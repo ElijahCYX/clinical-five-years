@@ -612,14 +612,17 @@ function RealApp() {
 
     const results = game.season.courses.map((course) => {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
-      const [expectedMin, expectedMax] = estimateRange(prep[course.id])
-      const expectedCenter = estimateScore(prep[course.id])
+      const [rawMin, rawMax] = estimateRange(prep[course.id])
+      const cap = effect.scoreCap ?? 100
+      const expectedMin = Math.min(rawMin, cap)
+      const expectedMax = Math.min(rawMax, cap)
+      const expectedCenter = Math.min(estimateScore(prep[course.id]), cap)
       let rawScore =
         38 +
         prep[course.id] * 0.55 +
         (Math.random() * 2 * effect.variance - effect.variance)
       if (game.examAllNighter) rawScore *= 0.95
-      const score = Math.max(0, Math.min(100, Math.trunc(rawScore)))
+      const score = Math.max(0, Math.min(cap, Math.min(100, Math.trunc(rawScore))))
       const rawGpa = gpaFromScore(score)
       const gpa = course.makeup
         ? score >= 60

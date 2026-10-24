@@ -303,6 +303,8 @@ export interface ReviewEffect {
   stress: number
   gains: Record<string, number>
   variance: number
+  /** 预期成绩上限；mock 卷面最高 90。 */
+  scoreCap?: number
 }
 
 /** 考前复习的选择效果：小考 3 选 1，大考 5 选 1。 */
@@ -317,6 +319,7 @@ export function getReviewEffect(
   let energy = 0
   let stress = 0
   let variance = 3
+  let scoreCap: number | undefined
 
   const gain = (course: Course, base: number) => {
     gains[course.id] = (gains[course.id] ?? 0) + base * courseK(course, attrs) * multiplier
@@ -329,6 +332,7 @@ export function getReviewEffect(
       energy = -10
       stress = 5
       variance = 1
+      scoreCap = 90
     } else if (choice === 'rest') {
       gains[course.id] = 4
       energy = 20
@@ -338,7 +342,7 @@ export function getReviewEffect(
       energy = -20
       stress = 10
     }
-    return { energy, stress, gains, variance }
+    return { energy, stress, gains, variance, scoreCap }
   }
 
   if (choice === 'focus0' || choice === 'focus1') {
@@ -351,20 +355,21 @@ export function getReviewEffect(
     stress = 10
   } else if (choice === 'balanced') {
     for (const course of courses) gain(course, 20)
-    energy = -15
+    energy = -20
     stress = 8
   } else if (choice === 'mock') {
-    for (const course of courses) gain(course, 10)
+    for (const course of courses) gain(course, 20)
     energy = -10
     stress = 5
     variance = 1
+    scoreCap = 90
   } else {
     for (const course of courses) gains[course.id] = 4
     energy = 20
     stress = 5
   }
 
-  return { energy, stress, gains, variance }
+  return { energy, stress, gains, variance, scoreCap }
 }
 
 export function backgroundAllowance(player: Player): number {

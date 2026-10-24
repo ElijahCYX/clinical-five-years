@@ -77,7 +77,7 @@ export function PrepScreen({
           id: 'mock',
           label: '历年卷 + zsy 笔记',
           en: 'PAST PAPERS + NOTES',
-          desc: '两门各做一套历年卷，再对着 zsy 笔记补漏洞，临场波动更小。',
+          desc: '两门各做一套历年卷，再对着 zsy 笔记补漏洞。收益等同均衡复习，但成绩上限 -10%。',
           meta: '',
         },
         {
@@ -100,7 +100,7 @@ export function PrepScreen({
           id: 'mock',
           label: '历年卷 + zsy 笔记',
           en: 'PAST PAPERS + NOTES',
-          desc: '按考试时间做一套历年卷，再对着 zsy 笔记补漏洞。',
+          desc: '按考试时间做一套历年卷，再对着 zsy 笔记补漏洞。临场更稳，但成绩上限 -10%。',
           meta: '',
         },
         {
@@ -170,7 +170,8 @@ export function PrepScreen({
         : option.effect.stress < 0
           ? `压力 ${option.effect.stress}`
           : null
-    return [energy, stress].filter(Boolean).join(' · ')
+    const cap = option.effect.scoreCap ? `成绩上限 ${option.effect.scoreCap}` : null
+    return [energy, stress, cap].filter(Boolean).join(' · ')
   }
 
   return (
