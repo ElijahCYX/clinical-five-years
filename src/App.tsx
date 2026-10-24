@@ -52,6 +52,7 @@ import type {
   PlanId,
   Player,
   PostgradChoice,
+  Relationship,
   ReviewChoice,
   ScreenName,
   VacationKind,
@@ -1055,6 +1056,93 @@ function RealApp() {
     persist(next)
   }
 
+  const patOutcome = (
+    current: GameState,
+    relation: Relationship,
+  ): {
+    next: GameState
+    message: string
+    publication?: { journal: string }
+  } => {
+    const updatedRelation = patRelationship(relation, current)
+    if (updatedRelation.lastPatKey === relation.lastPatKey) {
+      return {
+        next: current,
+        message: `${relation.name}本周已经拍过了。`,
+      }
+    }
+    const messages = [`你拍了拍${relation.name}，亲密度 +2。`]
+    let next: GameState = {
+      ...current,
+      relationships: current.relationships.map((item) =>
+        item.id === relation.id ? updatedRelation : item,
+      ),
+    }
+
+    if (relation.kind === 'mentor') {
+      if (
+        Math.random() < 0.25 &&
+        current.researchStarted &&
+        !current.researchPublished
+      ) {
+        const progress = Math.min(100, current.researchProgress + 2)
+        messages.push('导师顺手提点了你的课题，科研进度 +2。')
+        next = { ...next, researchProgress: progress }
+        if (progress >= 100) {
+          const profile = current.mentorProfileId
+            ? MENTOR_BY_ID[current.mentorProfileId]
+            : null
+          const journal =
+            profile && profile.journals.length > 0
+              ? profile.journals[
+                  Math.floor(Math.random() * profile.journals.length)
+                ]
+              : '待定期刊'
+          next = {
+            ...next,
+            researchPublished: true,
+            researchJournal: journal,
+          }
+          return {
+            next,
+            message: messages.join(' '),
+            publication: { journal },
+          }
+        }
+      }
+    } else if (relation.kind === 'counselor') {
+      if (Math.random() < 0.25) {
+        next = { ...next, stress: Math.max(0, next.stress - 5) }
+        messages.push('辅导员找你谈心，压力 -5。')
+      }
+    } else {
+      if (Math.random() < 0.2) {
+        const courses = current.season.courses
+        if (courses.length > 0) {
+          const course = courses[Math.floor(Math.random() * courses.length)]
+          next = {
+            ...next,
+            prep: {
+              ...next.prep,
+              [course.id]: Math.min(100, (next.prep[course.id] ?? 0) + 5),
+            },
+          }
+          messages.push(`TA把《${course.name}》的笔记借给你看，准备度 +5。`)
+        }
+      }
+      if (Math.random() < 0.1) {
+        next = {
+          ...next,
+          stress: Math.max(0, next.stress - 5),
+          energy: Math.min(100, next.energy + 5),
+        }
+        messages.push('TA请你喝奶茶/吃饭，压力 -5，精力 +5。')
+      }
+    }
+
+    return { next, message: messages.join(' ') }
+  }
+
   const autoPatTopRelations = (): string => {
     if (!game) return ''
     const remaining = patRemainingThisWeek(game)
@@ -1064,32 +1152,46 @@ function RealApp() {
       .sort((a, b) => b.intimacy - a.intimacy)
       .slice(0, remaining)
     if (targets.length === 0) return '本周还没有可以拍的人。'
-    let relationships = game.relationships
+    let next = game
+    const messages: string[] = []
+    let publication: { journal: string } | undefined
     for (const target of targets) {
-      relationships = relationships.map((relation) =>
-        relation.id === target.id
-          ? patRelationship(relation, game)
-          : relation,
-      )
+      const relation = next.relationships.find((item) => item.id === target.id)
+      if (!relation) continue
+      const outcome = patOutcome(next, relation)
+      next = outcome.next
+      messages.push(outcome.message)
+      if (outcome.publication) publication = outcome.publication
     }
-    const next: GameState = { ...game, relationships }
     setGame(next)
     persist(next)
-    return `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。`
+    if (publication) {
+      showResearchNotice({
+        kind: 'published',
+        title: '论文发表',
+        text: '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+        journal: publication.journal,
+      })
+    }
+    return `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`
   }
 
-  const patRelation = (id: string) => {
-    if (!game || patRemainingThisWeek(game) <= 0) return
+  const patRelation = (id: string): string => {
+    if (!game || patRemainingThisWeek(game) <= 0) return '本周的拍一拍次数已经用完了。'
     const relation = game.relationships.find((item) => item.id === id)
-    if (!relation) return
-    const next: GameState = {
-      ...game,
-      relationships: game.relationships.map((item) =>
-        item.id === id ? patRelationship(relation, game) : item,
-      ),
+    if (!relation) return '你找不到这个人。'
+    const outcome = patOutcome(game, relation)
+    setGame(outcome.next)
+    persist(outcome.next)
+    if (outcome.publication) {
+      showResearchNotice({
+        kind: 'published',
+        title: '论文发表',
+        text: '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+        journal: outcome.publication.journal,
+      })
     }
-    setGame(next)
-    persist(next)
+    return outcome.message
   }
 
   const confessRelation = (id: string): string => {

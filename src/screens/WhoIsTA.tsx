@@ -13,7 +13,7 @@ import { romanceRiskAfterWeek } from '../events'
 
 interface WhoIsTAScreenProps {
   state: GameState
-  onPat: (id: string) => void
+  onPat: (id: string) => string
   onAutoPat: () => string
   onConfess: (id: string) => string
   onMain: () => void
@@ -229,7 +229,7 @@ export function WhoIsTAScreen({
                         type="button"
                         className="whois-action"
                         disabled={!patAvailable}
-                        onClick={() => onPat(relation.id)}
+                        onClick={() => setMessage(onPat(relation.id))}
                       >
                         {patAvailable
                         ? '拍一拍'
