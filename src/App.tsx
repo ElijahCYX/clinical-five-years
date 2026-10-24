@@ -109,7 +109,9 @@ import {
   createInitialRelationships,
   nextRoommateAction,
   normalizeRelationships,
+  adjustIntimacyDelta,
   applyFriendContactDecay,
+  intimacyMultiplier,
   patRelationship,
   progressWeek,
   patRemainingThisWeek,
@@ -629,7 +631,11 @@ function RealApp() {
                       relation.kind === 'mentor'
                         ? {
                             ...relation,
-                            intimacy: Math.min(100, relation.intimacy + 5),
+                            intimacy: Math.min(
+                              100,
+                              relation.intimacy +
+                                adjustIntimacyDelta(previous, relation, 5),
+                            ),
                           }
                         : relation,
                     ),
@@ -650,7 +656,11 @@ function RealApp() {
                       relation.kind === 'mentor'
                         ? {
                             ...relation,
-                            intimacy: Math.max(0, relation.intimacy - 3),
+                            intimacy: Math.max(
+                              0,
+                              relation.intimacy +
+                                adjustIntimacyDelta(previous, relation, -3),
+                            ),
                           }
                         : relation,
                     ),
@@ -684,7 +694,10 @@ function RealApp() {
           relation.kind === 'mentor'
             ? {
                 ...relation,
-                intimacy: Math.max(0, relation.intimacy - 5),
+                intimacy: Math.max(
+                  0,
+                  relation.intimacy + adjustIntimacyDelta(game, relation, -5),
+                ),
               }
             : relation,
         ),
@@ -756,6 +769,7 @@ function RealApp() {
         name: relation.name,
         identity: relation.identity,
         chat,
+        intimacyMultiplier: intimacyMultiplier(nextWithWeek, relation),
         onResolve: (intimacy) => {
           setGame((previous) => {
             if (!previous) return previous
@@ -767,7 +781,11 @@ function RealApp() {
                       ...item,
                       intimacy: Math.max(
                         0,
-                        Math.min(100, item.intimacy + intimacy),
+                        Math.min(
+                          100,
+                          item.intimacy +
+                            adjustIntimacyDelta(previous, item, intimacy),
+                        ),
                       ),
                     }
                   : item,
@@ -940,7 +958,10 @@ function RealApp() {
       ? {
           ...relation,
           partner: true,
-          intimacy: Math.min(100, relation.intimacy + 5),
+          intimacy: Math.min(
+            100,
+            relation.intimacy + adjustIntimacyDelta(game, relation, 5),
+          ),
           confessionRisk: 0,
           breakupRisk: 0,
           ex: false,
@@ -949,7 +970,10 @@ function RealApp() {
         }
       : {
           ...relation,
-          intimacy: Math.max(0, relation.intimacy - 5),
+          intimacy: Math.max(
+            0,
+            relation.intimacy + adjustIntimacyDelta(game, relation, -5),
+          ),
           confessionRisk: 0,
         }
     const next: GameState = {
@@ -1042,14 +1066,18 @@ function RealApp() {
 
   const openWhoIs = () => {
     if (!game) return
+    setWhoisReturn(view)
+    setView('whois')
+  }
+
+  const markRelationSeen = (relationshipId: string) => {
+    if (!game || game.seenRelationIds.includes(relationshipId)) return
     const next: GameState = {
       ...game,
-      seenRelationIds: game.relationships.map((relation) => relation.id),
+      seenRelationIds: [...game.seenRelationIds, relationshipId],
     }
     setGame(next)
     persist(next)
-    setWhoisReturn(view)
-    setView('whois')
   }
 
   const arrangeDinner = (
@@ -1087,7 +1115,12 @@ function RealApp() {
         message: `${relation.name}本周已经拍过了。`,
       }
     }
-    const messages = [`你拍了拍${relation.name}，亲密度 +2。`]
+    const actualPatGain = updatedRelation.intimacy - relation.intimacy
+    const messages = [
+      `你拍了拍${relation.name}，亲密度 ${
+        actualPatGain >= 0 ? '+' : ''
+      }${actualPatGain}。`,
+    ]
     let next: GameState = {
       ...current,
       relationships: current.relationships.map((item) =>
@@ -1224,7 +1257,10 @@ function RealApp() {
       ? {
           ...relation,
           partner: true,
-          intimacy: Math.min(100, relation.intimacy + 5),
+          intimacy: Math.min(
+            100,
+            relation.intimacy + adjustIntimacyDelta(game, relation, 5),
+          ),
           ex: false,
           exWeek: 0,
           exPenalty: false,
@@ -1370,19 +1406,30 @@ function RealApp() {
             updated = {
               ...updated,
               weeklyAction: nextRoommateAction(),
-              intimacy: Math.min(100, updated.intimacy + 3),
+              intimacy: Math.min(
+                100,
+                updated.intimacy + adjustIntimacyDelta(game, relation, 3),
+              ),
             }
           }
           if (dinnerAccepted.includes(relation.id)) {
             updated = revealMaybe({
               ...updated,
-              intimacy: Math.min(100, updated.intimacy + dinnerIntimacyGain),
+              intimacy: Math.min(
+                100,
+                updated.intimacy +
+                  adjustIntimacyDelta(game, relation, dinnerIntimacyGain),
+              ),
             })
           }
           if (relation.kind === 'mentor' && sim.mentorIntimacyGain > 0) {
             updated = {
               ...updated,
-              intimacy: Math.min(100, updated.intimacy + sim.mentorIntimacyGain),
+              intimacy: Math.min(
+                100,
+                updated.intimacy +
+                  adjustIntimacyDelta(game, relation, sim.mentorIntimacyGain),
+              ),
             }
           }
           return updated
@@ -2103,6 +2150,7 @@ function RealApp() {
           event: pickTravelEvent(),
           companionId: companion.id,
           companionName: companion.name,
+          intimacyMultiplier: intimacyMultiplier(game, companion),
         }
       })
       showTravelEvents({
@@ -2130,7 +2178,12 @@ function RealApp() {
                         0,
                         Math.min(
                           100,
-                          relation.intimacy + (effects.intimacy ?? 0),
+                          relation.intimacy +
+                            adjustIntimacyDelta(
+                              previous,
+                              relation,
+                              effects.intimacy ?? 0,
+                            ),
                         ),
                       ),
                     }
@@ -2259,6 +2312,7 @@ function RealApp() {
         onPat={patRelation}
         onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
+        onViewRelation={markRelationSeen}
         onMain={() => setView(whoisReturn)}
         onWho={() => setView('whoami')}
         onTitle={goTitle}

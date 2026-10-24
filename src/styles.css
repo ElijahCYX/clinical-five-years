@@ -8799,3 +8799,53 @@ body.dinner-open {
   font-size: 10.5px;
   font-weight: 500;
 }
+
+/* ---------- new relation card pulse ---------- */
+
+.whois-row {
+  position: relative;
+  cursor: pointer;
+}
+
+.whois-new-pulse {
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 6px 8px;
+  border: 2px solid var(--gold);
+  background: linear-gradient(
+    110deg,
+    rgba(190, 145, 48, 0.02) 0%,
+    rgba(190, 145, 48, 0.12) 50%,
+    rgba(190, 145, 48, 0.02) 100%
+  );
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  animation: whoisPulse 1.7s ease-in-out infinite;
+}
+
+@keyframes whoisPulse {
+  0%,
+  100% {
+    border-color: rgba(190, 145, 48, 0.35);
+    box-shadow: 0 0 0 0 rgba(190, 145, 48, 0);
+  }
+  50% {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(190, 145, 48, 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whois-new-pulse {
+    animation: none;
+    border-color: var(--gold);
+  }
+}

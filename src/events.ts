@@ -11,6 +11,8 @@ import {
   isStaffRelation,
   npcOrientationAllows,
   playerAllowsGender,
+
+  adjustIntimacyDelta,
 } from './social'
 import { unlockMentor } from './mentors'
 
@@ -367,7 +369,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
         ? {
             ...relation,
             partner: false,
-            intimacy: Math.max(0, relation.intimacy - 10),
+            intimacy: Math.max(
+              0,
+              relation.intimacy + adjustIntimacyDelta(state, relation, -10),
+            ),
             ex: true,
             exWeek: absoluteWeek(state),
             exPenalty: false,
@@ -383,7 +388,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
         ? {
             ...relation,
             partner: false,
-            intimacy: Math.max(0, relation.intimacy - 18),
+            intimacy: Math.max(
+              0,
+              relation.intimacy + adjustIntimacyDelta(state, relation, -18),
+            ),
             breakupRisk: 0,
             ex: true,
             exWeek: absoluteWeek(state),
@@ -399,7 +407,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
         ? {
             ...relation,
             partner: false,
-            intimacy: Math.max(0, relation.intimacy - 20),
+            intimacy: Math.max(
+              0,
+              relation.intimacy + adjustIntimacyDelta(state, relation, -20),
+            ),
             breakupRisk: 0,
             ex: true,
             exWeek: absoluteWeek(state),
@@ -417,7 +428,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ex: false,
             exWeek: 0,
             exPenalty: false,
-            intimacy: Math.min(100, relation.intimacy + 5),
+            intimacy: Math.min(
+              100,
+              relation.intimacy + adjustIntimacyDelta(state, relation, 5),
+            ),
             confessionRisk: 0,
             breakupRisk: 0,
           }
@@ -440,7 +454,11 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ...relation,
             intimacy: Math.max(
               0,
-              Math.min(100, relation.intimacy + effect.mentorIntimacy!),
+              Math.min(
+                100,
+                relation.intimacy +
+                  adjustIntimacyDelta(state, relation, effect.mentorIntimacy!),
+              ),
             ),
           }
         : relation,

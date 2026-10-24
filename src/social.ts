@@ -205,6 +205,24 @@ export function patLimit(state: GameState): number {
   return state.vacation ? 5 : PAT_LIMIT
 }
 
+export function intimacyMultiplier(state: GameState, relation: Relationship): number {
+  const playerSocial = state.player?.attrs.social ?? 2
+  const otherSocial = relation.stats.attrs.social
+  const sum = playerSocial + otherSocial
+  if (sum >= 16) return 1.3
+  if (sum >= 13) return 1.15
+  return 1
+}
+
+export function adjustIntimacyDelta(
+  state: GameState,
+  relation: Relationship,
+  delta: number,
+): number {
+  if (!delta) return 0
+  return Math.round(delta * intimacyMultiplier(state, relation))
+}
+
 export function patUsedThisWeek(state: GameState): number {
   const key = patPeriodKey(state)
   return state.relationships.filter((relation) => relation.lastPatKey === key).length
@@ -222,7 +240,10 @@ export function patRelationship(relation: Relationship, state: GameState): Relat
   if (!canPat(state, relation)) return relation
   return revealMaybe({
     ...relation,
-    intimacy: Math.min(100, relation.intimacy + 2),
+    intimacy: Math.min(
+      100,
+      relation.intimacy + adjustIntimacyDelta(state, relation, 2),
+    ),
     lastPatKey: patPeriodKey(state),
     lastPatAbsWeek: progressWeek(state),
   })
@@ -241,13 +262,16 @@ export function applyFriendContactDecay(
       return relation
     }
     if (now - (relation.lastPatAbsWeek ?? 0) < 3) return relation
-    const delta =
+    const rawDelta =
       relation.intimacy > 15
         ? -Math.min(5, relation.intimacy - 15)
         : -1
     return {
       ...relation,
-      intimacy: Math.max(0, relation.intimacy + delta),
+      intimacy: Math.max(
+        0,
+        relation.intimacy + adjustIntimacyDelta(state, relation, rawDelta),
+      ),
     }
   })
 }

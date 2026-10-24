@@ -11,6 +11,7 @@ export interface TravelSequenceItem {
   event: TravelEvent
   companionId: string
   companionName: string
+  intimacyMultiplier: number
 }
 
 interface TravelPayload {
@@ -30,10 +31,15 @@ export function useTravelEvents(): TravelContextValue {
   return useContext(TravelContext)
 }
 
-function effectText(effects: TravelEventEffects, name: string): string[] {
+function effectText(
+  effects: TravelEventEffects,
+  name: string,
+  intimacyMultiplier: number,
+): string[] {
   const lines: string[] = []
   if (effects.intimacy) {
-    lines.push(`与${name}亲密度 ${effects.intimacy > 0 ? '+' : ''}${effects.intimacy}`)
+    const adjusted = Math.round(effects.intimacy * intimacyMultiplier)
+    lines.push(`与${name}亲密度 ${adjusted > 0 ? '+' : ''}${adjusted}`)
   }
   if (effects.money) {
     lines.push(`生活费 ${effects.money > 0 ? '+' : ''}${effects.money}`)
@@ -95,7 +101,7 @@ function TravelEventModal({
             <div className="encounter-result travel-result">
               <p>{replace(chosen.response)}</p>
               <div className="travel-effect-list">
-                {effectText(chosen.effects, name).map((line) => (
+                {effectText(chosen.effects, name, item.intimacyMultiplier).map((line) => (
                   <strong key={line}>{line}</strong>
                 ))}
               </div>

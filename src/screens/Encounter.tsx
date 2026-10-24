@@ -11,6 +11,7 @@ export interface EncounterPayload {
   name: string
   identity: string
   chat: EncounterChat
+  intimacyMultiplier: number
   onResolve: (intimacy: number) => void
 }
 
@@ -63,10 +64,19 @@ function EncounterModal({
           <>
             <div className="encounter-result">
               <p>{replaceName(option.response)}</p>
-              <strong className={option.intimacy >= 0 ? 'is-positive' : 'is-negative'}>
-                亲密度 {option.intimacy > 0 ? '+' : ''}
-                {option.intimacy}
-              </strong>
+              {(() => {
+                const adjusted = Math.round(
+                  option.intimacy * payload.intimacyMultiplier,
+                )
+                return (
+                  <strong
+                    className={adjusted >= 0 ? 'is-positive' : 'is-negative'}
+                  >
+                    亲密度 {adjusted > 0 ? '+' : ''}
+                    {adjusted}
+                  </strong>
+                )
+              })()}
             </div>
             <footer className="random-event-footer">
               <p>这个选择已经发生，不能撤回。</p>

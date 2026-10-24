@@ -18,13 +18,18 @@ interface WhoIsTAScreenProps {
   onPat: (id: string) => string
   onAutoPat: () => string
   onConfess: (id: string) => string
+  onViewRelation?: (id: string) => void
   onMain: () => void
   onWho: () => void
   onTitle?: () => void
 }
 
 function statsText(relation: Relationship): string[] {
-  if (!relation.statsKnown || !relation.knownStats) return []
+  const base = [
+    `建模 ${relation.stats.attrs.appearance}`,
+    `交际 ${relation.stats.attrs.social}`,
+  ]
+  if (!relation.statsKnown || !relation.knownStats) return base
   const stats = relation.knownStats
   return [
     `GPA ${stats.gpa.toFixed(2)}`,
@@ -44,6 +49,7 @@ export function WhoIsTAScreen({
   onPat,
   onAutoPat,
   onConfess,
+  onViewRelation,
   onMain,
   onWho,
   onTitle,
@@ -99,8 +105,8 @@ export function WhoIsTAScreen({
             <Eyebrow>WHO IS TA / RELATIONSHIP LEDGER</Eyebrow>
             <h1 className="page-title">TA 是谁</h1>
             <p className="page-lede">
-              你认识的人都在这里。亲密度越高，越可能看到 TA 不愿示人的一面；
-              到 100 时，所有面板都会完全解锁。
+              你认识的人都在这里。建模与交际永久可见；亲密度越高，越可能看到 TA 不愿示人的一面。
+              双方交际之和 ≥16 时亲密度变化 +30%，≥13 时 +15%。
             </p>
           </div>
           <div className="whois-summary">
@@ -180,7 +186,20 @@ export function WhoIsTAScreen({
                 const confessAvailable = canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
                 return (
-                  <article className="whois-row" key={relation.id}>
+                  <article
+                    className={`whois-row ${
+                      !state.seenRelationIds.includes(relation.id)
+                        ? 'is-new-relation'
+                        : ''
+                    }`}
+                    key={relation.id}
+                    onClick={() => onViewRelation?.(relation.id)}
+                  >
+                    {!state.seenRelationIds.includes(relation.id) && (
+                      <span className="whois-new-pulse" aria-hidden="true">
+                        NEW
+                      </span>
+                    )}
                     <div className="whois-avatar">
                       {relation.name.slice(0, 1)}
                     </div>
@@ -220,11 +239,12 @@ export function WhoIsTAScreen({
                         <span>{relation.intimacy} / 100</span>
                       </div>
                       <div className="whois-stats">
-                        {stats.length > 0 ? (
-                          stats.map((line) => <span key={line}>{line}</span>)
-                        ) : (
+                        {stats.map((line) => (
+                          <span key={line}>{line}</span>
+                        ))}
+                        {!relation.statsKnown && (
                           <span className="whois-hidden">
-                            面板未解锁 · 亲密度 100 或随机事件后可见
+                            其余面板未解锁 · 亲密度 100 或随机事件后可见
                           </span>
                         )}
                       </div>
