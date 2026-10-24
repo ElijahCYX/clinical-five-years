@@ -482,9 +482,15 @@ function RealApp() {
     setView('whoami')
   }
 
-  const chooseWeekFocus = (focus: string) => {
+  const chooseWeekFocus = (focus: string, addLibrary = false) => {
     if (!game) return
-    const next = { ...game, weekFocus: focus }
+    const selected =
+      addLibrary &&
+      game.selected.length < 2 &&
+      !game.selected.includes('library')
+        ? [...game.selected, 'library']
+        : game.selected
+    const next = { ...game, weekFocus: focus, selected }
     setGame(next)
     persist(next)
   }

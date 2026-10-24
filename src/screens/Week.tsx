@@ -9,6 +9,7 @@ import {
   archetypeFor,
   effectiveEnergyCost,
   energyEffectText,
+  englishGainForMemory,
   estimateRange,
   simulateWeek,
 } from '../game'
@@ -33,7 +34,7 @@ interface WeekScreenProps {
   state: GameState
   onToggleAction: (id: string) => void
   onEndWeek: () => void
-  onChooseFocus: (focus: string) => void
+  onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onOpenWhoAmI?: () => void
   onSave?: () => void
   onTitle?: () => void
@@ -49,7 +50,7 @@ export function WeekScreen({
   onTitle,
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
-  const [adjustFocusOpen, setAdjustFocusOpen] = useState(false)
+  const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const player = state.player
   if (!player) return null
 
@@ -64,8 +65,7 @@ export function WeekScreen({
     state.weekFocus === 'balanced'
       ? '全部课程均衡分配'
       : focusCourse?.name ?? '尚未选择'
-  const showFocusModal =
-    courses.length > 1 && (!state.weekFocus || adjustFocusOpen)
+  const showFocusModal = focusPrompt !== null
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : null
   const selectedGroups = Array.from(new Set(state.selected)).map((id) => ({
@@ -73,6 +73,32 @@ export function WeekScreen({
     count: state.selected.filter((item) => item === id).length,
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
+  const handleActionClick = (id: string) => {
+    if (
+      id === 'library' &&
+      courses.length > 1 &&
+      !state.weekFocus &&
+      countOf('library') === 0 &&
+      state.selected.length < 2
+    ) {
+      setFocusPrompt('library')
+      return
+    }
+    onToggleAction(id)
+  }
+  const chooseFocus = (focus: string) => {
+    onChooseFocus(focus, focusPrompt === 'library')
+    setFocusPrompt(null)
+  }
+  const actionEffectText = (action: ActionDef) => {
+    if (action.id === 'english') {
+      return action.effectText.replace(
+        '英语进度 +5',
+        `英语进度 +${englishGainForMemory(player.attrs.memory)}`,
+      )
+    }
+    return energyEffectText(action.effectText, action.energy, state.energy)
+  }
   const preview = state.selected.length > 0 ? simulateWeek(state) : null
   const kaoyanWindow =
     (state.postgradChoice === 'both' &&
@@ -343,14 +369,14 @@ export function WeekScreen({
                   </Pill>
                 </div>
 
-                {courses.length > 1 && (
+                {courses.length > 1 && state.weekFocus && (
                   <div className="week-focus-bar">
                     <span>本周主攻</span>
                     <strong>{focusLabel}</strong>
                     <button
                       type="button"
                       className="text-btn"
-                      onClick={() => setAdjustFocusOpen(true)}
+                      onClick={() => setFocusPrompt('adjust')}
                     >
                       调整
                     </button>
@@ -372,7 +398,7 @@ export function WeekScreen({
                         className={`action-card ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         }`}
-                        onClick={() => !disabled && onToggleAction(action.id)}
+                        onClick={() => !disabled && handleActionClick(action.id)}
                         disabled={disabled}
                       >
                         <div className="action-meta">
@@ -381,9 +407,7 @@ export function WeekScreen({
                         </div>
                         <h3>{action.name}</h3>
                         <p className="action-flavor">{action.flavor}</p>
-                        <p className="action-effect">
-                          {energyEffectText(action.effectText, action.energy, state.energy)}
-                        </p>
+                        <p className="action-effect">{actionEffectText(action)}</p>
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
                           {action.id === 'library' && selectedCount > 0 && state.selected.length >= 2 && (
@@ -560,10 +584,7 @@ export function WeekScreen({
                   type="button"
                   key={course.id}
                   className={`focus-choice ${state.weekFocus === course.id ? 'is-selected' : ''}`}
-                  onClick={() => {
-                    onChooseFocus(course.id)
-                    setAdjustFocusOpen(false)
-                  }}
+                  onClick={() => chooseFocus(course.id)}
                 >
                   <span className="focus-choice-en">MAIN / 75%</span>
                   <strong>{course.name}</strong>
@@ -578,10 +599,7 @@ export function WeekScreen({
                 className={`focus-choice is-balanced ${
                   state.weekFocus === 'balanced' ? 'is-selected' : ''
                 }`}
-                onClick={() => {
-                  onChooseFocus('balanced')
-                  setAdjustFocusOpen(false)
-                }}
+                onClick={() => chooseFocus('balanced')}
               >
                 <span className="focus-choice-en">EVEN / 25% × ALL</span>
                 <strong>全部课程均衡</strong>
@@ -589,7 +607,12 @@ export function WeekScreen({
                 <em>均衡</em>
               </button>
             </div>
-            <p className="focus-note">本周选择只影响第 {state.week} 周，下周会重新询问。</p>
+            <p className="focus-note">
+              {focusPrompt === 'library'
+                ? '这次选择会同时把泡图书馆排进本周行动。本周内可以继续调整主攻课程。'
+                : '本周选择只影响第 '}
+              {focusPrompt === 'adjust' ? `${state.week} 周，下周会重新询问。` : null}
+            </p>
           </div>
         </div>
       )}

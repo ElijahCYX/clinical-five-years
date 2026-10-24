@@ -4580,13 +4580,13 @@ input:focus-visible {
 /* ---------- bottom interface nav ---------- */
 
 .has-bottom-nav {
-  padding-bottom: 76px;
+  padding-bottom: 104px;
 }
 
 .bottom-interface-nav {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 44px;
   z-index: 110;
   display: flex;
   gap: 3px;

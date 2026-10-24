@@ -29,6 +29,11 @@ export const clamp = (value: number, min: number, max: number) =>
 
 export const WEEKLY_FIXED_COST = 300
 
+/** 每周英语行动的进度收益：记忆力 2→+4，10→+6。 */
+export function englishGainForMemory(memory: number): number {
+  return clamp(Math.round(4 + (memory - 2) * 0.25), 4, 6)
+}
+
 export const ATTR_KEYS = ATTRS.map((attr) => attr.key)
 
 export const TOTAL_SEASONS = 21
@@ -463,7 +468,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
     energy += effectiveEnergyCost(action.energy, state.energy)
     stress += action.stress
     money += action.money
-    english += action.english ?? 0
+    english +=
+      action.id === 'english'
+        ? englishGainForMemory(attrs.memory)
+        : action.english ?? 0
     composite += action.composite ?? 0
     research += action.research ?? 0
     kaoyanPrep += action.kaoyanPrep ?? 0
