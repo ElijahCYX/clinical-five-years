@@ -185,7 +185,7 @@ export function WeekScreen({
     }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
-      return `所有课程：准备度 +6 × K · 精力 ${costs.energy} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
+      return `所有课程：准备度 +6 × K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
     }
     if (action.id === 'research') {
       if (!state.labEntered) return '等待导师允许进入实验室'

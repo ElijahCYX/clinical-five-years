@@ -743,7 +743,8 @@ export function simulateWeek(state: GameState): WeekSimulation {
             courseK(course, attrs) *
             (1 + studyBonus) *
             prepMultiplier *
-            coursePrepTalentMultiplier(state, course),
+            coursePrepTalentMultiplier(state, course) *
+            (state.energy < 40 ? 0.5 : 1),
         ]),
       )
       const allocated = focusAdjustedGains(
@@ -981,7 +982,10 @@ export function libraryCosts(state: GameState): {
   return {
     count,
     costCount,
-    energy: effectiveEnergyCost(baseEnergy * energyFactor, state.energy),
+    energy:
+      state.energy < 40
+        ? Math.round(effectiveEnergyCost(baseEnergy * energyFactor, state.energy) / 2)
+        : effectiveEnergyCost(baseEnergy * energyFactor, state.energy),
     stress: Math.round(baseStress * stressFactor),
   }
 }
