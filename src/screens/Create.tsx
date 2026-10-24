@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ATTRS, BACKGROUNDS, TALENTS } from '../data'
 import { archetypeFor, evenAllocation, randomAllocation, totalPoints } from '../game'
+import { randomCharacterName } from '../names'
 import type { AttrKey, BackgroundId, Gender, Player, TalentId } from '../types'
 import { Eyebrow, Footer, SectionLabel, Stamp, TopBar } from '../ui'
 
@@ -212,12 +213,21 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
               <SectionLabel>03 / 基本信息</SectionLabel>
               <label className="field">
                 <span>你的名字</span>
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="留空也可以，故事会给你一个称呼"
-                  maxLength={12}
-                />
+                <div className="name-input-row">
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="留空也可以，故事会给你一个称呼"
+                    maxLength={12}
+                  />
+                  <button
+                    type="button"
+                    className="name-random-btn"
+                    onClick={() => setName(randomCharacterName())}
+                  >
+                    随机生成
+                  </button>
+                </div>
               </label>
 
               <div className="field">

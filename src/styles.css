@@ -161,6 +161,36 @@ input:focus-visible {
   border-bottom-color: var(--line-strong);
 }
 
+/* ---------- name input ---------- */
+
+.name-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.name-input-row input {
+  flex: 1;
+}
+
+.name-random-btn {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  background: #f6f1e6;
+  color: var(--ink-3);
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.name-random-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 /* ---------- top bar ---------- */
 
 .topbar {
