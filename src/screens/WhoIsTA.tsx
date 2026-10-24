@@ -6,6 +6,7 @@ import {
   confessionChance,
   currentWeekKey,
   patLimit,
+  orientationLabel,
   patRemainingThisWeek,
   relationshipKindLabel,
   unseenRelationCount,
@@ -222,6 +223,14 @@ export function WhoIsTAScreen({
                           >
                             {relation.gender === '男' ? '♂' : '♀'}
                           </span>
+                          {relation.intimacy >= 80 && (
+                            <span
+                              className="whois-orientation"
+                              title={`性取向：${orientationLabel(relation.orientation)}`}
+                            >
+                              {orientationLabel(relation.orientation)}
+                            </span>
+                          )}
                         </span>
                         <span>{relation.identity}</span>
                         {relationshipKindLabel(relation.kind) !== relation.identity && (

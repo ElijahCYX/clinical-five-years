@@ -23,6 +23,7 @@ import { ConsumptionEventModal } from './ConsumptionEvent'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import {
   isDinnerFriend,
+  orientationLabel,
   patRemainingThisWeek,
   relationshipKindLabel,
   relationshipStatsLine,
@@ -519,6 +520,14 @@ export function WeekScreen({
                       >
                         {relation.gender === '男' ? '♂' : '♀'}
                       </span>
+                      {relation.intimacy >= 80 && (
+                        <span
+                          className="inline-orientation"
+                          title={`性取向：${orientationLabel(relation.orientation)}`}
+                        >
+                          {orientationLabel(relation.orientation)}
+                        </span>
+                      )}
                     </h4>
                     <p>
                       {relation.identity}

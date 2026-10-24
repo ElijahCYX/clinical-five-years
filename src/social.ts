@@ -160,6 +160,14 @@ export function createCourseFriend(player: Player, courseName: string): Relation
   )
 }
 
+export function orientationLabel(
+  orientation: Relationship['orientation'],
+): string {
+  if (orientation === 'homosexual') return '同性恋'
+  if (orientation === 'bisexual') return '双性恋'
+  return '异性恋'
+}
+
 export function relationshipKindLabel(kind: Relationship['kind']): string {
   switch (kind) {
     case 'roommate':
