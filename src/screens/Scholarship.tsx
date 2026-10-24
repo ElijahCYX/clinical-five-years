@@ -28,8 +28,21 @@ export function ScholarshipScreen({
   const prior = state.yearRecords.filter((item) => item.year < record.year)
   const previousAward = bestAward(prior)
   const yearName = YEAR_NAMES[record.year - 1] ?? `第 ${record.year} 学年`
-  const award = record.award
-  const awardLabel = award ? AWARD_LABELS[award] : '未获奖'
+  const awards = record.awards?.length
+    ? record.awards
+    : record.award
+      ? [record.award]
+      : []
+  const award = awards.includes('national')
+    ? 'national'
+    : awards.includes('provincial')
+      ? 'provincial'
+      : awards.includes('school')
+        ? 'school'
+        : null
+  const awardLabel = awards.length > 0
+    ? awards.map((item) => AWARD_LABELS[item]).join(' + ')
+    : '未获奖'
 
   return (
     <div className="screen event-screen">
@@ -80,7 +93,7 @@ export function ScholarshipScreen({
               <div className="scholarship-cutoffs">
                 <span>国奖线 80</span>
                 <span>省奖线 70</span>
-                <span>校奖线 60</span>
+                <span>校奖线 50</span>
               </div>
             </div>
 
@@ -126,14 +139,19 @@ export function ScholarshipScreen({
                 <strong>{awardLabel}</strong>
               </div>
               <p>
-                {award === 'national' &&
-                  '总分达到国奖线，且没有挂科记录。学院将按名额组织答辩与材料复核。'}
-                {award === 'provincial' &&
-                  '总分达到省奖线，且本学年没有挂科。最终名额以学院评审为准。'}
-                {award === 'school' &&
-                  '总分达到校奖线。校级奖学金不影响后续国奖/省奖的履历效应。'}
-                {!award &&
-                  '本次未达到 60 分校奖线。先把成绩和综测补起来，明年还有机会。'}
+                {awards.includes('national') &&
+                  '总分达到国奖线，且没有挂科记录。校奖与国奖可以同时获得，奖金会一起到账。'}
+                {!awards.includes('national') && awards.includes('provincial') &&
+                  '总分达到省奖线，且本学年没有挂科。校奖与省奖可以同时获得，省奖与国奖只能取其一。'}
+                {!awards.includes('national') && !awards.includes('provincial') && awards.includes('school') &&
+                  '总分超过 50 分校奖线。校级奖学金不影响后续国奖/省奖的履历效应。'}
+                {awards.length === 0 &&
+                  '本次未超过 50 分校奖线。先把成绩和综测补起来，明年还有机会。'}
+                {record.score.reward > 0 && (
+                  <em className="scholarship-reward">
+                    奖金 ¥{record.score.reward.toLocaleString()} 已计入生活费
+                  </em>
+                )}
               </p>
               {(state.everFailed || record.failed) && (
                 <p className="scholarship-warning">

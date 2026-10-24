@@ -32,7 +32,9 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
     state.cumulativeCredits > 0
       ? state.cumulativePoints / state.cumulativeCredits
       : null
-  const awards = state.yearRecords.filter((record) => record.award)
+  const awards = state.yearRecords.filter(
+    (record) => record.evaluated && (record.awards?.length ?? 0) + (record.award ? 1 : 0) > 0,
+  )
   const previousAward = bestAward(state.yearRecords)
   const paperCount = Math.floor(state.research / 100)
   const openingTalents = state.openingTalents
@@ -286,7 +288,14 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                           .map(
                             (record) =>
                               `${YEAR_NAMES[record.year - 1] ?? `${record.year} 学年`} ${
-                                record.award ? AWARD_LABELS[record.award] : ''
+                                (record.awards?.length
+                                  ? record.awards
+                                  : record.award
+                                    ? [record.award]
+                                    : []
+                                )
+                                  .map((award) => AWARD_LABELS[award])
+                                  .join('+')
                               }`,
                           )
                           .join(' / ')
@@ -316,7 +325,11 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                     <span>{record.gpa.toFixed(2)}</span>
                     <span>{record.compositeGain}</span>
                     <span>{record.papers}</span>
-                    <span>{record.award ? AWARD_LABELS[record.award] : '未获奖'}</span>
+                    <span>
+                      {(record.awards?.length ? record.awards : record.award ? [record.award] : [])
+                        .map((award) => AWARD_LABELS[award])
+                        .join(' + ') || '未获奖'}
+                    </span>
                   </div>
                 ))}
               </div>

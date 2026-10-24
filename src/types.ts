@@ -159,6 +159,7 @@ export interface PeResult {
 export type PostgradChoice = 'baoyan' | 'both' | 'employment' | null
 
 export type AwardLevel = 'national' | 'provincial' | 'school' | null
+export type Award = Exclude<AwardLevel, null>
 
 export interface ScholarshipScore {
   grade: number
@@ -168,6 +169,8 @@ export interface ScholarshipScore {
   legacy: number
   total: number
   award: AwardLevel
+  awards: Award[]
+  reward: number
 }
 
 export interface YearRecord {
@@ -183,6 +186,7 @@ export interface YearRecord {
   cumulativeResearch: number
   evaluated: boolean
   award: AwardLevel
+  awards: Award[]
   score: ScholarshipScore | null
 }
 

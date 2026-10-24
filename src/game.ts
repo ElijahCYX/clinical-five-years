@@ -11,6 +11,7 @@ import {
 } from './data'
 import type {
   AttrKey,
+  Award,
   AwardLevel,
   Course,
   GameState,
@@ -784,6 +785,12 @@ export function energyEffectText(
 
 export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 40
 
+export const SCHOLARSHIP_REWARDS: Record<Award, number> = {
+  national: 5000,
+  provincial: 3000,
+  school: 1000,
+}
+
 export const AWARD_LABELS: Record<Exclude<AwardLevel, null>, string> = {
   national: '国家奖学金',
   provincial: '省级奖学金',
@@ -823,10 +830,21 @@ export function interviewScoreFor(player: Player): number {
 }
 
 export function bestAward(records: YearRecord[]): AwardLevel {
-  if (records.some((record) => record.award === 'national')) return 'national'
-  if (records.some((record) => record.award === 'provincial')) return 'provincial'
-  if (records.some((record) => record.award === 'school')) return 'school'
+  const all = records.flatMap((record) =>
+    record.awards?.length
+      ? record.awards
+      : record.award
+        ? [record.award]
+        : [],
+  )
+  if (all.includes('national')) return 'national'
+  if (all.includes('provincial')) return 'provincial'
+  if (all.includes('school')) return 'school'
   return null
+}
+
+export function scholarshipRewardFor(awards: Award[]): number {
+  return awards.reduce((sum, award) => sum + SCHOLARSHIP_REWARDS[award], 0)
 }
 
 export function legacyScoreFor(records: YearRecord[]): number {
@@ -853,14 +871,13 @@ export function scholarshipFor(
   const interview = interviewScoreFor(player)
   const legacy = legacyScoreFor(priorRecords)
   const total = grade + composite + research + interview + legacy
-  const award: AwardLevel =
-    total >= 80 && !everFailed
-      ? 'national'
-      : total >= 70 && !record.failed
-        ? 'provincial'
-        : total >= 60
-          ? 'school'
-          : null
+  let primary: Award | null = null
+  if (total >= 80 && !everFailed) primary = 'national'
+  else if (total >= 70 && !record.failed) primary = 'provincial'
+  const awards: Award[] = []
+  if (primary) awards.push(primary)
+  if (total > 50) awards.push('school')
+  const award: AwardLevel = primary ?? (awards.includes('school') ? 'school' : null)
   return {
     grade,
     composite,
@@ -869,6 +886,8 @@ export function scholarshipFor(
     legacy,
     total,
     award,
+    awards,
+    reward: scholarshipRewardFor(awards),
   }
 }
 

@@ -78,7 +78,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v15'
+const SAVE_KEY = 'clinical-five-years-save-v16'
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -230,6 +230,7 @@ function finalizeYear(base: GameState): GameState {
     cumulativeResearch: base.research,
     evaluated: false,
     award: null,
+    awards: [],
     score: null,
   }
   return {
@@ -249,9 +250,16 @@ function evaluateScholarship(base: GameState, index: number): GameState | null {
   const score = scholarshipFor(record, base.player, prior, base.everFailed)
   return {
     ...base,
+    money: base.money + score.reward,
     yearRecords: base.yearRecords.map((item) =>
       item === record
-        ? { ...item, evaluated: true, award: score.award, score }
+        ? {
+            ...item,
+            evaluated: true,
+            award: score.award,
+            awards: score.awards,
+            score,
+          }
         : item,
     ),
   }
