@@ -707,7 +707,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
       !state.researchPublished
     ) {
       if (state.researchStarted) {
-        researchProgressGain += researchGainForComprehension(attrs.comprehension)
+        const researchGain = researchGainForComprehension(attrs.comprehension)
+        researchProgressGain += researchGain
+        // 科研页进度与左侧「科研」数值保持同步增长。
+        research += researchGain
       } else {
         mentorIntimacyGain += 5
       }
