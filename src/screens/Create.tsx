@@ -223,7 +223,15 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
                   <button
                     type="button"
                     className="name-random-btn"
-                    onClick={() => setName(randomCharacterName())}
+                    onClick={() => {
+                      setName(randomCharacterName())
+                      setGender(Math.random() < 0.5 ? '女' : '男')
+                      setBackground(
+                        BACKGROUNDS[
+                          Math.floor(Math.random() * BACKGROUNDS.length)
+                        ].id,
+                      )
+                    }}
                   >
                     随机生成
                   </button>

@@ -1,90 +1,306 @@
 /**
- * 中文姓名库：共 1000 个，长度 2–4 个汉字。
- * 由单姓/复姓与一字/二字名组合去重后定量截取，保证唯一。
+ * 姓名库：100 个姓 × 1000 个名。
+ * 随机时抽取一个姓和一个名拼接；名库包含 100 个一字名和 900 个二字名，保证不重复。
  */
 
 const SINGLE_SURNAMES = [
-  '赵', '钱', '孙', '李', '周', '吴', '郑', '王', '冯', '陈',
-  '褚', '卫', '蒋', '沈', '韩', '杨', '朱', '秦', '尤', '许',
-  '何', '吕', '施', '张', '孔', '曹', '严', '华', '金', '魏',
-  '陶', '姜', '戚', '谢', '邹', '喻', '柏', '水', '窦', '章',
-  '云', '苏', '潘', '葛', '范', '彭', '郎', '鲁', '韦', '昌',
+  '赵',
+  '钱',
+  '孙',
+  '李',
+  '周',
+  '吴',
+  '郑',
+  '王',
+  '冯',
+  '陈',
+  '褚',
+  '卫',
+  '蒋',
+  '沈',
+  '韩',
+  '杨',
+  '朱',
+  '秦',
+  '尤',
+  '许',
+  '何',
+  '吕',
+  '施',
+  '张',
+  '孔',
+  '曹',
+  '严',
+  '华',
+  '金',
+  '魏',
+  '陶',
+  '姜',
+  '戚',
+  '谢',
+  '邹',
+  '喻',
+  '柏',
+  '水',
+  '窦',
+  '章',
+  '云',
+  '苏',
+  '潘',
+  '葛',
+  '范',
+  '彭',
+  '郎',
+  '鲁',
+  '韦',
+  '昌',
+  '马',
+  '苗',
+  '凤',
+  '花',
+  '方',
+  '俞',
+  '任',
+  '袁',
+  '柳',
+  '鲍',
+  '史',
+  '唐',
+  '费',
+  '廉',
+  '岑',
+  '薛',
+  '雷',
+  '贺',
+  '倪',
+  '汤',
+  '滕',
+  '殷',
+  '罗',
+  '毕',
+  '郝',
+  '安',
+  '常',
+  '于',
+  '傅',
+  '齐',
+  '康',
+  '伍',
+  '余',
+  '顾',
+  '孟',
+  '平',
+  '黄',
+  '和',
+  '穆',
+  '萧',
 ]
 
 const COMPOUND_SURNAMES = [
-  '欧阳', '司马', '上官', '诸葛', '东方',
-  '慕容', '尉迟', '长孙', '皇甫', '端木',
+  '欧阳',
+  '司马',
+  '上官',
+  '诸葛',
+  '东方',
+  '慕容',
+  '尉迟',
+  '长孙',
+  '皇甫',
+  '端木',
+]
+
+export const SURNAME_LIBRARY: string[] = [
+  ...SINGLE_SURNAMES,
+  ...COMPOUND_SURNAMES,
 ]
 
 const GIVEN_ONE = [
-  '嘉', '宁', '悦', '晨', '涵', '宇', '彤', '琪', '睿', '欣',
-  '然', '安', '若', '思', '雨', '梓', '子', '明', '泽', '佳',
-  '文', '可', '心', '亦', '天', '乐', '清', '知', '远', '星',
-  '沐', '景', '书', '语', '梦', '初', '云', '舒', '青', '和',
+  '嘉',
+  '宁',
+  '悦',
+  '晨',
+  '涵',
+  '宇',
+  '彤',
+  '琪',
+  '睿',
+  '欣',
+  '安',
+  '然',
+  '若',
+  '思',
+  '雨',
+  '梓',
+  '子',
+  '明',
+  '泽',
+  '佳',
+  '文',
+  '可',
+  '心',
+  '亦',
+  '天',
+  '乐',
+  '清',
+  '知',
+  '远',
+  '星',
+  '沐',
+  '景',
+  '书',
+  '语',
+  '梦',
+  '初',
+  '云',
+  '舒',
+  '青',
+  '和',
+  '南',
+  '北',
+  '时',
+  '见',
+  '逢',
+  '临',
+  '照',
+  '映',
+  '听',
+  '望',
+  '念',
+  '予',
+  '晚',
+  '朝',
+  '微',
+  '辰',
+  '墨',
+  '晴',
+  '山',
+  '川',
+  '雪',
+  '白',
+  '言',
+  '秋',
+  '冬',
+  '夏',
+  '一',
+  '诺',
+  '柠',
+  '春',
+  '禾',
+  '野',
+  '溪',
+  '桐',
+  '河',
+  '懿',
+  '澜',
+  '欢',
+  '阳',
+  '羽',
+  '西',
+  '齐',
+  '树',
+  '玉',
+  '月',
+  '瑶',
+  '琳',
+  '婷',
+  '雅',
+  '静',
+  '怡',
+  '馨',
+  '璐',
+  '茜',
+  '瑾',
+  '萱',
+  '妍',
+  '琦',
+  '露',
+  '蕾',
 ]
 
-const GIVEN_TWO = [
-  '雨桐', '子涵', '思远', '嘉宁', '若曦', '晨阳', '语嫣', '明轩', '书瑶', '安然',
-  '一诺', '清和', '知夏', '沐辰', '景行', '思齐', '望舒', '云舒', '星河', '若溪',
-  '语桐', '念安', '亦辰', '嘉懿', '子墨', '晚晴', '听澜', '初晴', '予安', '知微',
-  '南星', '北柠', '时雨', '见山', '逢春', '青禾', '临川', '照野', '映雪', '听白',
+const GIVEN_TWO_FIRST = [
+  '嘉',
+  '子',
+  '思',
+  '雨',
+  '语',
+  '安',
+  '若',
+  '明',
+  '清',
+  '知',
+  '景',
+  '沐',
+  '书',
+  '云',
+  '一',
+  '亦',
+  '天',
+  '乐',
+  '星',
+  '晨',
+  '涵',
+  '欣',
+  '悦',
+  '梓',
+  '佳',
+  '文',
+  '可',
+  '心',
+  '初',
+  '远',
+  '梦',
+  '舒',
+  '青',
+  '和',
+  '宁',
+  '南',
+  '北',
+  '时',
+  '见',
+  '逢',
+  '临',
+  '照',
+  '映',
+  '听',
+  '望',
+  '念',
+  '予',
+  '晚',
+  '朝',
+  '微',
 ]
 
-function buildNameLibrary(): string[] {
-  const twoChar: string[] = []
-  const threeChar: string[] = []
-  const fourChar: string[] = []
-  const seen = new Set<string>()
+const GIVEN_TWO_SECOND = [
+  '宁',
+  '涵',
+  '晨',
+  '宇',
+  '悦',
+  '然',
+  '安',
+  '思',
+  '雨',
+  '泽',
+  '文',
+  '清',
+  '辰',
+  '行',
+  '溪',
+  '桐',
+  '星',
+  '言',
+]
 
-  for (const surname of SINGLE_SURNAMES) {
-    for (const given of GIVEN_ONE) {
-      if (twoChar.length >= 250) break
-      const name = surname + given
-      if (!seen.has(name)) {
-        seen.add(name)
-        twoChar.push(name)
-      }
-    }
-    if (twoChar.length >= 250) break
-  }
+const GIVEN_TWO = GIVEN_TWO_FIRST.flatMap((a) =>
+  GIVEN_TWO_SECOND.map((b) => a + b),
+)
 
-  outer: for (const given of GIVEN_TWO) {
-    for (const surname of SINGLE_SURNAMES) {
-      if (threeChar.length >= 500) break outer
-      const name = surname + given
-      if (!seen.has(name)) {
-        seen.add(name)
-        threeChar.push(name)
-      }
-    }
-  }
-  outerCompound: for (const given of GIVEN_ONE) {
-    for (const surname of COMPOUND_SURNAMES) {
-      if (threeChar.length >= 500) break outerCompound
-      const name = surname + given
-      if (!seen.has(name)) {
-        seen.add(name)
-        threeChar.push(name)
-      }
-    }
-  }
-
-  outerFour: for (const given of GIVEN_TWO) {
-    for (const surname of COMPOUND_SURNAMES) {
-      if (fourChar.length >= 250) break outerFour
-      const name = surname + given
-      if (!seen.has(name)) {
-        seen.add(name)
-        fourChar.push(name)
-      }
-    }
-  }
-
-  return [...twoChar, ...threeChar, ...fourChar]
-}
-
-export const NAME_LIBRARY = buildNameLibrary()
+export const GIVEN_NAME_LIBRARY: string[] = [...GIVEN_ONE, ...GIVEN_TWO]
 
 export function randomCharacterName(): string {
-  return NAME_LIBRARY[Math.floor(Math.random() * NAME_LIBRARY.length)]
+  const surname =
+    SURNAME_LIBRARY[Math.floor(Math.random() * SURNAME_LIBRARY.length)]
+  const given =
+    GIVEN_NAME_LIBRARY[Math.floor(Math.random() * GIVEN_NAME_LIBRARY.length)]
+  return surname + given
 }
