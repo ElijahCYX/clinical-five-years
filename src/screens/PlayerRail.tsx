@@ -2,6 +2,11 @@ import { BACKGROUND_BY_ID, HABIT_BY_ID, PLAN_BY_ID, TALENT_BY_ID } from '../data
 import { cetHint, type WeekSimulation } from '../game'
 import type { GameState } from '../types'
 import { Dot, StatBar } from '../ui'
+import {
+  energyCostMultiplier,
+  energyTone,
+  stressTone,
+} from '../game'
 
 interface PlayerRailProps {
   state: GameState
@@ -71,17 +76,34 @@ export function PlayerRail({
         <StatBar
           label="精力"
           value={state.energy}
-          tone="green"
+          tone={energyTone(state.energy)}
           previewValue={preview?.energy}
           sub={isExam ? '喝咖啡 / 刷夜会即时改变这里' : '自然恢复 +15 / 周 · 行动与计划消耗'}
         />
         <StatBar
           label="压力"
           value={state.stress}
-          tone="red"
+          tone={stressTone(state.stress)}
           previewValue={preview?.stress}
           sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
         />
+        {(state.highPressureDebuff || state.stress > 70 || energyCostMultiplier(state.energy) > 1) && (
+          <div className="condition-notes">
+            {state.highPressureDebuff && (
+              <p className="condition-note is-danger">
+                高压状态：考试准备度收益 -30%，压力回落到 60 以下后解除
+              </p>
+            )}
+            {!state.highPressureDebuff && state.stress > 70 && (
+              <p className="condition-note is-warn">压力偏高：考试准备度收益 -10%</p>
+            )}
+            {energyCostMultiplier(state.energy) > 1 && (
+              <p className="condition-note is-warn">
+                低精力：所有精力消耗 +{Math.round((energyCostMultiplier(state.energy) - 1) * 100)}%
+              </p>
+            )}
+          </div>
+        )}
         <div className="money-row">
           <div>
             <span>生活费</span>

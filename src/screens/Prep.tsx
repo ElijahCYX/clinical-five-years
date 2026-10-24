@@ -3,8 +3,10 @@ import { HABIT_BY_ID } from '../data'
 import {
   clamp,
   courseK,
+  effectiveEnergyCost,
   estimateRange,
   getReviewEffect,
+  prepGainMultiplier,
   reviewMultiplier,
 } from '../game'
 import type { GameState, ReviewChoice } from '../types'
@@ -112,14 +114,14 @@ export function PrepScreen({
     () =>
       options.map((option) => {
         const rawEffect = getReviewEffect(option.id, courses, player.attrs, planId)
-        const effect = state.examEnglishPrep
-          ? {
-              ...rawEffect,
-              gains: Object.fromEntries(
-                Object.entries(rawEffect.gains).map(([id, gain]) => [id, gain * 0.9]),
-              ),
-            }
-          : rawEffect
+        const gainFactor =
+          prepGainMultiplier(state) * (state.examEnglishPrep ? 0.9 : 1)
+        const effect = {
+          ...rawEffect,
+          gains: Object.fromEntries(
+            Object.entries(rawEffect.gains).map(([id, gain]) => [id, gain * gainFactor]),
+          ),
+        }
         const projected = courses.reduce<Record<string, number>>((acc, course) => {
           acc[course.id] = Math.min(
             100,
@@ -129,7 +131,14 @@ export function PrepScreen({
         }, {})
         return { ...option, effect, projected }
       }),
-    [state.prep, state.season.id, options.length, state.examEnglishPrep],
+    [
+      state.prep,
+      state.season.id,
+      options.length,
+      state.examEnglishPrep,
+      state.stress,
+      state.highPressureDebuff,
+    ],
   )
 
   const selected = optionEffects.find((option) => option.id === choice)
@@ -146,11 +155,12 @@ export function PrepScreen({
   }
 
   const metaSummary = (option: (typeof optionEffects)[number]) => {
+    const adjustedEnergy = effectiveEnergyCost(option.effect.energy, state.energy)
     const energy =
-      option.effect.energy > 0
-        ? `精力 +${option.effect.energy}`
-        : option.effect.energy < 0
-          ? `精力 ${option.effect.energy}`
+      adjustedEnergy > 0
+        ? `精力 +${adjustedEnergy}`
+        : adjustedEnergy < 0
+          ? `精力 ${adjustedEnergy}`
           : null
     const stress =
       option.effect.stress > 0
@@ -397,7 +407,7 @@ export function PrepScreen({
                       <div>
                         <span>精力</span>
                         <b>
-                          {state.energy} → {clamp(state.energy - 10, 0, 100)}
+                          {state.energy} → {clamp(state.energy + effectiveEnergyCost(-10, state.energy), 0, 100)}
                         </b>
                       </div>
                       <div>
@@ -438,7 +448,7 @@ export function PrepScreen({
                         <div>
                           <span>精力</span>
                           <b>
-                            {state.energy} → {clamp(state.energy - 10, 0, 100)}
+                            {state.energy} → {clamp(state.energy + effectiveEnergyCost(-10, state.energy), 0, 100)}
                           </b>
                         </div>
                         <div>

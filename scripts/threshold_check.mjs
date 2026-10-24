@@ -1,0 +1,23 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{
+  const {newGameState}=await import('/src/game.ts'); const {SEASONS}=await import('/src/data.ts'); const {demoPlayer}=await import('/src/demo.ts')
+  const s=newGameState(demoPlayer); s.seasonIndex=1; s.season=SEASONS[1]; s.screen='week'; s.week=1; s.plan='B'; s.habit='timeManagement'; s.energy=15; s.stress=85
+  localStorage.setItem('clinical-five-years-save-v10',JSON.stringify({game:s,savedAt:Date.now()}))
+})
+await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(500)
+console.log('crisis1', await page.locator('.event-title').innerText().catch(()=> 'none'))
+await page.locator('.event-actions .btn-primary').click(); await page.waitForTimeout(500)
+console.log('crisis2', await page.locator('.event-title').innerText().catch(()=> 'none'))
+await page.locator('.event-actions .btn-primary').click(); await page.waitForTimeout(500)
+const bars=await page.locator('.bar-fill').evaluateAll(nodes=>nodes.map(n=>n.className))
+console.log('bars', bars)
+const cards=await page.locator('.action-card').evaluateAll(nodes=>nodes.slice(0,4).map(n=>({text:n.innerText.split('\n').slice(0,7).join(' | '), locked:n.className.includes('is-locked')})))
+console.log('cards', JSON.stringify(cards,null,1).slice(0,800))
+console.log('notes', await page.locator('.condition-note').allInnerTexts())
+console.log('errors', errors.slice(0,5))
+await page.screenshot({path:'/tmp/shots/low-energy-week.png',fullPage:true})
+await browser.close()

@@ -1,0 +1,20 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1100} })
+page.on('pageerror',e=>console.log('PAGEERR',e.message)); page.on('console',m=>{if(m.type()==='error') console.log('CONSOLE',m.text())})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{
+  const {newGameState}=await import('/src/game.ts'); const {SEASONS}=await import('/src/data.ts'); const {demoPlayer}=await import('/src/demo.ts')
+  const s=newGameState(demoPlayer); s.seasonIndex=1; s.season=SEASONS[1]; s.screen='week'; s.week=1; s.plan='B'; s.habit='timeManagement'; s.energy=80; s.stress=85
+  localStorage.setItem('clinical-five-years-save-v10',JSON.stringify({game:s,savedAt:Date.now()}))
+})
+await page.reload({waitUntil:'networkidle'})
+console.log('buttons', await page.locator('.title-actions .btn-ghost').allInnerTexts())
+await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(1500)
+console.log('url', page.url())
+console.log('view classes', await page.locator('.screen').getAttribute('class').catch(()=> 'none'))
+console.log('title', await page.locator('.event-title').innerText().catch(()=> 'none'))
+console.log('crisis count', await page.locator('.crisis-screen').count())
+console.log('game', await page.evaluate(()=>{const x=JSON.parse(localStorage.getItem('clinical-five-years-save-v10')); return {stress:x.game.stress,debuff:x.game.highPressureDebuff,energy:x.game.energy,alert:x.game.lowEnergyAlert}}))
+await page.screenshot({path:'/tmp/shots/crisis-debug.png',fullPage:true})
+await browser.close()

@@ -75,7 +75,7 @@ export function Bar({
 }: {
   value: number
   max?: number
-  tone?: 'green' | 'red' | 'gold'
+  tone?: 'green' | 'red' | 'gold' | 'orange' | 'black'
   thin?: boolean
   previewValue?: number
 }) {
@@ -117,7 +117,7 @@ export function StatBar({
   label: string
   value: number
   max?: number
-  tone?: 'green' | 'red' | 'gold'
+  tone?: 'green' | 'red' | 'gold' | 'orange' | 'black'
   valueLabel?: string
   sub?: string
   previewValue?: number

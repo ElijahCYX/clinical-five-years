@@ -5,7 +5,13 @@ import {
   BACKGROUND_BY_ID,
   TALENT_BY_ID,
 } from '../data'
-import { archetypeFor, estimateRange, simulateWeek } from '../game'
+import {
+  archetypeFor,
+  effectiveEnergyCost,
+  energyEffectText,
+  estimateRange,
+  simulateWeek,
+} from '../game'
 import type { ActionDef, GameState } from '../types'
 import { Bar, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
@@ -67,7 +73,8 @@ export function WeekScreen({
     if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'partner') return action.lockedNote ?? '尚未解锁'
-    if (action.energy < 0 && state.energy + action.energy < 0) return '精力不足'
+    const energyCost = effectiveEnergyCost(action.energy, state.energy)
+    if (energyCost < 0 && state.energy + energyCost < 0) return '精力不足'
     if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null
   }
@@ -353,7 +360,9 @@ export function WeekScreen({
                         </div>
                         <h3>{action.name}</h3>
                         <p className="action-flavor">{action.flavor}</p>
-                        <p className="action-effect">{action.effectText}</p>
+                        <p className="action-effect">
+                          {energyEffectText(action.effectText, action.energy, state.energy)}
+                        </p>
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
                           {action.id === 'library' && selectedCount < 2 && (

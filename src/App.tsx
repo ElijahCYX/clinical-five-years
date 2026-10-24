@@ -23,6 +23,8 @@ import {
   peScoreFor,
   postgradChanceFor,
   scholarshipFor,
+  effectiveEnergyCost,
+  prepGainMultiplier,
   planEnergyCost,
   planPassive,
   planStress,
@@ -56,14 +58,15 @@ import {
 } from './screens/Postgrad'
 import { PrepScreen } from './screens/Prep'
 import { ScholarshipScreen } from './screens/Scholarship'
+import { CrisisScreen, type CrisisKind } from './screens/Crisis'
 import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v9'
+const SAVE_KEY = 'clinical-five-years-save-v10'
 
-type View = ScreenName
+type View = ScreenName | 'crisis'
 
 function persist(game: GameState) {
   try {
@@ -341,10 +344,57 @@ function RealApp() {
   const [view, setView] = useState<View>('title')
   const [game, setGame] = useState<GameState | null>(null)
   const [hasSave, setHasSave] = useState(false)
+  const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
+  const [crisisReturn, setCrisisReturn] = useState<View>('week')
 
   useEffect(() => {
     setHasSave(Boolean(readSave()))
   }, [])
+
+  useEffect(() => {
+    if (
+      !game ||
+      crisisKind ||
+      view === 'title' ||
+      view === 'create' ||
+      view === 'crisis'
+    ) {
+      return
+    }
+
+    if (game.stress > 80 && !game.highPressureDebuff) {
+      const next = { ...game, highPressureDebuff: true }
+      setGame(next)
+      persist(next)
+      setCrisisReturn(view)
+      setCrisisKind('stress')
+      setView('crisis')
+      return
+    }
+
+    if (game.stress < 60 && game.highPressureDebuff) {
+      const next = { ...game, highPressureDebuff: false }
+      setGame(next)
+      persist(next)
+      return
+    }
+
+    if (game.energy < 20 && !game.lowEnergyAlert) {
+      const next = { ...game, lowEnergyAlert: true }
+      setGame(next)
+      persist(next)
+      setCrisisReturn(view)
+      setCrisisKind('energy')
+      setView('crisis')
+      return
+    }
+
+    if (game.energy >= 20 && game.lowEnergyAlert) {
+      const next = { ...game, lowEnergyAlert: false }
+      setGame(next)
+      persist(next)
+    }
+  }, [game, view, crisisKind])
 
   const commit = (next: GameState, nextView: View) => {
     setGame(next)
@@ -358,15 +408,18 @@ function RealApp() {
       persist(game)
       setHasSave(true)
     }
+    setCrisisKind(null)
     setView('title')
   }
 
   const startCreate = () => {
+    setCrisisKind(null)
     setGame(null)
     setView('create')
   }
 
   const handleCreate = (player: Player) => {
+    setCrisisKind(null)
     commit(newGameState(player), 'plan')
   }
 
@@ -468,10 +521,14 @@ function RealApp() {
     const gains = Object.fromEntries(
       Object.entries(effect.gains).map(([id, gain]) => [
         id,
-        gain * (game.examEnglishPrep ? 0.9 : 1),
+        gain * prepGainMultiplier(game) * (game.examEnglishPrep ? 0.9 : 1),
       ]),
     )
-    const energy = clamp(game.energy + effect.energy, 0, 100)
+    const energy = clamp(
+      game.energy + effectiveEnergyCost(effect.energy, game.energy),
+      0,
+      100,
+    )
     const stress = clamp(game.stress + effect.stress, 0, 100)
     const money = Math.max(0, game.money - 250)
     const prep = { ...game.prep }
@@ -553,7 +610,7 @@ function RealApp() {
     if (!game || game.examEnglishPrep) return
     const next: GameState = {
       ...game,
-      energy: clamp(game.energy - 10, 0, 100),
+      energy: clamp(game.energy + effectiveEnergyCost(-10, game.energy), 0, 100),
       stress: clamp(game.stress + 5, 0, 100),
       english: game.english + 5,
       cetAttemptBonus: game.cetWindow
@@ -568,12 +625,13 @@ function RealApp() {
   const handleAllNighter = () => {
     if (!game || game.examAllNighter) return
     const prep = { ...game.prep }
+    const gain = 15 * prepGainMultiplier(game)
     for (const course of game.season.courses) {
-      prep[course.id] = clamp((prep[course.id] ?? 0) + 15, 0, 100)
+      prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
     }
     const next: GameState = {
       ...game,
-      energy: clamp(game.energy - 10, 0, 100),
+      energy: clamp(game.energy + effectiveEnergyCost(-10, game.energy), 0, 100),
       stress: clamp(game.stress + 10, 0, 100),
       constitutionGrowth: Math.max(0, game.constitutionGrowth - 10),
       prep,
@@ -885,7 +943,7 @@ function RealApp() {
     for (const id of game.selected) {
       const action = VACATION_ACTION_BY_ID[id]
       if (!action) continue
-      energy += action.energy
+      energy += effectiveEnergyCost(action.energy, game.energy)
       stress += action.stress
       money += action.money
       english += action.english ?? 0
@@ -961,6 +1019,7 @@ function RealApp() {
   const handleContinueSave = () => {
     const saved = readSave()
     if (!saved) return
+    setCrisisKind(null)
     setGame(saved)
     setView(saved.screen === 'title' ? 'week' : saved.screen)
   }
@@ -973,6 +1032,7 @@ function RealApp() {
   }
 
   const handleRestart = () => {
+    setCrisisKind(null)
     setGame(null)
     setView('create')
   }
@@ -993,6 +1053,20 @@ function RealApp() {
 
   if (!game || !game.player) {
     return <TitleScreen hasSave={hasSave} onStart={startCreate} onContinue={handleContinueSave} />
+  }
+
+  if (view === 'crisis' && crisisKind) {
+    return (
+      <CrisisScreen
+        state={game}
+        kind={crisisKind}
+        onDismiss={() => {
+          setCrisisKind(null)
+          setView(crisisReturn)
+        }}
+        onTitle={goTitle}
+      />
+    )
   }
 
   if (view === 'cetEvent') {

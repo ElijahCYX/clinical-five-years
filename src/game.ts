@@ -259,6 +259,8 @@ export function newGameState(player: Player): GameState {
     socialGrowth: 0,
     mentorSelected: false,
     labEntered: false,
+    highPressureDebuff: false,
+    lowEnergyAlert: false,
     constitutionGrowth: 0,
     appearanceGrowth: 0,
     actionsUsed: 0,
@@ -400,6 +402,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   const habit = state.habit ? HABIT_BY_ID[state.habit] : null
   const habitApplied = state.stress <= 60
   const studyBonus = habit && habitApplied ? (habit.studyBonus ?? 0) : 0
+  const prepMultiplier = prepGainMultiplier(state)
 
   let energy = state.energy
   let stress = state.stress
@@ -417,7 +420,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   for (const id of state.selected) {
     const action = ACTION_BY_ID[id]
     if (!action) continue
-    energy += action.energy
+    energy += effectiveEnergyCost(action.energy, state.energy)
     stress += action.stress
     money += action.money
     english += action.english ?? 0
@@ -428,7 +431,8 @@ export function simulateWeek(state: GameState): WeekSimulation {
       studyCount += 1
       for (const course of state.season.courses) {
         prep[course.id] = clamp(
-          (prep[course.id] ?? 0) + 8 * courseK(course, attrs) * (1 + studyBonus),
+          (prep[course.id] ?? 0) +
+            8 * courseK(course, attrs) * (1 + studyBonus) * prepMultiplier,
           0,
           100,
         )
@@ -442,7 +446,8 @@ export function simulateWeek(state: GameState): WeekSimulation {
   if (plan) {
     for (const course of state.season.courses) {
       prep[course.id] = clamp(
-        (prep[course.id] ?? 0) + planPassive(state.plan!) * courseK(course, attrs),
+        (prep[course.id] ?? 0) +
+          planPassive(state.plan!) * courseK(course, attrs) * prepMultiplier,
         0,
         100,
       )
@@ -463,7 +468,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
     }
   }
 
-  energy = clamp(energy + 15 - (state.plan ? planEnergyCost(state.plan) : 0), 0, 100)
+  const planCost = state.plan
+    ? -effectiveEnergyCost(-planEnergyCost(state.plan), state.energy)
+    : 0
+  energy = clamp(energy + 15 - planCost, 0, 100)
   stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
   money = Math.max(0, money - 250)
 
@@ -564,6 +572,50 @@ export function graduationReasons(state: GameState): string[] {
 }
 
 export const KAOYAN_PASS = 300
+
+export function energyCostMultiplier(energy: number): number {
+  if (energy < 20) return 1.4
+  if (energy < 40) return 1.2
+  if (energy < 60) return 1.1
+  return 1
+}
+
+/** 负精力消耗按当前状态放大；恢复类行动不受影响。 */
+export function effectiveEnergyCost(raw: number, currentEnergy: number): number {
+  if (raw >= 0) return raw
+  return -Math.ceil(Math.abs(raw) * energyCostMultiplier(currentEnergy))
+}
+
+export function energyTone(energy: number): 'green' | 'orange' | 'red' | 'black' {
+  if (energy < 20) return 'black'
+  if (energy < 40) return 'red'
+  if (energy < 60) return 'orange'
+  return 'green'
+}
+
+export function stressTone(stress: number): 'green' | 'orange' | 'red' | 'black' {
+  if (stress > 80) return 'black'
+  if (stress > 79) return 'red'
+  if (stress > 60) return 'orange'
+  return 'green'
+}
+
+export function prepGainMultiplier(state: Pick<GameState, 'stress' | 'highPressureDebuff'>): number {
+  if (state.highPressureDebuff) return 0.7
+  if (state.stress > 70) return 0.9
+  return 1
+}
+
+export function energyEffectText(
+  text: string,
+  rawEnergy: number,
+  currentEnergy: number,
+): string {
+  if (rawEnergy >= 0) return text
+  const next = effectiveEnergyCost(rawEnergy, currentEnergy)
+  return text.replace(`精力 ${rawEnergy}`, `精力 ${next}`)
+}
+
 
 export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 40
 

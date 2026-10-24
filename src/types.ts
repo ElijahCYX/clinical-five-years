@@ -259,6 +259,8 @@ export interface GameState {
   socialGrowth: number
   mentorSelected: boolean
   labEntered: boolean
+  highPressureDebuff: boolean
+  lowEnergyAlert: boolean
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number

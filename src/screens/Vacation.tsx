@@ -1,5 +1,12 @@
 import { VACATION_ACTION_BY_ID, VACATION_ACTIONS, VACATIONS, HABIT_BY_ID, BACKGROUND_BY_ID, TALENT_BY_ID, SEASONS } from '../data'
-import { archetypeFor, cetHint } from '../game'
+import {
+  archetypeFor,
+  cetHint,
+  effectiveEnergyCost,
+  energyEffectText,
+  energyTone,
+  stressTone,
+} from '../game'
 import type { ActionDef, GameState } from '../types'
 import { Bar, Dot, Eyebrow, Pill, StatBar, TopBar } from '../ui'
 
@@ -52,7 +59,8 @@ export function VacationScreen({
     if (action.requires === 'lab' && !(state.mentorSelected && state.labEntered)) {
       return action.lockedNote ?? '需要先选导师并进入实验室'
     }
-    if (action.energy < 0 && state.energy + action.energy < 0) return '精力不足'
+    const energyCost = effectiveEnergyCost(action.energy, state.energy)
+    if (energyCost < 0 && state.energy + energyCost < 0) return '精力不足'
     if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null
   }
@@ -136,15 +144,33 @@ export function VacationScreen({
               <StatBar
                 label="精力"
                 value={state.energy}
-                tone="green"
+                tone={energyTone(state.energy)}
                 sub="自然恢复 +15 / 周"
               />
               <StatBar
                 label="压力"
                 value={state.stress}
-                tone="red"
+                tone={stressTone(state.stress)}
                 sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
               />
+              {(state.highPressureDebuff || state.stress > 70 || state.energy < 60) && (
+                <div className="condition-notes">
+                  {state.highPressureDebuff && (
+                    <p className="condition-note is-danger">
+                      高压状态：考试准备度收益 -30%，压力回落到 60 以下后解除
+                    </p>
+                  )}
+                  {!state.highPressureDebuff && state.stress > 70 && (
+                    <p className="condition-note is-warn">压力偏高：考试准备度收益 -10%</p>
+                  )}
+                  {state.energy < 60 && (
+                    <p className="condition-note is-warn">
+                      低精力：所有行动精力消耗 +
+                      {state.energy < 20 ? 40 : state.energy < 40 ? 20 : 10}%
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="money-row">
                 <div>
                   <span>生活费</span>
@@ -254,7 +280,9 @@ export function VacationScreen({
                     </div>
                     <h3>{action.name}</h3>
                     <p className="action-flavor">{action.flavor}</p>
-                    <p className="action-effect">{action.effectText}</p>
+                    <p className="action-effect">
+                      {energyEffectText(action.effectText, action.energy, state.energy)}
+                    </p>
                     <div className="action-bottom">
                       <span className="action-en">{action.en}</span>
                       {selected && <span className="action-selected">已排入本周</span>}
