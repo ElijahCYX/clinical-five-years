@@ -7355,3 +7355,134 @@ body.dinner-open {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- social readability pass ---------- */
+
+.whois-name-row > span {
+  font-size: 12px;
+}
+
+.whois-kind {
+  font-size: 11px;
+}
+
+.whois-intimacy > span {
+  font-size: 11.5px;
+}
+
+.whois-stats > span {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.whois-hidden {
+  font-size: 11px;
+}
+
+.whois-message {
+  font-size: 11px;
+}
+
+.whois-action {
+  min-width: 116px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.roommate-top p {
+  font-size: 12px;
+}
+
+.roommate-intimacy {
+  font-size: 12px;
+}
+
+.roommate-action {
+  min-height: 40px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.roommate-stats span {
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+.roommate-unknown {
+  font-size: 11px;
+}
+
+.tab-link {
+  font-size: 12px;
+}
+
+.dinner-eyebrow {
+  font-size: 10.5px;
+}
+
+.dinner-head p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.dinner-person-name {
+  font-size: 18px;
+}
+
+.dinner-person-name small {
+  font-size: 11px;
+}
+
+.dinner-person-status {
+  font-size: 11px;
+}
+
+.dinner-reason {
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.dinner-footer > div:first-child span,
+.dinner-footer > div:first-child small {
+  font-size: 10.5px;
+}
+
+.dinner-summary {
+  font-size: 11.5px;
+}
+
+.dinner-empty {
+  font-size: 12px;
+}
+
+@media (max-width: 820px) {
+  .whois-action {
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 10.5px;
+  }
+
+  .whois-name-row > span,
+  .whois-kind,
+  .whois-intimacy > span {
+    font-size: 10.5px;
+  }
+
+  .whois-stats > span,
+  .whois-hidden {
+    font-size: 10.5px;
+  }
+
+  .roommate-top p,
+  .roommate-action,
+  .roommate-unknown {
+    font-size: 11px;
+  }
+
+  .dinner-head p,
+  .dinner-reason,
+  .dinner-summary {
+    font-size: 11px;
+  }
+}
