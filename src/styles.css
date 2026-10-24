@@ -7932,3 +7932,70 @@ body.dinner-open {
     font-size: 18px;
   }
 }
+
+.research-notice-choices {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.research-hypothesis {
+  margin-top: 4px !important;
+  color: var(--green) !important;
+  font-size: 9.5px !important;
+}
+
+/* ---------- TA relation filter ---------- */
+
+.whois-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.whois-filter-row > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.whois-filter {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+}
+
+.whois-filter button {
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-family: var(--sans);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.whois-filter button + button {
+  border-left: 1px solid var(--line);
+}
+
+.whois-filter button.is-active {
+  background: var(--green);
+  color: var(--paper);
+}
+
+.whois-filter-row small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 820px) {
+  .whois-filter-row {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .whois-filter-row small {
+    flex-basis: 100%;
+  }
+}

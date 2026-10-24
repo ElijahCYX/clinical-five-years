@@ -93,6 +93,7 @@ import {
   useResearchNotice,
 } from './screens/ResearchNotice'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
+import { pickHypothesis } from './hypotheses'
 import {
   canConfess,
   canPat,
@@ -107,8 +108,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v25'
+const SAVE_KEY = 'clinical-five-years-save-v26'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v25',
   'clinical-five-years-save-v24',
   'clinical-five-years-save-v23',
   'clinical-five-years-save-v22',
@@ -162,6 +164,12 @@ function readSave(): GameState | null {
       researchProgress: game.researchProgress ?? 0,
       researchPublished: game.researchPublished ?? false,
       researchJournal: game.researchJournal ?? null,
+      researchStarted: game.researchStarted ?? false,
+      activeHypothesisId: game.activeHypothesisId ?? null,
+      activeHypothesisTitle: game.activeHypothesisTitle ?? null,
+      lastResearchWeek: game.lastResearchWeek ?? 0,
+      lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
+      lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
     })
   } catch {
     return null
@@ -444,6 +452,10 @@ function getCount(selected: string[], id: string): number {
   return selected.filter((item) => item === id).length
 }
 
+function absoluteWeek(state: GameState): number {
+  return state.seasonIndex * 4 + state.week
+}
+
 function RealApp() {
   const { showResearchNotice } = useResearchNotice()
   const [view, setView] = useState<View>('title')
@@ -507,7 +519,7 @@ function RealApp() {
       mentorRelation &&
       game.mentorContactUnlocked &&
       !game.labEntered &&
-      mentorRelation.intimacy >= 60
+      mentorRelation.intimacy >= 40
     ) {
       const mentorName = mentorRelation.name
       const next: GameState = {
@@ -534,6 +546,136 @@ function RealApp() {
       })
       return
     }
+    const mentor = mentorRelation
+    const currentAbsoluteWeek = absoluteWeek(game)
+    const isAutumn = game.season.seasonLabel.includes('秋')
+    const ideaThresholdDue =
+      mentor !== undefined &&
+      mentor.intimacy >= 60 &&
+      game.lastHypothesisOfferSeason === null
+    const ideaAutumnDue =
+      mentor !== undefined &&
+      mentor.intimacy >= 60 &&
+      isAutumn &&
+      game.lastHypothesisOfferSeason !== game.season.id
+    if (
+      mentor &&
+      game.labEntered &&
+      !game.researchStarted &&
+      !game.researchPublished &&
+      (ideaThresholdDue || ideaAutumnDue)
+    ) {
+      const hypothesis = game.mentorProfileId
+        ? pickHypothesis(game.mentorProfileId)
+        : null
+      if (hypothesis) {
+        const offerNext: GameState = {
+          ...game,
+          eventWeek: game.week,
+          lastHypothesisOfferSeason: game.season.id,
+          pendingEvent: null,
+          pendingConfession: null,
+          screen: 'week',
+        }
+        setGame(offerNext)
+        persist(offerNext)
+        showResearchNotice({
+          kind: 'idea',
+          title: '导师的 idea',
+          text: `${mentor.name}在组会结束后叫住你：“我最近想到一个题目——‘${hypothesis.title}’。有点冒险，但值得一试。你要不要接？”`,
+          choices: [
+            {
+              label: '接下课题',
+              primary: true,
+              onClick: () => {
+                setGame((previous) => {
+                  if (!previous) return previous
+                  const updated: GameState = {
+                    ...previous,
+                    researchStarted: true,
+                    activeHypothesisId: hypothesis.id,
+                    activeHypothesisTitle: hypothesis.title,
+                    researchProgress: 0,
+                    researchPublished: false,
+                    lastResearchWeek: currentAbsoluteWeek,
+                    lastResearchWarningWeek: currentAbsoluteWeek,
+                    relationships: previous.relationships.map((relation) =>
+                      relation.kind === 'mentor'
+                        ? {
+                            ...relation,
+                            intimacy: Math.min(100, relation.intimacy + 5),
+                          }
+                        : relation,
+                    ),
+                  }
+                  persist(updated)
+                  return updated
+                })
+              },
+            },
+            {
+              label: '暂时不接',
+              onClick: () => {
+                setGame((previous) => {
+                  if (!previous) return previous
+                  const updated: GameState = {
+                    ...previous,
+                    relationships: previous.relationships.map((relation) =>
+                      relation.kind === 'mentor'
+                        ? {
+                            ...relation,
+                            intimacy: Math.max(0, relation.intimacy - 3),
+                          }
+                        : relation,
+                    ),
+                    stress: Math.min(100, previous.stress + 2),
+                  }
+                  persist(updated)
+                  return updated
+                })
+              },
+            },
+          ],
+        })
+        return
+      }
+    }
+
+    if (
+      mentor &&
+      game.researchStarted &&
+      !game.researchPublished &&
+      currentAbsoluteWeek - game.lastResearchWeek > 3 &&
+      (game.lastResearchWarningWeek === 0 ||
+        currentAbsoluteWeek - game.lastResearchWarningWeek >= 3)
+    ) {
+      const warningNext: GameState = {
+        ...game,
+        eventWeek: game.week,
+        lastResearchWarningWeek: currentAbsoluteWeek,
+        stress: Math.min(100, game.stress + 5),
+        relationships: game.relationships.map((relation) =>
+          relation.kind === 'mentor'
+            ? {
+                ...relation,
+                intimacy: Math.max(0, relation.intimacy - 5),
+              }
+            : relation,
+        ),
+        pendingEvent: null,
+        pendingConfession: null,
+        screen: 'week',
+      }
+      setGame(warningNext)
+      persist(warningNext)
+      showResearchNotice({
+        kind: 'warning',
+        title: '导师的电话',
+        text: `导师在电话里沉默了几秒，然后说：“课题不是挂在墙上的画。你已经三周没有推进了，再这样下去，我只能当你还没准备好。”你握着手机，压力一下子涨了上来。`,
+      })
+      return
+    }
+
     if (!game.mentorContactUnlocked && Math.random() < 0.28) {
       const next: GameState = {
         ...game,
@@ -1018,6 +1160,12 @@ function RealApp() {
           intimacy: Math.min(100, updated.intimacy + dinnerIntimacyGain),
         })
       }
+      if (relation.kind === 'mentor' && sim.mentorIntimacyGain > 0) {
+        updated = {
+          ...updated,
+          intimacy: Math.min(100, updated.intimacy + sim.mentorIntimacyGain),
+        }
+      }
       return updated
     })
     const next: GameState = {
@@ -1041,6 +1189,10 @@ function RealApp() {
       researchProgress,
       researchPublished: game.researchPublished || publishedNow,
       researchJournal: publishedJournal,
+      lastResearchWeek:
+        game.researchStarted && game.selected.includes('research')
+          ? absoluteWeek(game)
+          : game.lastResearchWeek,
       weekFocus: null,
       selected: [],
       actionsUsed: 0,

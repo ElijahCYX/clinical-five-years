@@ -219,6 +219,13 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-social-random-09', kind: 'random', title: '操场看球', text: '傍晚操场有人打球，你被拉去凑数。你一个球都没进，但场边的人一直在给你加油，结束以后还一起去喝了水。', effects: {socialGrowth: 5, stress: -3, energy: -2} },
   { id: 'ev-social-random-10', kind: 'random', title: '毕业合影', text: '毕业季的校园到处是拍照的人，你被{npc}拉去合影。快门按下时，你突然发现自己已经能熟练地说出“以后常联系”。', effects: {socialGrowth: 5, stress: -2} },  // 科研导师解锁事件
   { id: 'ev-scene-mentor', kind: 'scene', title: '讲台边的导师', text: '讲座结束后，你留下来问了一个有点笨的问题。讲台上的老师没有笑你，反而把电脑合上，和你聊了十分钟。临走时，TA说：“有兴趣的话，来实验室看看。”', effects: { mentorUnlock: true }, condition: (s) => !s.mentorContactUnlocked },
+  // 科研相关突发事件
+  { id: 'ev-research-meeting', kind: 'scene', title: '临时组会', text: '导师突然在群里发了一句“十分钟后组会”，你抱着电脑冲进会议室，发现 PPT 还是上个月的版本。好在导师只是临时想讨论一个方向，你一边记笔记一边祈祷自己不要被点名。', effects: { energy: -8, stress: 4, mentorIntimacy: 2 }, condition: (s) => s.labEntered },
+  { id: 'ev-research-call', kind: 'scene', title: '导师电话', text: '晚上十点，导师突然打来电话，说刚看完一篇文献，觉得和你的课题有关。你听完之后发现，TA 说的方向和你的开题报告几乎完全相反。', effects: { stress: 5, mentorIntimacy: 2 }, condition: (s) => s.labEntered },
+  { id: 'ev-research-equipment', kind: 'scene', title: '仪器故障', text: '你刚把样本放进仪器，机器就发出一声不祥的蜂鸣，然后彻底黑屏。维修师傅说至少等两天，你看着冰箱里的样本，第一次理解了“科研充满不确定性”。', effects: { energy: -10, stress: 6, mentorIntimacy: -2 }, condition: (s) => s.researchStarted },
+  { id: 'ev-research-help', kind: 'scene', title: '同门帮忙', text: '你卡在一个实验步骤上，同门师兄/师姐路过看了一眼，顺手帮你调好了参数。你感激得想请 TA 喝奶茶，对方说“记得在论文致谢里写我”。', effects: { stress: -4, research: 3, mentorIntimacy: 3 }, condition: (s) => s.labEntered },
+  { id: 'ev-research-revision', kind: 'scene', title: '论文返修', text: '审稿意见回来了，满屏都是“建议补充实验”。导师看完后沉默了很久，说：“至少说明他们认真看了。”你开始重新排实验计划。', effects: { energy: -8, stress: 6, mentorIntimacy: 3 }, condition: (s) => s.researchStarted },
+  { id: 'ev-research-presentation', kind: 'scene', title: '组会汇报', text: '轮到你汇报时，投影仪突然连不上。你站在白板前，用一支马克笔讲了二十分钟，导师居然听懂了，还夸你“脱稿能力不错”。', effects: { stress: 3, research: 4, mentorIntimacy: 2 }, condition: (s) => s.researchStarted },
 ]
 
 const KIND_LABEL = {
@@ -270,6 +277,7 @@ function effectLines(effect: EventEffect): string[] {
   push('综测', effect.composite)
   push('考研准备', effect.kaoyanPrep)
   push('交际', effect.socialAttr)
+  push('导师亲密度', effect.mentorIntimacy)
   if (effect.socialUnlock) lines.push('社交模块解锁（后续开发）')
   if (effect.romanceBreak) lines.push('所有恋爱关系破裂')
   if (effect.teacherBreak) lines.push('师生关系破裂')
@@ -424,6 +432,19 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   }
   if (effect.mentorUnlock && !next.mentorContactUnlocked) {
     Object.assign(next, unlockMentor(next))
+  }
+  if (effect.mentorIntimacy) {
+    next.relationships = next.relationships.map((relation) =>
+      relation.kind === 'mentor'
+        ? {
+            ...relation,
+            intimacy: Math.max(
+              0,
+              Math.min(100, relation.intimacy + effect.mentorIntimacy!),
+            ),
+          }
+        : relation,
+    )
   }
   if (effect.prep) {
     for (const course of state.season.courses) {

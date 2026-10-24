@@ -154,6 +154,16 @@ export function WeekScreen({
     onChooseFocus(focus, focusPrompt === 'library')
     setFocusPrompt(null)
   }
+  const researchActionName = state.researchPublished
+    ? '论文已发表'
+    : !state.labEntered
+      ? '科研相关'
+      : !state.researchStarted
+        ? '实验室打杂'
+        : researchStage(state.researchProgress).name
+  const displayActionName = (action: ActionDef) =>
+    action.id === 'research' ? researchActionName : action.name
+
   const actionEffectText = (action: ActionDef) => {
     if (action.id === 'english') {
       return action.effectText.replace(
@@ -164,6 +174,13 @@ export function WeekScreen({
     if (action.id === 'library') {
       const costs = libraryCosts(state)
       return `所有课程：准备度 +6 × K · 精力 ${costs.energy} · 压力 +${costs.stress} · 当前 ${costs.count} 门课（消耗按 ${costs.costCount} 门封顶）`
+    }
+    if (action.id === 'research') {
+      if (!state.labEntered) return '等待导师允许进入实验室'
+      if (!state.researchStarted) {
+        return '导师亲密度 +1 · 精力 -20 · 压力 +3'
+      }
+      return '科研进度随机 +1~5（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3'
     }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
@@ -359,12 +376,12 @@ export function WeekScreen({
             <h3>导师已经联系上了</h3>
             <p>
               导师愿意先和你聊聊，但还没有允许你进入课题组。
-              和导师的亲密度达到 60 后，TA 会通知你进实验室。
+              和导师的亲密度达到 40 后，TA 会通知你进实验室。
             </p>
             {mentorRelation && (
               <div className="research-mentor-line">
                 <span>{mentorRelation.name}</span>
-                <strong>亲密度 {mentorRelation.intimacy} / 60</strong>
+                <strong>亲密度 {mentorRelation.intimacy} / 40</strong>
               </div>
             )}
             {profile && (
@@ -377,9 +394,43 @@ export function WeekScreen({
       )
     }
 
+    if (!state.researchStarted) {
+      return (
+        <div className="tab-panel">
+          <SectionLabel right="LAB CHORES">科研</SectionLabel>
+          <div className="research-locked-card">
+            <span className="lock-glyph">⌁</span>
+            <h3>实验室打杂中</h3>
+            <p>
+              你已经可以进出实验室，但还没有自己的课题。
+              先帮师兄师姐跑跑胶、配配液、整理数据，顺便和导师混熟。
+            </p>
+            {mentorRelation && (
+              <div className="research-mentor-line">
+                <span>{mentorRelation.name}</span>
+                <strong>亲密度 {mentorRelation.intimacy} / 60</strong>
+              </div>
+            )}
+            <p className="research-mentor-meta">
+              亲密度达到 60 后，导师会给你一个可以开始的课题。
+              本周选择「实验室打杂」可以增加导师亲密度。
+            </p>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="tab-panel">
-        <SectionLabel right={state.researchPublished ? 'PUBLISHED' : stage.name}>
+        <SectionLabel
+          right={
+            state.researchPublished
+              ? 'PUBLISHED'
+              : state.researchStarted
+                ? stage.name
+                : 'LAB CHORES'
+          }
+        >
           课题组
         </SectionLabel>
         <div className="research-panel">
@@ -390,6 +441,11 @@ export function WeekScreen({
                 {profile ? `${profile.department} · ${profile.title}` : '导师'} ·{' '}
                 {profile?.field ?? '科研训练'}
               </p>
+              {state.activeHypothesisTitle && (
+                <p className="research-hypothesis">
+                  当前课题：{state.activeHypothesisTitle}
+                </p>
+              )}
             </div>
             <Pill tone={state.researchPublished ? 'green' : 'gold'}>
               {state.researchPublished ? '已发表' : stage.name}
@@ -414,8 +470,14 @@ export function WeekScreen({
           ) : (
             <div className="research-action-note">
               <span>本周科研行动</span>
-              <strong>科研进度随机 +1–5</strong>
-              <p>悟性越高，抽出 4、5 点的概率越高。科研进度会显示在「本周安排」的科研相关行动中。</p>
+              <strong>
+                {state.researchStarted ? '科研进度随机 +1–5' : '实验室打杂 · 导师亲密度 +1'}
+              </strong>
+              <p>
+                {state.researchStarted
+                  ? '悟性越高，抽出 4、5 点的概率越高。科研进度会显示在「本周安排」的科研相关行动中。'
+                  : '你还在熟悉实验室。和导师亲密度达到 60 后，TA 会给你一个可以开始的课题。'}
+              </p>
             </div>
           )}
         </div>
@@ -724,7 +786,7 @@ export function WeekScreen({
                           <span>{action.category}</span>
                           <span className="action-no">{action.no}</span>
                         </div>
-                        <h3>{action.name}</h3>
+                        <h3>{displayActionName(action)}</h3>
                         <p className="action-flavor">{action.flavor}</p>
                         <p className="action-effect">{actionEffectText(action)}</p>
                         <div className="action-bottom">
@@ -755,7 +817,7 @@ export function WeekScreen({
                     ) : (
                       selectedGroups.map((group) => (
                         <strong key={group.id}>
-                          {ACTIONS.find((item) => item.id === group.id)?.name}
+                          {displayActionName(ACTIONS.find((item) => item.id === group.id) ?? ACTIONS[0])}
                           {group.count > 1 ? ` ×${group.count}` : ''}
                         </strong>
                       ))

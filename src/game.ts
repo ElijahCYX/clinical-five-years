@@ -363,6 +363,12 @@ export function newGameState(player: Player): GameState {
     researchProgress: 0,
     researchPublished: false,
     researchJournal: null,
+    researchStarted: false,
+    activeHypothesisId: null,
+    activeHypothesisTitle: null,
+    lastResearchWeek: 0,
+    lastResearchWarningWeek: 0,
+    lastHypothesisOfferSeason: null,
   }
 }
 
@@ -594,6 +600,7 @@ export interface WeekSimulation {
   composite: number
   research: number
   researchProgressGain: number
+  mentorIntimacyGain: number
   prep: Record<string, number>
   kaoyanPrep: number
   constitutionGrowth: number
@@ -644,6 +651,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   let composite = state.composite
   let research = state.research
   let researchProgressGain = 0
+  let mentorIntimacyGain = 0
   let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
@@ -679,7 +687,11 @@ export function simulateWeek(state: GameState): WeekSimulation {
       state.labEntered &&
       !state.researchPublished
     ) {
-      researchProgressGain += researchGainForComprehension(attrs.comprehension)
+      if (state.researchStarted) {
+        researchProgressGain += researchGainForComprehension(attrs.comprehension)
+      } else {
+        mentorIntimacyGain += 1
+      }
     }
     if (action.id === 'electiveHomework') {
       for (const course of state.season.courses) {
@@ -788,6 +800,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     composite,
     research,
     researchProgressGain,
+    mentorIntimacyGain,
     prep,
     kaoyanPrep,
     constitutionGrowth,

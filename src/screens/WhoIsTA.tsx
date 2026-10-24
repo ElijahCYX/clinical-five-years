@@ -47,10 +47,18 @@ export function WhoIsTAScreen({
   onTitle,
 }: WhoIsTAScreenProps) {
   const [message, setMessage] = useState<string | null>(null)
+  const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
   const player = state.player
   if (!player) return null
   const weekKey = currentWeekKey(state)
   const relations = state.relationships
+  const visibleRelations = relations.filter((relation) =>
+    relationFilter === 'all'
+      ? true
+      : relationFilter === 'elder'
+        ? relation.kind === 'mentor' || relation.kind === 'counselor'
+        : relation.kind !== 'mentor' && relation.kind !== 'counselor',
+  )
   const patRemaining = patRemainingThisWeek(state)
   const partnerCount = relations.filter((relation) => relation.partner).length
   const staffPartner = relations.some(
@@ -113,6 +121,35 @@ export function WhoIsTAScreen({
           </div>
         </header>
 
+        <div className="whois-filter-row">
+          <span>显示关系</span>
+          <div className="whois-filter">
+            {(
+              [
+                ['all', '全部'],
+                ['elder', '长辈'],
+                ['peer', '同辈'],
+              ] as Array<['all' | 'elder' | 'peer', string]>
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={relationFilter === key ? 'is-active' : ''}
+                onClick={() => setRelationFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <small>
+            {relationFilter === 'elder'
+              ? '导师与辅导员'
+              : relationFilter === 'peer'
+                ? '舍友、朋友、同学与恋人'
+                : '长辈与同辈'}
+          </small>
+        </div>
+
         {message && (
           <div className="whois-message" role="status">
             {message}
@@ -124,11 +161,11 @@ export function WhoIsTAScreen({
 
         <section className="paper-card whois-card">
           <SectionLabel right={`本周 ${weekKey}`}>关系列表</SectionLabel>
-          {relations.length === 0 ? (
+          {visibleRelations.length === 0 ? (
             <p className="placeholder-note">你还没有认识什么人。先去过一周。</p>
           ) : (
             <div className="whois-list">
-              {relations.map((relation) => {
+              {visibleRelations.map((relation) => {
                 const stats = statsText(relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)

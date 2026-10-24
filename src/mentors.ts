@@ -400,7 +400,15 @@ export function createMentorRelationship(
     orientation: randomOrientation(),
     kind: 'mentor',
     identity: `${profile.department} · ${profile.title}`,
-    intimacy: randInt(45, 56),
+    // 初始亲密度 0-40：悟性 : 交际 = 3 : 1，不参考建模。
+    intimacy: Math.max(
+      0,
+      Math.min(
+        40,
+        Math.round((player.attrs.comprehension * 3 + player.attrs.social) * 1.25) -
+          10,
+      ),
+    ),
     statsKnown: false,
     knownStats: null,
     stats: randomStats(),

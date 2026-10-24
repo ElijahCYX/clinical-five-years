@@ -286,6 +286,7 @@ export interface EventEffect {
   breakupRelationId?: string
   reconcileRelationId?: string
   mentorUnlock?: boolean
+  mentorIntimacy?: number
 }
 
 export interface PendingEvent {
@@ -370,6 +371,12 @@ export interface MentorProfile {
   confidence: string
 }
 
+export interface Hypothesis {
+  id: string
+  mentorId: string
+  title: string
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -451,6 +458,12 @@ export interface GameState {
   researchProgress: number
   researchPublished: boolean
   researchJournal: string | null
+  researchStarted: boolean
+  activeHypothesisId: string | null
+  activeHypothesisTitle: string | null
+  lastResearchWeek: number
+  lastResearchWarningWeek: number
+  lastHypothesisOfferSeason: string | null
 }
 
 export type DemoName =
