@@ -8,6 +8,7 @@ import {
   confessionChance,
   currentWeekKey,
   gameDate,
+  isPatBlocked,
   patLimit,
   orientationLabel,
   patRemainingThisWeek,
@@ -209,6 +210,7 @@ export function WhoIsTAScreen({
                   relation.birthdayMonth === currentDate.month
                 const birthdayContactedThisYear =
                   relation.birthdayGiftYear === currentDate.year
+                const patBlocked = isPatBlocked(state, relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
@@ -343,11 +345,13 @@ export function WhoIsTAScreen({
                         disabled={!patAvailable}
                         onClick={() => setMessage(onPat(relation.id))}
                       >
-                        {patAvailable
-                        ? '拍一拍'
-                        : relation.lastPatKey === weekKey
-                          ? '本周已拍'
-                          : '本周已拍满'}
+                        {patBlocked
+                          ? '心结未解'
+                          : patAvailable
+                            ? '拍一拍'
+                            : relation.lastPatKey === weekKey
+                              ? '本周已拍'
+                              : '本周已拍满'}
                       </button>
                       <button
                         type="button"

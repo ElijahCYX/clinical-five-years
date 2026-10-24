@@ -114,6 +114,7 @@ import {
   normalizeRelationships,
   adjustIntimacyDelta,
   applyFriendContactDecay,
+  applyMissedBirthdayPenalties,
   currentWeekKey,
   gameDate,
   intimacyMultiplier,
@@ -124,8 +125,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v31'
+const SAVE_KEY = 'clinical-five-years-save-v32'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v31',
   'clinical-five-years-save-v30',
   'clinical-five-years-save-v29',
   'clinical-five-years-save-v28',
@@ -1268,6 +1270,7 @@ function RealApp() {
               intimacy: Math.min(100, item.intimacy + gain),
               birthdayGiftYear: currentDate.year,
               birthdayContactType: 'gift',
+              birthdayNextYear: currentDate.year + 1,
             }
           : item,
       ),
@@ -1315,6 +1318,7 @@ function RealApp() {
               intimacy: Math.min(100, item.intimacy + gain),
               birthdayGiftYear: currentDate.year,
               birthdayContactType: 'blessing',
+              birthdayNextYear: currentDate.year + 1,
             }
           : item,
       ),
@@ -1693,7 +1697,9 @@ function RealApp() {
       dinnerAccepted.length > 0
         ? Math.max(1, Math.floor(6 / dinnerAccepted.length))
         : 0
-    const relationships = applyFriendContactDecay(
+    const relationshipsWithBirthdayMisses = applyMissedBirthdayPenalties({
+      ...game,
+      relationships: applyFriendContactDecay(
       {
         ...game,
         relationships: game.relationships.map((relation) => {
@@ -1732,7 +1738,9 @@ function RealApp() {
         }),
       },
       progressWeek(game),
-    )
+      ),
+    })
+    const relationships = relationshipsWithBirthdayMisses
     const next: GameState = {
       ...game,
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
@@ -2438,7 +2446,10 @@ function RealApp() {
     const base: GameState = {
       ...game,
       player: { ...player, attrs: grown.attrs },
-      relationships: applyFriendContactDecay(game, progressWeek(game)),
+      relationships: applyMissedBirthdayPenalties({
+        ...game,
+        relationships: applyFriendContactDecay(game, progressWeek(game)),
+      }),
       energy,
       stress,
       money,

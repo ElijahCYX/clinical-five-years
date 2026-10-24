@@ -109,6 +109,8 @@ function makeRelationship(
     birthdayMonth: randInt(1, 12),
     birthdayGiftYear: 0,
     birthdayContactType: null,
+    birthdayNextYear: 0,
+    patBlockedUntilWeek: 0,
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,
@@ -276,7 +278,50 @@ export function patRemainingThisWeek(state: GameState): number {
 }
 
 export function canPat(state: GameState, relation: Relationship): boolean {
-  return relation.lastPatKey !== patPeriodKey(state)
+  return (
+    !isPatBlocked(state, relation) &&
+    relation.lastPatKey !== patPeriodKey(state)
+  )
+}
+
+export function isPatBlocked(
+  state: GameState,
+  relation: Relationship,
+): boolean {
+  return (
+    relation.patBlockedUntilWeek > 0 &&
+    progressWeek(state) <= relation.patBlockedUntilWeek
+  )
+}
+
+/** 生日月份过去且未送礼/祝福：扣亲密度并封拍拍三周。 */
+export function applyMissedBirthdayPenalties(
+  state: GameState,
+): Relationship[] {
+  const date = gameDate(state)
+  const now = progressWeek(state)
+  return state.relationships.map((relation) => {
+    if (relation.intimacy < 40) return relation
+    const birthdayMonth = relation.birthdayMonth
+    let nextYear = relation.birthdayNextYear
+    if (!nextYear) {
+      nextYear = date.month <= birthdayMonth ? date.year : date.year + 1
+      relation = { ...relation, birthdayNextYear: nextYear }
+    }
+    const birthdayPassed =
+      date.year > nextYear ||
+      (date.year === nextYear && date.month > birthdayMonth)
+    if (!birthdayPassed) return relation
+    return {
+      ...relation,
+      intimacy: Math.max(
+        0,
+        relation.intimacy + adjustIntimacyDelta(state, relation, -5),
+      ),
+      patBlockedUntilWeek: now + 3,
+      birthdayNextYear: nextYear + 1,
+    }
+  })
 }
 
 export function patRelationship(relation: Relationship, state: GameState): Relationship {
@@ -349,6 +394,8 @@ export function normalizeRelationships(
     birthdayMonth: relation.birthdayMonth ?? randInt(1, 12),
     birthdayGiftYear: relation.birthdayGiftYear ?? 0,
     birthdayContactType: relation.birthdayContactType ?? null,
+    birthdayNextYear: relation.birthdayNextYear ?? 0,
+    patBlockedUntilWeek: relation.patBlockedUntilWeek ?? 0,
     partner: relation.partner ?? false,
     confessionRisk: relation.confessionRisk ?? 0,
     breakupRisk: relation.breakupRisk ?? 0,
