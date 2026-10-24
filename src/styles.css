@@ -4279,6 +4279,151 @@ input:focus-visible {
 
 
 
+
+/* ---------- weekly focus decision ---------- */
+
+.week-focus-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 12px;
+  padding: 7px 10px;
+  border-left: 2px solid var(--green);
+  background: var(--green-soft);
+  font-size: 9px;
+  color: var(--ink-3);
+}
+
+.week-focus-bar span {
+  font-size: 7.5px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.week-focus-bar strong {
+  flex: 1;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.week-focus-bar .text-btn {
+  font-size: 8px;
+}
+
+.focus-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(32, 39, 34, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.focus-modal {
+  width: min(720px, 100%);
+  padding: 28px 30px 22px;
+  border: 1px solid var(--line-strong);
+  background: #f6f1e6;
+  box-shadow: 0 24px 70px rgba(24, 32, 26, 0.24);
+}
+
+.focus-modal h2 {
+  margin: 8px 0 7px;
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.focus-lede {
+  margin: 0 0 18px;
+  max-width: 560px;
+  font-size: 9.5px;
+  line-height: 1.75;
+  color: var(--ink-3);
+}
+
+.focus-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.focus-choice {
+  position: relative;
+  min-height: 112px;
+  padding: 13px 13px 30px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 245, 0.64);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.focus-choice:hover,
+.focus-choice.is-selected {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.focus-choice-en {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.focus-choice strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.focus-choice small {
+  display: block;
+  margin-top: 7px;
+  font-size: 8px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.focus-choice em {
+  position: absolute;
+  right: 11px;
+  bottom: 9px;
+  font-family: var(--sans);
+  font-size: 7px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: var(--green);
+}
+
+.focus-choice.is-balanced em {
+  color: var(--gold);
+}
+
+.focus-note {
+  margin: 14px 0 0;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .focus-options {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-modal {
+    padding: 22px 20px 18px;
+  }
+}
+
 /* ---------- result save button ---------- */
 
 .btn-save {

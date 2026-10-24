@@ -238,6 +238,7 @@ export function newGameState(player: Player): GameState {
     vacation: null,
     plan: null,
     habits: [],
+    weekFocus: null,
     week: 1,
     energy: 100,
     stress: 22,
@@ -395,6 +396,25 @@ export function cetScore(
   return clamp(Math.round(score), floor, CET.total)
 }
 
+export function focusAdjustedGains(
+  nominal: Record<string, number>,
+  focus: string | null,
+  courses: Course[],
+): Record<string, number> {
+  if (courses.length <= 1 || !focus || focus === 'balanced') return nominal
+  if (!courses.some((course) => course.id === focus)) return nominal
+  const total = courses.reduce((sum, course) => sum + (nominal[course.id] ?? 0), 0)
+  if (total <= 0) return nominal
+  const main = Math.round(total * 0.75)
+  const restCount = courses.length - 1
+  const rest = (total - main) / restCount
+  const result: Record<string, number> = {}
+  for (const course of courses) {
+    result[course.id] = course.id === focus ? main : Math.round(rest)
+  }
+  return result
+}
+
 export interface WeekSimulation {
   energy: number
   stress: number
@@ -449,10 +469,20 @@ export function simulateWeek(state: GameState): WeekSimulation {
     kaoyanPrep += action.kaoyanPrep ?? 0
     if (action.study) {
       studyCount += 1
+      const nominal = Object.fromEntries(
+        state.season.courses.map((course) => [
+          course.id,
+          8 * courseK(course, attrs) * (1 + studyBonus) * prepMultiplier,
+        ]),
+      )
+      const allocated = focusAdjustedGains(
+        nominal,
+        state.weekFocus,
+        state.season.courses,
+      )
       for (const course of state.season.courses) {
         prep[course.id] = clamp(
-          (prep[course.id] ?? 0) +
-            8 * courseK(course, attrs) * (1 + studyBonus) * prepMultiplier,
+          (prep[course.id] ?? 0) + (allocated[course.id] ?? 0),
           0,
           100,
         )
@@ -464,10 +494,20 @@ export function simulateWeek(state: GameState): WeekSimulation {
   }
 
   if (plan) {
+    const nominal = Object.fromEntries(
+      state.season.courses.map((course) => [
+        course.id,
+        planPassive(state.plan!) * courseK(course, attrs) * prepMultiplier,
+      ]),
+    )
+    const allocated = focusAdjustedGains(
+      nominal,
+      state.weekFocus,
+      state.season.courses,
+    )
     for (const course of state.season.courses) {
       prep[course.id] = clamp(
-        (prep[course.id] ?? 0) +
-          planPassive(state.plan!) * courseK(course, attrs) * prepMultiplier,
+        (prep[course.id] ?? 0) + (allocated[course.id] ?? 0),
         0,
         100,
       )

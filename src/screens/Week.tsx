@@ -33,6 +33,7 @@ interface WeekScreenProps {
   state: GameState
   onToggleAction: (id: string) => void
   onEndWeek: () => void
+  onChooseFocus: (focus: string) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -41,10 +42,12 @@ export function WeekScreen({
   state,
   onToggleAction,
   onEndWeek,
+  onChooseFocus,
   onSave,
   onTitle,
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
+  const [adjustFocusOpen, setAdjustFocusOpen] = useState(false)
   const player = state.player
   if (!player) return null
 
@@ -53,6 +56,14 @@ export function WeekScreen({
   const latestLog = state.logs[state.logs.length - 1]
   const remainingActions = Math.max(0, 2 - state.selected.length)
   const archetype = archetypeFor(player.attrs)
+  const courses = state.season.courses
+  const focusCourse = courses.find((course) => course.id === state.weekFocus)
+  const focusLabel =
+    state.weekFocus === 'balanced'
+      ? '全部课程均衡分配'
+      : focusCourse?.name ?? '尚未选择'
+  const showFocusModal =
+    courses.length > 1 && (!state.weekFocus || adjustFocusOpen)
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : null
   const selectedGroups = Array.from(new Set(state.selected)).map((id) => ({
@@ -330,6 +341,20 @@ export function WeekScreen({
                   </Pill>
                 </div>
 
+                {courses.length > 1 && (
+                  <div className="week-focus-bar">
+                    <span>本周主攻</span>
+                    <strong>{focusLabel}</strong>
+                    <button
+                      type="button"
+                      className="text-btn"
+                      onClick={() => setAdjustFocusOpen(true)}
+                    >
+                      调整
+                    </button>
+                  </div>
+                )}
+
                 <div className="actions-grid">
                   {visibleActions.map((id) => {
                     const action = ACTIONS.find((item) => item.id === id)
@@ -511,6 +536,55 @@ export function WeekScreen({
           <span>每周结算后自动保存</span>
         </footer>
       </div>
+
+      {showFocusModal && (
+        <div className="focus-backdrop" role="presentation">
+          <div className="focus-modal" role="dialog" aria-modal="true" aria-label="本周主攻课程">
+            <Eyebrow>WEEKLY FOCUS / 第 {state.week} 周</Eyebrow>
+            <h2>这周主要温习哪门课？</h2>
+            <p className="focus-lede">
+              主课程拿 75% 的准备度收益，其余课程平分剩下的 25%；
+              也可以选择全部课程均衡分配。
+            </p>
+            <div className="focus-options">
+              {courses.map((course) => (
+                <button
+                  type="button"
+                  key={course.id}
+                  className={`focus-choice ${state.weekFocus === course.id ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    onChooseFocus(course.id)
+                    setAdjustFocusOpen(false)
+                  }}
+                >
+                  <span className="focus-choice-en">MAIN / 75%</span>
+                  <strong>{course.name}</strong>
+                  <small>
+                    {course.credits} 学分 · 记忆力 {course.memory} · 悟性 {course.comprehension}
+                  </small>
+                  <em>主攻</em>
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`focus-choice is-balanced ${
+                  state.weekFocus === 'balanced' ? 'is-selected' : ''
+                }`}
+                onClick={() => {
+                  onChooseFocus('balanced')
+                  setAdjustFocusOpen(false)
+                }}
+              >
+                <span className="focus-choice-en">EVEN / 25% × ALL</span>
+                <strong>全部课程均衡</strong>
+                <small>每门课平分本周准备度收益，哪门都不落下。</small>
+                <em>均衡</em>
+              </button>
+            </div>
+            <p className="focus-note">本周选择只影响第 {state.week} 周，下周会重新询问。</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

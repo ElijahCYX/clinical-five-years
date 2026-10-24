@@ -69,7 +69,7 @@ import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v12'
+const SAVE_KEY = 'clinical-five-years-save-v13'
 
 type View = ScreenName | 'crisis'
 
@@ -278,6 +278,7 @@ function prepareSeason(base: GameState, index: number): GameState {
     seasonIndex: index,
     plan: null,
     habits: [],
+    weekFocus: null,
     week: 1,
     money: base.money + (base.player ? backgroundAllowance(base.player) : 0),
     prep: Object.fromEntries(season.courses.map((course) => [course.id, 0])),
@@ -447,6 +448,7 @@ function RealApp() {
       screen: 'week',
       plan,
       habits,
+      weekFocus: null,
       week: 1,
       selected: [],
       actionsUsed: 0,
@@ -470,6 +472,13 @@ function RealApp() {
     }
     if (prev.selected.length >= 2) return prev
     return { ...prev, selected: [...prev.selected, id] }
+  }
+
+  const chooseWeekFocus = (focus: string) => {
+    if (!game) return
+    const next = { ...game, weekFocus: focus }
+    setGame(next)
+    persist(next)
   }
 
   const toggleAction = (id: string) => {
@@ -526,6 +535,7 @@ function RealApp() {
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,
+      weekFocus: null,
       selected: [],
       actionsUsed: 0,
       logs: [...game.logs, log],
@@ -1203,6 +1213,7 @@ function RealApp() {
         state={game}
         onToggleAction={toggleAction}
         onEndWeek={endWeek}
+        onChooseFocus={chooseWeekFocus}
         onSave={saveNow}
         onTitle={goTitle}
       />
@@ -1320,6 +1331,7 @@ function DemoWeek() {
       state={state}
       onToggleAction={toggle}
       onEndWeek={() => goDemo('prep')}
+      onChooseFocus={() => undefined}
       onSave={() => undefined}
       onTitle={() => goDemo('title')}
     />
