@@ -468,6 +468,12 @@ export function cetScore(
   return clamp(Math.round(score), floor, CET.total)
 }
 
+export function examCoffeeMultiplier(
+  state: Pick<GameState, 'examCoffee'>,
+): number {
+  return state.examCoffee ? 1.15 : 1
+}
+
 export function examReviewTalentMultiplier(
   state: Pick<GameState, 'openingTalents'>,
 ): number {

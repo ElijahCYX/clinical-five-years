@@ -40,6 +40,7 @@ import {
   applyWeeklyOpeningTalent,
   applyScoreRescue,
   coursePrepTalentMultiplier,
+  examCoffeeMultiplier,
   examReviewTalentMultiplier,
 } from './game'
 import type {
@@ -710,6 +711,7 @@ function RealApp() {
           prepGainMultiplier(game) *
           examReviewTalentMultiplier(game) *
           coursePrepTalentMultiplier(game, course) *
+          examCoffeeMultiplier(game) *
           (game.examEnglishPrep ? 0.9 : 1),
       ]),
     )
@@ -862,13 +864,13 @@ function RealApp() {
   }
 
   const handleCoffee = () => {
-    if (!game || game.examCoffee || game.money < 10) return
+    if (!game || game.examCoffee || game.money < 50) return
     const next: GameState = {
       ...game,
-      money: game.money - 10,
+      money: game.money - 50,
       energy: clamp(game.energy + 10, 0, 100),
       stress: clamp(
-        game.stress + (game.openingTalents.includes('caffeineImmune') ? 0 : 2),
+        game.stress + (game.openingTalents.includes('caffeineImmune') ? 0 : 5),
         0,
         100,
       ),
@@ -897,7 +899,7 @@ function RealApp() {
   const handleAllNighter = () => {
     if (!game || game.examAllNighter) return
     const prep = { ...game.prep }
-    const gain = 15 * prepGainMultiplier(game)
+    const gain = 15 * prepGainMultiplier(game) * examCoffeeMultiplier(game)
     for (const course of game.season.courses) {
       prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
     }

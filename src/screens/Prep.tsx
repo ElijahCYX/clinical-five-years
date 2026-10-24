@@ -6,6 +6,7 @@ import {
   coursePrepTalentMultiplier,
   effectiveEnergyCost,
   estimateRange,
+  examCoffeeMultiplier,
   examReviewTalentMultiplier,
   getReviewEffect,
   isExamReviewCourse,
@@ -132,7 +133,8 @@ export function PrepScreen({
               (rawEffect.gains[course.id] ?? 0) *
                 gainFactor *
                 examReviewTalentMultiplier(state) *
-                coursePrepTalentMultiplier(state, course),
+                coursePrepTalentMultiplier(state, course) *
+                examCoffeeMultiplier(state),
             ]),
           ),
         }
@@ -150,6 +152,7 @@ export function PrepScreen({
       state.season.id,
       options.length,
       state.examEnglishPrep,
+      state.examCoffee,
       state.stress,
       state.highPressureDebuff,
     ],
@@ -375,7 +378,7 @@ export function PrepScreen({
                 <div>
                   <h4>喝咖啡</h4>
                   <p>一杯美式，续命不续成绩。</p>
-                  <small>生活费 -10 · 精力 +10 · 压力 {caffeineImmune ? 0 : 2}</small>
+                  <small>生活费 -50 · 精力 +10 · 压力 +{caffeineImmune ? 0 : 5} · 准备度收益 +15%</small>
                   {state.examCoffee ? (
                     <small className="boost-now">已生效 · 本场不可撤销</small>
                   ) : (
@@ -389,13 +392,13 @@ export function PrepScreen({
                       <div>
                         <span>压力</span>
                         <b>
-                          {state.stress} → {clamp(state.stress + 2, 0, 100)}
+                          {state.stress} → {clamp(state.stress + (caffeineImmune ? 0 : 5), 0, 100)}
                         </b>
                       </div>
                       <div>
                         <span>生活费</span>
                         <b>
-                          ¥{state.money} → ¥{Math.max(0, state.money - 10)}
+                          ¥{state.money} → ¥{Math.max(0, state.money - 50)}
                         </b>
                       </div>
                     </div>
@@ -405,7 +408,7 @@ export function PrepScreen({
                   type="button"
                   className="boost-btn"
                   onClick={onCoffee}
-                  disabled={state.examCoffee || state.money < 10}
+                  disabled={state.examCoffee || state.money < 50}
                 >
                   {state.examCoffee ? '已喝过' : '来一杯'}
                 </button>
