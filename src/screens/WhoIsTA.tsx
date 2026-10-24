@@ -181,7 +181,24 @@ export function WhoIsTAScreen({
                     </div>
                     <div className="whois-main">
                       <div className="whois-name-row">
-                        <h3>{relation.name}</h3>
+                        <span
+                          className="whois-name-plate"
+                          style={{
+                            backgroundColor: `rgba(32, 59, 50, ${(
+                              0.035 +
+                              (relation.intimacy / 100) * 0.09
+                            ).toFixed(3)})`,
+                          }}
+                        >
+                          <h3>{relation.name}</h3>
+                          <span
+                            className={`whois-gender ${relation.gender === '男' ? 'is-male' : 'is-female'}`}
+                            title={relation.gender === '男' ? '男性' : '女性'}
+                            aria-label={relation.gender === '男' ? '男性' : '女性'}
+                          >
+                            {relation.gender === '男' ? '♂' : '♀'}
+                          </span>
+                        </span>
                         <span>{relation.identity}</span>
                         {relationshipKindLabel(relation.kind) !== relation.identity && (
                           <span className="whois-kind">

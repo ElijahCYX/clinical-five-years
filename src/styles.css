@@ -8702,3 +8702,74 @@ body.dinner-open {
     gap: 5px;
   }
 }
+
+/* ---------- gender marks and intimacy-tinted name plates ---------- */
+
+.whois-name-row {
+  align-items: center;
+}
+
+.whois-name-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 8px 2px 7px;
+  border: 1px solid rgba(32, 59, 50, 0.13);
+  transition: background-color 0.25s ease;
+}
+
+.whois-name-plate h3 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.whois-gender {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.whois-gender.is-male,
+.inline-gender.is-male {
+  color: #3c6673;
+}
+
+.whois-gender.is-female,
+.inline-gender.is-female {
+  color: #9a5a5a;
+}
+
+.inline-gender {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 1px;
+}
+
+@media (max-width: 820px) {
+  .whois-name-plate {
+    gap: 5px;
+    padding: 1px 6px;
+  }
+
+  .whois-gender {
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+  }
+}

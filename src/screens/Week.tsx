@@ -503,7 +503,16 @@ export function WeekScreen({
                 <div className="roommate-top">
                   <div className="roommate-avatar">{relation.name.slice(0, 1)}</div>
                   <div>
-                    <h4>{relation.name}</h4>
+                    <h4>
+                      {relation.name}
+                      <span
+                        className={`inline-gender ${relation.gender === '男' ? 'is-male' : 'is-female'}`}
+                        title={relation.gender === '男' ? '男性' : '女性'}
+                        aria-label={relation.gender === '男' ? '男性' : '女性'}
+                      >
+                        {relation.gender === '男' ? '♂' : '♀'}
+                      </span>
+                    </h4>
                     <p>
                       {relation.identity}
                       {relationshipKindLabel(relation.kind) !== relation.identity
