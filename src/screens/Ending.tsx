@@ -7,8 +7,11 @@ interface EndingScreenProps {
   state: GameState
   onRestart: () => void
   onTitle: () => void
+  onContinue?: () => void
+  continueLabel?: string
   titleMain?: string
   titleAccent?: string
+  eyebrow?: string
   description?: string
   note?: string
 }
@@ -17,8 +20,11 @@ export function EndingScreen({
   state,
   onRestart,
   onTitle,
+  onContinue,
+  continueLabel,
   titleMain = '第一学期',
   titleAccent = '完',
+  eyebrow = 'END OF YEAR ONE / PROTOTYPE 001',
   description,
   note,
 }: EndingScreenProps) {
@@ -44,7 +50,7 @@ export function EndingScreen({
         <main className="ending-wrap">
           <div className="paper-card ending-card">
             <span className="tape" aria-hidden="true" />
-            <Eyebrow>END OF YEAR ONE / PROTOTYPE 001</Eyebrow>
+            <Eyebrow>{eyebrow}</Eyebrow>
             <h1 className="ending-title">
               {titleMain}
               <em>{titleAccent}</em>
@@ -89,10 +95,17 @@ export function EndingScreen({
             </div>
 
             <div className="ending-actions">
-              <button type="button" className="btn btn-primary" onClick={onRestart}>
-                重新开始一局
-                <span className="btn-arrow">→</span>
-              </button>
+              {onContinue ? (
+                <button type="button" className="btn btn-primary" onClick={onContinue}>
+                  {continueLabel ?? '继续'}
+                  <span className="btn-arrow">→</span>
+                </button>
+              ) : (
+                <button type="button" className="btn btn-primary" onClick={onRestart}>
+                  重新开始一局
+                  <span className="btn-arrow">→</span>
+                </button>
+              )}
               <button type="button" className="btn btn-ghost" onClick={onTitle}>
                 回到标题
               </button>

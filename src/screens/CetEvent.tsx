@@ -50,7 +50,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
               <div>
                 <h1 className="event-title">英语四六级报名</h1>
                 <p className="event-sub">
-                  大一 · 夏学期 · 第 3 周 · 考试周前一周
+                  {state.season.seasonLabel} · 第 3 周 · 考试周前一周
                 </p>
               </div>
               <Pill tone="gold">限本周事件</Pill>

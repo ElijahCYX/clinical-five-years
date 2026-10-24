@@ -40,7 +40,7 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
             <span className="tape" aria-hidden="true" />
             <header className="result-head">
               <div>
-                <Eyebrow>SEMESTER REPORT / 001</Eyebrow>
+                <Eyebrow>SEMESTER REPORT / {state.season.chapterNo}</Eyebrow>
                 <h1 className="page-title">学期结算</h1>
                 <p className="result-sub">
                   {state.season.seasonLabel} · {state.season.chapterTitle}
@@ -146,8 +146,8 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
           </div>
 
           <p className="result-footnote">
-            当前为 UI 初稿：可完整走完大一的「计划 → 周循环 → 考前复习 → 成绩单」流程。
-            大二与临床年会按同一套接口继续接入。
+            当前为 UI 初稿：可完整走完大一至大三的「计划 → 周循环 → 考前复习 → 成绩单」流程。
+            大四、大五临床年与后续事件会按同一套接口继续接入。
           </p>
         </main>
       </div>

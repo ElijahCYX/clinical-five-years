@@ -1,4 +1,4 @@
-import { VACATION_ACTION_BY_ID, VACATION_ACTIONS, VACATIONS, HABIT_BY_ID, BACKGROUND_BY_ID, TALENT_BY_ID } from '../data'
+import { VACATION_ACTION_BY_ID, VACATION_ACTIONS, VACATIONS, HABIT_BY_ID, BACKGROUND_BY_ID, TALENT_BY_ID, SEASONS } from '../data'
 import { archetypeFor, cetHint } from '../game'
 import type { ActionDef, GameState } from '../types'
 import { Bar, Dot, Eyebrow, Pill, StatBar, TopBar } from '../ui'
@@ -34,6 +34,9 @@ export function VacationScreen({
   if (!player || !vacation) return null
 
   const meta = VACATIONS[vacation.kind]
+  const yearPrefix = state.season.seasonLabel.split(' · ')[0] ?? ''
+  const nextSeason = SEASONS[state.seasonIndex + 1]
+  const nextLabel = nextSeason?.seasonLabel ?? '下一学年'
   const talent = TALENT_BY_ID[player.talent]
   const background = BACKGROUND_BY_ID[player.background]
   const habit = state.habit ? HABIT_BY_ID[state.habit] : null
@@ -72,7 +75,7 @@ export function VacationScreen({
             <Eyebrow>INTERLUDE / {meta.en}</Eyebrow>
             <h1>{meta.name}</h1>
             <p>
-              大一 · {meta.name}
+              {yearPrefix} · {meta.name}
               <span className="head-sep">/</span>
               没有考试
               <span className="head-sep">/</span>
@@ -185,7 +188,7 @@ export function VacationScreen({
             <div className="left-progress">
               <div>
                 <span>学年进度</span>
-                <strong>大一 · {meta.name}</strong>
+                <strong>{yearPrefix} · {meta.name}</strong>
               </div>
               <div>
                 <span>假期进度</span>
@@ -195,7 +198,7 @@ export function VacationScreen({
               </div>
               <div>
                 <span>假期结束</span>
-                <strong>{meta.nextLabel}</strong>
+                <strong>{nextLabel}</strong>
               </div>
             </div>
           </aside>
@@ -309,11 +312,11 @@ export function VacationScreen({
                 <span>假期之后</span>
               </div>
               <div className="vacation-after">
-                <span>{meta.nextLabel}</span>
+                <span>{nextLabel}</span>
                 <p>
                   {vacation.kind === 'winter'
-                    ? '寒假结束后是大一下学期。系统解剖学在春天等你。'
-                    : '暑假结束后就是大二。大二的内容会在下一轮开发中接入。'}
+                    ? `寒假结束后是${nextLabel}。新的课程在春天等你。`
+                    : `暑假结束后先进行学年结算；${nextLabel}在结算后开始。`}
                 </p>
               </div>
               <div className="vacation-habit">
@@ -360,9 +363,9 @@ export function VacationScreen({
 
         <footer className="game-footer">
           <span>
-            大一 · {meta.name} · 第 {vacation.week} / {vacation.totalWeeks} 周 · 没有考试
+            {yearPrefix} · {meta.name} · 第 {vacation.week} / {vacation.totalWeeks} 周 · 没有考试
           </span>
-          <span>假期结束后：{meta.nextLabel}</span>
+          <span>假期结束后：{nextLabel}</span>
         </footer>
       </div>
     </div>

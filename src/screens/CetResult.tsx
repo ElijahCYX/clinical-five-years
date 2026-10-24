@@ -5,11 +5,12 @@ import { Eyebrow, Pill, TopBar } from '../ui'
 
 interface CetResultScreenProps {
   state: GameState
+  nextLabel?: string
   onContinue: () => void
   onTitle?: () => void
 }
 
-export function CetResultScreen({ state, onContinue, onTitle }: CetResultScreenProps) {
+export function CetResultScreen({ state, nextLabel = '下一学年', onContinue, onTitle }: CetResultScreenProps) {
   const cet4Taken = state.cet4Score !== null
   const cet6Taken = state.cet6Score !== null
   const cet4Passed = cet4Taken && state.cet4Score! >= CET.pass4
@@ -35,7 +36,7 @@ export function CetResultScreen({ state, onContinue, onTitle }: CetResultScreenP
             <div className="event-title-row">
               <div>
                 <h1 className="event-title">成绩公布</h1>
-                <p className="event-sub">大二秋 · 开学前 · 英语四六级</p>
+                <p className="event-sub">{nextLabel} · 开学前 · 英语四六级</p>
               </div>
               <Pill tone={cet6Qualified ? 'green' : 'gold'}>
                 {cet6Qualified ? '毕业英语已合格' : '仍有提升空间'}
@@ -92,7 +93,7 @@ export function CetResultScreen({ state, onContinue, onTitle }: CetResultScreenP
 
             <div className="event-actions">
               <button type="button" className="btn btn-primary" onClick={onContinue}>
-                查看大一学年档案
+                查看学年档案
                 <span className="btn-arrow">→</span>
               </button>
             </div>

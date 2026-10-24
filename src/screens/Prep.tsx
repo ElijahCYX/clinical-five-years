@@ -190,7 +190,7 @@ export function PrepScreen({
                   <h2>本季考试</h2>
                   <p>
                     {courses.reduce((sum, course) => sum + course.credits, 0)} 学分 ·{' '}
-                    {courses.length} 门课程 · 第 1 学年
+                    {courses.length} 门课程 · {state.season.yearLabel}
                   </p>
                 </div>
                 <div className="prep-estimate">

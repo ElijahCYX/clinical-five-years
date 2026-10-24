@@ -19,7 +19,6 @@ import {
   planEnergyCost,
   planPassive,
   planStress,
-  RESULT_NEXT_LABEL,
   simulateWeek,
   signed,
 } from './game'
@@ -46,7 +45,7 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v3'
+const SAVE_KEY = 'clinical-five-years-save-v4'
 
 type View = ScreenName
 
@@ -145,6 +144,21 @@ function buildVacationLog(
     text: `没有早八的一周。你把这周的时间分给了${selectedNames || '一些小事'}。`,
     deltas,
   }
+}
+
+function resultNextLabel(index: number): string {
+  if (index === 1 || index === 5 || index === 9) return '寒假'
+  if (index === 3 || index === 7) return '暑假'
+  if (index === 11) return '学年结算'
+  return SEASONS[index + 1]?.seasonLabel ?? '继续'
+}
+
+function yearNumber(index: number): number {
+  return Math.floor(index / 4) + 1
+}
+
+function yearName(index: number): string {
+  return ['大一', '大二', '大三'][yearNumber(index) - 1] ?? `第 ${yearNumber(index)} 学年`
 }
 
 function prepareSeason(base: GameState, index: number): GameState {
@@ -456,10 +470,26 @@ function RealApp() {
 
   const handleResultContinue = () => {
     if (!game) return
-    if (game.seasonIndex === 0) startSeason(1)
-    else if (game.seasonIndex === 1) startVacation('winter')
-    else if (game.seasonIndex === 2) startSeason(3)
-    else startVacation('summer')
+    const index = game.seasonIndex
+    if (index === 11) {
+      commit({ ...game, screen: 'yearend', vacation: null }, 'yearend')
+      return
+    }
+    if (index === 1 || index === 5 || index === 9) {
+      startVacation('winter')
+      return
+    }
+    if (index === 3 || index === 7) {
+      startVacation('summer')
+      return
+    }
+    startSeason(index + 1)
+  }
+
+  const handleYearEndContinue = () => {
+    if (!game) return
+    const nextIndex = game.seasonIndex + 1
+    if (nextIndex < SEASONS.length) startSeason(nextIndex)
   }
 
   const endVacationWeek = () => {
@@ -543,7 +573,7 @@ function RealApp() {
     }
 
     if (game.vacation.kind === 'winter') {
-      commit(prepareSeason(base, 2), 'plan')
+      commit(prepareSeason(base, game.seasonIndex + 1), 'plan')
     } else {
       const tookCet4 = base.cet4Registered
       const tookCet6 = base.cet6Registered
@@ -568,16 +598,7 @@ function RealApp() {
           'cetResult',
         )
       } else {
-        commit(
-          {
-            ...base,
-            screen: 'yearend',
-            vacation: null,
-            finalNote:
-              '大一结束。你从解剖楼、图书馆和无数个早八里走过来，开始知道白大褂的重量。大二见。',
-          },
-          'yearend',
-        )
+        commit({ ...base, screen: 'yearend', vacation: null }, 'yearend')
       }
     }
   }
@@ -632,7 +653,12 @@ function RealApp() {
 
   if (view === 'cetResult') {
     return (
-      <CetResultScreen state={game} onContinue={handleCetResultContinue} onTitle={goTitle} />
+      <CetResultScreen
+        state={game}
+        nextLabel={SEASONS[game.seasonIndex + 1]?.seasonLabel ?? '下一学年'}
+        onContinue={handleCetResultContinue}
+        onTitle={goTitle}
+      />
     )
   }
 
@@ -678,7 +704,7 @@ function RealApp() {
     return (
       <ResultScreen
         state={game}
-        nextLabel={RESULT_NEXT_LABEL[game.seasonIndex] ?? '继续'}
+        nextLabel={resultNextLabel(game.seasonIndex)}
         onContinue={handleResultContinue}
         onTitle={goTitle}
       />
@@ -698,16 +724,29 @@ function RealApp() {
   }
 
   if (view === 'yearend') {
+    const completedYear = yearNumber(game.seasonIndex)
+    const nextSeason = SEASONS[game.seasonIndex + 1]
+    const displayYear = yearName(game.seasonIndex)
+    const descriptions: Record<number, string> = {
+      1: '大一结束。你从解剖楼、图书馆和无数个早八里走过来，开始知道白大褂的重量。大二见。',
+      2: '大二结束。基础课的骨架搭起来了，病理、药理和诊断开始把你往临床推。大三见。',
+      3: '大三结束。临床前的门槛已经跨过，接下来是大四、大五的临床年。',
+    }
+    const notes: Record<number, string> = {
+      1: '下一站：大二。桥梁课程与四六级机会已经接入。',
+      2: '下一站：大三。诊断学、临床基础课与临床前学期等你。',
+      3: '大二、大三的课程与考试已经完成。大四、大五临床年、事件卡、人物关系、科研与奖学金会在后续版本接入。',
+    }
     return (
       <EndingScreen
         state={game}
-        titleMain="大一学年"
+        titleMain={`${displayYear}学年`}
         titleAccent="完"
-        description={
-          game.finalNote ??
-          '大一结束。你从解剖楼、图书馆和无数个早八里走过来，开始知道白大褂的重量。大二见。'
-        }
-        note="寒假、暑假与大一的四个学期已经走完。大二、临床年、事件卡、人物关系、科研与奖学金会在后续版本接入。"
+        eyebrow={`END OF YEAR ${['ONE', 'TWO', 'THREE'][completedYear - 1]} / PROTOTYPE 00${completedYear}`}
+        description={descriptions[completedYear] ?? game.finalNote ?? `${displayYear}结束。`}
+        note={notes[completedYear]}
+        continueLabel={nextSeason ? `继续：${nextSeason.seasonLabel}` : undefined}
+        onContinue={nextSeason ? handleYearEndContinue : undefined}
         onRestart={handleRestart}
         onTitle={goTitle}
       />
