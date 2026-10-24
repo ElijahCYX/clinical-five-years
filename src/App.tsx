@@ -80,8 +80,11 @@ import { WhoAmIScreen } from './screens/WhoAmI'
 import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
+import { applyEvent, rollWeeklyEvent } from './events'
+import { RandomEventScreen } from './screens/RandomEvent'
 
-const SAVE_KEY = 'clinical-five-years-save-v19'
+const SAVE_KEY = 'clinical-five-years-save-v20'
+const LEGACY_SAVE_KEYS = ['clinical-five-years-save-v19']
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -95,10 +98,23 @@ function persist(game: GameState) {
 
 function readSave(): GameState | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY)
+    const raw =
+      localStorage.getItem(SAVE_KEY) ??
+      LEGACY_SAVE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean)
     if (!raw) return null
     const parsed = JSON.parse(raw) as { game?: GameState }
-    return parsed.game ?? null
+    if (!parsed.game) return null
+    const game = parsed.game
+    return {
+      ...game,
+      player: game.player
+        ? { ...game.player, orientation: game.player.orientation ?? 'heterosexual' }
+        : null,
+      eventWeek: game.eventWeek ?? 0,
+      eventHistory: game.eventHistory ?? [],
+      pendingEvent: game.pendingEvent ?? null,
+      socialModuleUnlocked: game.socialModuleUnlocked ?? false,
+    }
   } catch {
     return null
   }
@@ -419,6 +435,28 @@ function RealApp() {
   }, [game, view])
 
   useEffect(() => {
+    if (!game || view !== 'week') return
+    if (game.pendingEvent || game.eventWeek === game.week) return
+    if (game.week < 1 || game.week > 3) return
+    if (
+      (!game.highPressureDebuff && game.stress > 80) ||
+      (!game.lowEnergyAlert && game.energy < 20)
+    ) {
+      return
+    }
+    const pending = rollWeeklyEvent(game)
+    const next: GameState = {
+      ...game,
+      eventWeek: game.week,
+      pendingEvent: pending,
+      screen: pending ? 'randomEvent' : 'week',
+    }
+    setGame(next)
+    persist(next)
+    if (pending) setView('randomEvent')
+  }, [game, view])
+
+  useEffect(() => {
     if (
       !game ||
       crisisKind ||
@@ -513,6 +551,12 @@ function RealApp() {
   const handleTalentEventContinue = () => {
     if (!game) return
     commit({ ...game, screen: 'plan' }, 'plan')
+  }
+
+  const handleRandomEventContinue = () => {
+    if (!game || !game.pendingEvent) return
+    const next = applyEvent(game, game.pendingEvent)
+    commit(next, 'week')
   }
 
   const confirmElectives = (acceptedIds: string[]) => {
@@ -1330,6 +1374,17 @@ function RealApp() {
 
   if (!game || !game.player) {
     return <TitleScreen hasSave={hasSave} onStart={startCreate} onContinue={handleContinueSave} />
+  }
+
+  if (view === 'randomEvent' && game.pendingEvent) {
+    return (
+      <RandomEventScreen
+        state={game}
+        event={game.pendingEvent}
+        onContinue={handleRandomEventContinue}
+        onTitle={goTitle}
+      />
+    )
   }
 
   if (view === 'crisis' && crisisKind) {

@@ -16,6 +16,7 @@ const demoAttrs: Record<AttrKey, number> = {
 export const demoPlayer: Player = {
   name: '林知夏',
   gender: '女',
+  orientation: 'heterosexual',
   background: 'ordinary',
   talent: 'bright',
   attrs: demoAttrs,

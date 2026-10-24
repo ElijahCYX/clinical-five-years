@@ -33,6 +33,8 @@ export type BackgroundId = 'ordinary' | 'comfortable' | 'middle' | 'affluent'
 
 export type Gender = '女' | '男'
 
+export type SexualOrientation = 'heterosexual' | 'homosexual' | 'bisexual'
+
 export type ScreenName =
   | 'title'
   | 'create'
@@ -46,6 +48,7 @@ export type ScreenName =
   | 'vacation'
   | 'cetEvent'
   | 'cetResult'
+  | 'randomEvent'
   | 'route'
   | 'baoyanResult'
   | 'kaoyanExam'
@@ -238,6 +241,7 @@ export interface OpeningTalentDef {
 export interface Player {
   name: string
   gender: Gender
+  orientation: SexualOrientation
   background: BackgroundId
   talent: TalentId
   attrs: Record<AttrKey, number>
@@ -259,6 +263,32 @@ export interface ExamResult {
   expectedMin: number
   expectedMax: number
   stressRelief: number
+}
+
+export type EventKind = 'scene' | 'attribute' | 'random'
+
+export interface EventEffect {
+  stress?: number
+  energy?: number
+  money?: number
+  prep?: number
+  constitutionGrowth?: number
+  socialGrowth?: number
+  appearanceGrowth?: number
+  research?: number
+  english?: number
+  composite?: number
+  kaoyanPrep?: number
+  socialUnlock?: boolean
+}
+
+export interface PendingEvent {
+  id: string
+  kind: EventKind
+  title: string
+  text: string
+  effectLines: string[]
+  effects: EventEffect
 }
 
 export interface GameState {
@@ -327,6 +357,10 @@ export interface GameState {
   cumulativeCredits: number
   cumulativePoints: number
   finalNote: string | null
+  eventWeek: number
+  eventHistory: string[]
+  pendingEvent: PendingEvent | null
+  socialModuleUnlocked: boolean
 }
 
 export type DemoName =
@@ -342,5 +376,6 @@ export type DemoName =
   | 'vacation'
   | 'cetEvent'
   | 'cetResult'
+  | 'randomEvent'
   | 'yearend'
   | 'ending'

@@ -106,6 +106,13 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                 </p>
                 <div className="dossier-tags">
                   <Pill tone="green">{player.gender}</Pill>
+                  <Pill>
+                    {player.orientation === 'heterosexual'
+                      ? '异性恋'
+                      : player.orientation === 'homosexual'
+                        ? '同性恋'
+                        : '双性恋'}
+                  </Pill>
                   <Pill>临床医学 · 五年制</Pill>
                   <Pill tone={state.everFailed ? 'red' : 'plain'}>
                     {state.everFailed ? '有挂科记录' : '无挂科记录'}

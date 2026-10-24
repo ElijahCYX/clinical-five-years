@@ -2,7 +2,14 @@ import { useMemo, useState } from 'react'
 import { ATTRS, BACKGROUNDS, TALENTS } from '../data'
 import { archetypeFor, evenAllocation, randomAllocation, totalPoints } from '../game'
 import { randomCharacterName } from '../names'
-import type { AttrKey, BackgroundId, Gender, Player, TalentId } from '../types'
+import type {
+  AttrKey,
+  BackgroundId,
+  Gender,
+  Player,
+  SexualOrientation,
+  TalentId,
+} from '../types'
 import { Eyebrow, Footer, SectionLabel, Stamp, TopBar } from '../ui'
 
 interface CreateScreenProps {
@@ -18,6 +25,9 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
   )
   const [name, setName] = useState(initialPlayer?.name ?? '')
   const [gender, setGender] = useState<Gender>(initialPlayer?.gender ?? '女')
+  const [orientation, setOrientation] = useState<SexualOrientation>(
+    initialPlayer?.orientation ?? 'heterosexual',
+  )
   const [background, setBackground] = useState<BackgroundId>(
     initialPlayer?.background ?? 'ordinary',
   )
@@ -46,6 +56,7 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
     onConfirm({
       name: name.trim() || '小林',
       gender,
+      orientation,
       background,
       talent: talentId,
       attrs,
@@ -226,6 +237,11 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
                     onClick={() => {
                       setName(randomCharacterName())
                       setGender(Math.random() < 0.5 ? '女' : '男')
+                      setOrientation(
+                        (['heterosexual', 'homosexual', 'bisexual'] as SexualOrientation[])[
+                          Math.floor(Math.random() * 3)
+                        ],
+                      )
                       setBackground(
                         BACKGROUNDS[
                           Math.floor(Math.random() * BACKGROUNDS.length)
@@ -249,6 +265,28 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
                       onClick={() => setGender(item)}
                     >
                       {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="field">
+                <span>性取向</span>
+                <div className="segmented">
+                  {(
+                    [
+                      ['heterosexual', '异性恋'],
+                      ['homosexual', '同性恋'],
+                      ['bisexual', '双性恋'],
+                    ] as Array<[SexualOrientation, string]>
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={orientation === key ? 'is-active' : ''}
+                      onClick={() => setOrientation(key)}
+                    >
+                      {label}
                     </button>
                   ))}
                 </div>

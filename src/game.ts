@@ -348,6 +348,10 @@ export function newGameState(player: Player): GameState {
     cumulativeCredits: 0,
     cumulativePoints: 0,
     finalNote: null,
+    eventWeek: 0,
+    eventHistory: [],
+    pendingEvent: null,
+    socialModuleUnlocked: false,
   }
 }
 
