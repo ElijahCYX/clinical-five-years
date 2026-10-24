@@ -1,0 +1,12 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1200,height:800} })
+const errors=[]; page.on('pageerror', e=>errors.push(e.message)); page.on('console', m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:4180/clinical-five-years/?demo=week', {waitUntil:'networkidle'})
+await page.waitForTimeout(500)
+console.log('title:', await page.title())
+console.log('game:', await page.locator('.game-screen').count())
+console.log('rail:', await page.locator('.game-left').count())
+console.log('errors:', errors)
+await page.screenshot({path:'/tmp/shots/subpath-check.png'})
+await browser.close()

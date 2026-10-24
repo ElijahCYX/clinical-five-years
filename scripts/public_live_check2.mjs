@@ -1,0 +1,12 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1200,height:800} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('https://a52b2530458429.lhr.life/?demo=week', {waitUntil:'networkidle', timeout:30000})
+await page.waitForTimeout(1000)
+console.log('url:', page.url())
+console.log('html len:', (await page.content()).length)
+console.log('body text:', (await page.locator('body').innerText()).slice(0,300).replace(/\n/g,' | '))
+console.log('errors:', errors.slice(0,5))
+await page.screenshot({path:'/tmp/shots/public-live.png'})
+await browser.close()
