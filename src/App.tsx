@@ -22,6 +22,7 @@ import {
   peGpaFor,
   peScoreFor,
   postgradChanceFor,
+  scholarshipFor,
   planEnergyCost,
   planPassive,
   planStress,
@@ -54,12 +55,13 @@ import {
   RouteScreen,
 } from './screens/Postgrad'
 import { PrepScreen } from './screens/Prep'
+import { ScholarshipScreen } from './screens/Scholarship'
 import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v7'
+const SAVE_KEY = 'clinical-five-years-save-v8'
 
 type View = ScreenName
 
@@ -184,6 +186,60 @@ function isYearFinal(index: number): boolean {
   return [3, 7, 11, 15, 19].includes(index)
 }
 
+function finalizeYear(base: GameState): GameState {
+  const year = yearNumber(base.seasonIndex)
+  if (base.yearRecords.some((record) => record.year === year)) return base
+  const previous = base.yearRecords[base.yearRecords.length - 1]
+  const prevCredits = previous?.cumulativeCredits ?? 0
+  const prevPoints = previous?.cumulativePoints ?? 0
+  const prevComposite = previous?.cumulativeComposite ?? 0
+  const prevResearch = previous?.cumulativeResearch ?? 0
+  const creditsGain = base.cumulativeCredits - prevCredits
+  const pointsGain = base.cumulativePoints - prevPoints
+  const gpa = creditsGain > 0 ? pointsGain / creditsGain : 0
+  const compositeGain = base.composite - prevComposite
+  const paperGain =
+    Math.floor(base.research / 100) - Math.floor(prevResearch / 100)
+  const record = {
+    year,
+    gpa,
+    compositeGain,
+    researchGain: base.research - prevResearch,
+    papers: Math.max(0, paperGain),
+    failed: base.yearFailed,
+    cumulativeCredits: base.cumulativeCredits,
+    cumulativePoints: base.cumulativePoints,
+    cumulativeComposite: base.composite,
+    cumulativeResearch: base.research,
+    evaluated: false,
+    award: null,
+    score: null,
+  }
+  return {
+    ...base,
+    yearRecords: [...base.yearRecords, record],
+    yearFailed: false,
+  }
+}
+
+function evaluateScholarship(base: GameState, index: number): GameState | null {
+  if (!base.player) return null
+  const record = base.yearRecords.find(
+    (item) => !item.evaluated && item.year === yearNumber(index) - 1,
+  )
+  if (!record) return null
+  const prior = base.yearRecords.filter((item) => item.year < record.year)
+  const score = scholarshipFor(record, base.player, prior, base.everFailed)
+  return {
+    ...base,
+    yearRecords: base.yearRecords.map((item) =>
+      item === record
+        ? { ...item, evaluated: true, award: score.award, score }
+        : item,
+    ),
+  }
+}
+
 function settlePe(base: GameState): GameState {
   const year = yearNumber(base.seasonIndex)
   if (base.peResults.some((item) => item.year === year)) return base
@@ -196,6 +252,8 @@ function settlePe(base: GameState): GameState {
     peResults: [...base.peResults, { year, score, gpa, passed }],
     cumulativeCredits: base.cumulativeCredits + (passed ? 2 : 0),
     cumulativePoints: base.cumulativePoints + (passed ? 2 * gpa : 0),
+    everFailed: base.everFailed || !passed,
+    yearFailed: base.yearFailed || !passed,
   }
 }
 
@@ -449,6 +507,8 @@ function RealApp() {
       prep,
       results,
       pendingMakeups,
+      everFailed: game.everFailed || failed.length > 0,
+      yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
       selected: [],
@@ -597,6 +657,13 @@ function RealApp() {
 
   const handleCetResultContinue = () => {
     if (!game) return
+    if (game.seasonIndex > 0 && game.seasonIndex % 4 === 0) {
+      const withScholarship = evaluateScholarship(game, game.seasonIndex)
+      if (withScholarship) {
+        commit({ ...withScholarship, screen: 'scholarship' }, 'scholarship')
+        return
+      }
+    }
     if (game.seasonIndex === 14 && !game.postgradChoice) {
       commit(
         {
@@ -619,6 +686,13 @@ function RealApp() {
     if (pendingCet) {
       commit({ ...withCetResults(prepared), screen: 'cetResult' }, 'cetResult')
       return
+    }
+    if (index > 0 && index % 4 === 0) {
+      const withScholarship = evaluateScholarship(prepared, index)
+      if (withScholarship) {
+        commit({ ...withScholarship, screen: 'scholarship' }, 'scholarship')
+        return
+      }
     }
     if (index === 14 && !base.postgradChoice) {
       commit(
@@ -678,6 +752,11 @@ function RealApp() {
     beginSeason(game, 19)
   }
 
+  const handleScholarshipContinue = () => {
+    if (!game) return
+    commit({ ...game, screen: 'plan' }, 'plan')
+  }
+
   const handleResultContinue = () => {
     if (!game) return
     let current = game
@@ -686,6 +765,7 @@ function RealApp() {
 
     // 大三临床前、大四夏：学年结算（大四无暑假）
     if (index === 11 || index === 15) {
+      current = finalizeYear(current)
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
       return
     }
@@ -853,7 +933,8 @@ function RealApp() {
     if (game.vacation.kind === 'winter') {
       beginSeason(base, game.seasonIndex + 1)
     } else {
-      commit({ ...base, screen: 'yearend', vacation: null }, 'yearend')
+      const finalized = finalizeYear(base)
+      commit({ ...finalized, screen: 'yearend', vacation: null }, 'yearend')
     }
   }
 
@@ -911,6 +992,18 @@ function RealApp() {
         state={game}
         nextLabel={game.season.seasonLabel}
         onContinue={handleCetResultContinue}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'scholarship') {
+    const record = game.yearRecords[game.yearRecords.length - 1]
+    return (
+      <ScholarshipScreen
+        state={game}
+        record={record}
+        onContinue={handleScholarshipContinue}
         onTitle={goTitle}
       />
     )

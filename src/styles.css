@@ -4147,6 +4147,147 @@ input:focus-visible {
 }
 
 
+
+/* ---------- scholarship ---------- */
+
+.scholarship-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 20px 0 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.scholarship-total > div:first-child span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.scholarship-total strong {
+  font-family: var(--serif);
+  font-size: 48px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.scholarship-total small {
+  margin-left: 4px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.scholarship-cutoffs {
+  display: flex;
+  gap: 12px;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.scholarship-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line-soft);
+}
+
+.scholarship-grid > div {
+  padding: 13px 12px;
+  background: #f8f4ea;
+}
+
+.scholarship-grid span {
+  display: block;
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.scholarship-grid strong {
+  display: block;
+  margin: 5px 0 3px;
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.scholarship-grid small {
+  display: block;
+  font-size: 7.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.scholarship-award {
+  margin-top: 16px;
+  padding: 13px 15px;
+  border-left: 2px solid var(--line-strong);
+  background: #f5f0e5;
+}
+
+.scholarship-award.is-national {
+  border-left-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.scholarship-award.is-provincial {
+  border-left-color: #7d9884;
+  background: var(--green-soft);
+}
+
+.scholarship-award.is-school {
+  border-left-color: #a9b6ad;
+  background: #f2f1e8;
+}
+
+.scholarship-award div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scholarship-award span {
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.scholarship-award strong {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.scholarship-award p {
+  margin: 7px 0 0;
+  font-size: 9.5px;
+  line-height: 1.75;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.scholarship-warning {
+  color: var(--red) !important;
+}
+
+@media (max-width: 820px) {
+  .scholarship-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scholarship-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
 /* ---------- app version badge ---------- */
 
 #app-version {

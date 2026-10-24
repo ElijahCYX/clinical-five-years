@@ -47,6 +47,7 @@ export type ScreenName =
   | 'baoyanResult'
   | 'kaoyanExam'
   | 'kaoyanResult'
+  | 'scholarship'
   | 'yearend'
   | 'graduation'
   | 'ending'
@@ -155,6 +156,34 @@ export interface PeResult {
 
 export type PostgradChoice = 'baoyan' | 'both' | 'employment' | null
 
+export type AwardLevel = 'national' | 'provincial' | 'school' | null
+
+export interface ScholarshipScore {
+  grade: number
+  composite: number
+  research: number
+  interview: number
+  legacy: number
+  total: number
+  award: AwardLevel
+}
+
+export interface YearRecord {
+  year: number
+  gpa: number
+  compositeGain: number
+  researchGain: number
+  papers: number
+  failed: boolean
+  cumulativeCredits: number
+  cumulativePoints: number
+  cumulativeComposite: number
+  cumulativeResearch: number
+  evaluated: boolean
+  award: AwardLevel
+  score: ScholarshipScore | null
+}
+
 export interface Season {
   id: string
   yearLabel: string
@@ -224,6 +253,9 @@ export interface GameState {
   kaoyanResult: 'success' | 'fail' | null
   peMakeupPassed: boolean | null
   peMakeupScore: number | null
+  yearRecords: YearRecord[]
+  everFailed: boolean
+  yearFailed: boolean
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number

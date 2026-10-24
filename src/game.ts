@@ -11,14 +11,17 @@ import {
 } from './data'
 import type {
   AttrKey,
+  AwardLevel,
   Course,
   GameState,
   HabitId,
   Player,
   PlanId,
   ReviewChoice,
+  ScholarshipScore,
   SkillTier,
   TalentId,
+  YearRecord,
 } from './types'
 
 export const clamp = (value: number, min: number, max: number) =>
@@ -250,6 +253,9 @@ export function newGameState(player: Player): GameState {
     kaoyanResult: null,
     peMakeupPassed: null,
     peMakeupScore: null,
+    yearRecords: [],
+    everFailed: false,
+    yearFailed: false,
     constitutionGrowth: 0,
     appearanceGrowth: 0,
     actionsUsed: 0,
@@ -555,6 +561,96 @@ export function graduationReasons(state: GameState): string[] {
 }
 
 export const KAOYAN_PASS = 300
+
+export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 40
+
+export const AWARD_LABELS: Record<Exclude<AwardLevel, null>, string> = {
+  national: '国家奖学金',
+  provincial: '省级奖学金',
+  school: '校级奖学金',
+}
+
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z))
+  const d = 0.3989423 * Math.exp((-z * z) / 2)
+  const p =
+    d *
+    t *
+    (0.3193815 +
+      t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))))
+  return z > 0 ? 1 - p : p
+}
+
+/** 按 3.9 前 30%、4.5 前 5% 的近正态分布折算 40 分成绩项。 */
+export function gradeScoreFor(gpa: number): number {
+  const mean = 3.619
+  const sd = 0.5355
+  const below = normalCdf((gpa - mean) / sd)
+  const fromTopFive = (below - 0.05) / 0.95
+  return clamp(fromTopFive * 40, 0, 40)
+}
+
+export function researchScoreFor(papers: number): number {
+  if (papers <= 0) return 0
+  if (papers === 1) return 5
+  if (papers === 2) return 8
+  return 10
+}
+
+export function interviewScoreFor(player: Player): number {
+  const avg = (player.attrs.appearance + player.attrs.social) / 2
+  return clamp(((avg - 2) / 8) * 20, 0, 20)
+}
+
+export function bestAward(records: YearRecord[]): AwardLevel {
+  if (records.some((record) => record.award === 'national')) return 'national'
+  if (records.some((record) => record.award === 'provincial')) return 'provincial'
+  if (records.some((record) => record.award === 'school')) return 'school'
+  return null
+}
+
+export function legacyScoreFor(records: YearRecord[]): number {
+  const award = bestAward(records)
+  if (award === 'national') return 10
+  if (award === 'provincial') return 6
+  if (award === 'school') return 3
+  return 0
+}
+
+export function scholarshipFor(
+  record: YearRecord,
+  player: Player,
+  priorRecords: YearRecord[],
+  everFailed: boolean,
+): ScholarshipScore {
+  const grade = gradeScoreFor(record.gpa)
+  const composite = clamp(
+    (record.compositeGain / SCHOLARSHIP_COMPOSITE_BENCHMARK) * 20,
+    0,
+    20,
+  )
+  const research = researchScoreFor(record.papers)
+  const interview = interviewScoreFor(player)
+  const legacy = legacyScoreFor(priorRecords)
+  const total = grade + composite + research + interview + legacy
+  const award: AwardLevel =
+    total >= 80 && !everFailed
+      ? 'national'
+      : total >= 70 && !record.failed
+        ? 'provincial'
+        : total >= 60
+          ? 'school'
+          : null
+  return {
+    grade,
+    composite,
+    research,
+    interview,
+    legacy,
+    total,
+    award,
+  }
+}
 
 export const DEFAULT_DEMO_TALENT: TalentId = 'bright'
 export const DEFAULT_DEMO_ATTRS = evenAllocation(DEFAULT_DEMO_TALENT)
