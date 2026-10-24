@@ -25,6 +25,7 @@ import {
   patRemainingThisWeek,
   relationshipKindLabel,
   relationshipStatsLine,
+  unseenRelationCount,
 } from '../social'
 
 const VISIBLE_ACTIONS = [
@@ -592,7 +593,10 @@ export function WeekScreen({
           onTA={onOpenTA ?? (() => undefined)}
           badges={{
             main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta: patRemainingThisWeek(state) || undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
           }}
         />
 

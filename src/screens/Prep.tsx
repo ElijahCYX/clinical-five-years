@@ -14,8 +14,9 @@ import {
   reviewMultiplier,
 } from '../game'
 import type { GameState, ReviewChoice } from '../types'
-import { Bar, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
+import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
+import { patRemainingThisWeek, unseenRelationCount } from '../social'
 
 interface PrepScreenProps {
   state: GameState
@@ -25,6 +26,8 @@ interface PrepScreenProps {
   onAllNighter?: () => void
   onEnglishPrep?: () => void
   onTitle?: () => void
+  onWho?: () => void
+  onTA?: () => void
 }
 
 export function PrepScreen({
@@ -35,6 +38,8 @@ export function PrepScreen({
   onAllNighter,
   onEnglishPrep,
   onTitle,
+  onWho,
+  onTA,
 }: PrepScreenProps) {
   const [choice, setChoice] = useState<ReviewChoice | null>(initialChoice)
   const player = state.player
@@ -195,6 +200,18 @@ export function PrepScreen({
         <TopBar
           onTitle={onTitle}
           right={<span className="topbar-note">第 4 周 · 考前复习</span>}
+        />
+        <InterfaceNav
+          active="main"
+          onMain={() => undefined}
+          onWho={onWho ?? (() => undefined)}
+          onTA={onTA ?? (() => undefined)}
+          badges={{
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
+          }}
         />
 
         <header className="prep-head">

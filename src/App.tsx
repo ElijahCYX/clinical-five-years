@@ -178,6 +178,8 @@ function readSave(): GameState | null {
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
       familyAffection: game.familyAffection ?? 0,
       familyReliefWeek: game.familyReliefWeek ?? 0,
+      seenRelationIds:
+        game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
     })
   } catch {
     return null
@@ -1032,6 +1034,12 @@ function RealApp() {
 
   const openWhoIs = () => {
     if (!game) return
+    const next: GameState = {
+      ...game,
+      seenRelationIds: game.relationships.map((relation) => relation.id),
+    }
+    setGame(next)
+    persist(next)
     setWhoisReturn(view)
     setView('whois')
   }
@@ -2220,6 +2228,8 @@ function RealApp() {
         onConfirmElectives={confirmElectives}
         onBack={() => setView('create')}
         onConfirm={handlePlan}
+        onWho={openWhoAmI}
+        onTA={openWhoIs}
       />
     )
   }
@@ -2261,6 +2271,8 @@ function RealApp() {
         onAllNighter={handleAllNighter}
         onEnglishPrep={handleEnglishPrep}
         onTitle={goTitle}
+        onWho={openWhoAmI}
+        onTA={openWhoIs}
       />
     )
   }

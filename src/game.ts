@@ -371,6 +371,7 @@ export function newGameState(player: Player): GameState {
     lastHypothesisOfferSeason: null,
     familyAffection: 0,
     familyReliefWeek: 0,
+    seenRelationIds: [],
   }
 }
 

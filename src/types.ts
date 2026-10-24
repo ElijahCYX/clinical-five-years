@@ -478,6 +478,7 @@ export interface GameState {
   lastHypothesisOfferSeason: string | null
   familyAffection: number
   familyReliefWeek: number
+  seenRelationIds: string[]
 }
 
 export type DemoName =

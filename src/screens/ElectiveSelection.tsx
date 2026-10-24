@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { ELECTIVE_COURSE_BY_ID, ELECTIVE_COURSES } from '../data'
 import { courseDifficulty } from '../game'
+import { patRemainingThisWeek, unseenRelationCount } from '../social'
 import type { Course, ElectiveType, GameState } from '../types'
-import { Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
+import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 
 interface ElectiveSelectionProps {
   state: GameState
   onConfirm: (acceptedIds: string[]) => void
   onBack?: () => void
+  onWho?: () => void
+  onTA?: () => void
 }
 
 const TYPE_LABELS: Record<ElectiveType, string> = {
@@ -30,6 +33,8 @@ export function ElectiveSelectionScreen({
   state,
   onConfirm,
   onBack,
+  onWho,
+  onTA,
 }: ElectiveSelectionProps) {
   const [slots, setSlots] = useState<string[]>(state.electiveOffers)
   const [selected, setSelected] = useState<string[]>([])
@@ -103,6 +108,18 @@ export function ElectiveSelectionScreen({
               返回标题
             </button>
           }
+        />
+        <InterfaceNav
+          active="main"
+          onMain={() => undefined}
+          onWho={onWho ?? (() => undefined)}
+          onTA={onTA ?? (() => undefined)}
+          badges={{
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
+          }}
         />
 
         <header className="elective-head">

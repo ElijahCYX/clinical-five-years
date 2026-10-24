@@ -3,7 +3,8 @@ import { HABITS, PLANS, SCHOOL_NAME } from '../data'
 import type { Course, GameState, HabitId, PlanId, Player } from '../types'
 import { ElectiveSelectionScreen } from './ElectiveSelection'
 import { courseDifficulty } from '../game'
-import { Eyebrow, Footer, SectionLabel, TopBar } from '../ui'
+import { patRemainingThisWeek, unseenRelationCount } from '../social'
+import { Eyebrow, Footer, InterfaceNav, SectionLabel, TopBar } from '../ui'
 
 interface PlanScreenProps {
   player: Player
@@ -15,6 +16,8 @@ interface PlanScreenProps {
   onConfirmElectives?: (acceptedIds: string[]) => void
   onBack?: () => void
   onConfirm: (plan: PlanId, habits: HabitId[]) => void
+  onWho?: () => void
+  onTA?: () => void
 }
 
 export function PlanScreen({
@@ -27,6 +30,8 @@ export function PlanScreen({
   onConfirmElectives,
   onBack,
   onConfirm,
+  onWho,
+  onTA,
 }: PlanScreenProps) {
   const [plan, setPlan] = useState<PlanId | null>(initialPlan)
   const [habits, setHabits] = useState<HabitId[]>(initialHabits)
@@ -37,6 +42,8 @@ export function PlanScreen({
         state={state}
         onConfirm={onConfirmElectives}
         onBack={onBack}
+        onWho={onWho}
+        onTA={onTA}
       />
     )
   }
@@ -60,6 +67,22 @@ export function PlanScreen({
             <button className="text-btn" type="button" onClick={onBack}>
               ← 返回
             </button>
+          }
+        />
+        <InterfaceNav
+          active="main"
+          onMain={() => undefined}
+          onWho={onWho ?? (() => undefined)}
+          onTA={onTA ?? (() => undefined)}
+          badges={
+            state
+              ? {
+                  ta:
+                    unseenRelationCount(state) > 0
+                      ? '新'
+                      : patRemainingThisWeek(state) || undefined,
+                }
+              : undefined
           }
         />
 

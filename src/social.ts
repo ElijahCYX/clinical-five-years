@@ -180,6 +180,11 @@ export function currentWeekKey(state: GameState): string {
   return `${state.season.id}-w${state.week}`
 }
 
+export function unseenRelationCount(state: GameState): number {
+  const seen = new Set(state.seenRelationIds ?? [])
+  return state.relationships.filter((relation) => !seen.has(relation.id)).length
+}
+
 export const PAT_LIMIT = 3
 
 export function patUsedThisWeek(state: GameState): number {

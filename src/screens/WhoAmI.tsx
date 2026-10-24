@@ -9,7 +9,7 @@ import {
 import { AWARD_LABELS, bestAward } from '../game'
 import type { GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
-import { patRemainingThisWeek } from '../social'
+import { patRemainingThisWeek, unseenRelationCount } from '../social'
 
 interface WhoAmIScreenProps {
   state: GameState
@@ -80,7 +80,10 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
           onTA={onTA ?? (() => undefined)}
           badges={{
             main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta: patRemainingThisWeek(state) || undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
           }}
         />
 

@@ -90,7 +90,11 @@ export function InterfaceNav({
     }
     return (
       <span className="interface-badge" aria-label="有未完成操作">
-        {typeof value === 'number' ? value : ''}
+        {typeof value === 'number'
+          ? value
+          : typeof value === 'string'
+            ? value
+            : ''}
       </span>
     )
   }

@@ -7,6 +7,7 @@ import {
   currentWeekKey,
   patRemainingThisWeek,
   relationshipKindLabel,
+  unseenRelationCount,
 } from '../social'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { romanceRiskAfterWeek } from '../events'
@@ -85,7 +86,10 @@ export function WhoIsTAScreen({
           onTA={() => undefined}
           badges={{
             main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta: patRemaining || undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemaining || undefined,
           }}
         />
 
