@@ -934,10 +934,10 @@ export const VACATION_ACTIONS: ActionDef[] = [
     en: 'HOME',
     category: '生活',
     flavor: '把行李箱拖回家，先睡一整天。',
-    energy: 10,
+    energy: 15,
     stress: -10,
-    money: -50,
-    effectText: '精力 +10 · 压力 -10 · 生活费 -50',
+    money: 100,
+    effectText: '精力 +15 · 压力 -10 · 生活费 +100',
   },
   {
     id: 'vacTravel',
