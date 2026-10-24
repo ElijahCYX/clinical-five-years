@@ -406,9 +406,18 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
 }
 
 export function romanceRiskAfterWeek(state: GameState): number {
-  const partners = state.relationships.filter((relation) => relation.partner).length
-  if (partners < 2) return 0
-  return Math.min(95, (state.romanceRisk ?? 0) + 8 + (partners - 2) * 4)
+  const partners = state.relationships.filter((relation) => relation.partner)
+  if (partners.length < 2) return 0
+  // 每段关系都贡献热度：亲密越高，风险增长越快。
+  const heat = partners.reduce(
+    (sum, relation) => sum + Math.max(0, relation.intimacy) / 100,
+    0,
+  )
+  const increment = Math.max(
+    3,
+    Math.round(2 + (partners.length - 2) * 3 + heat * 4),
+  )
+  return Math.min(95, (state.romanceRisk ?? 0) + increment)
 }
 
 export function createRomanceDiscoveryEvent(state: GameState): PendingEvent {
@@ -498,10 +507,7 @@ export function rollRelationshipWeekly(state: GameState): RelationshipWeeklyResu
   // 2. 多线恋爱修罗场
   const partners = relationships.filter((relation) => relation.partner)
   if (partners.length >= 2) {
-    const risk = Math.min(
-      95,
-      (state.romanceRisk ?? 0) + 8 + (partners.length - 2) * 4,
-    )
+    const risk = romanceRiskAfterWeek(state)
     next = { ...next, romanceRisk: risk }
     if (Math.random() < risk / 100) {
       const names = partners.map((relation) => relation.name).join('、')

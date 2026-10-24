@@ -9,6 +9,7 @@ import {
   relationshipKindLabel,
 } from '../social'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
+import { romanceRiskAfterWeek } from '../events'
 
 interface WhoIsTAScreenProps {
   state: GameState
@@ -102,7 +103,9 @@ export function WhoIsTAScreen({
             </button>
             {state.romanceUnlocked && <Pill tone="gold">恋爱模块已解锁</Pill>}
             {partnerCount > 1 && (
-              <Pill tone="red">多线恋爱 · 下周风险 {state.romanceRisk}%</Pill>
+              <Pill tone="red">
+                多线恋爱 · 下周风险 {romanceRiskAfterWeek(state)}%
+              </Pill>
             )}
             {staffPartner && (
               <Pill tone="red">师生关系风险 {state.teacherScandalRisk}%</Pill>
