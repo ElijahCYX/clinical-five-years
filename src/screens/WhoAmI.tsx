@@ -9,6 +9,7 @@ import {
 import { AWARD_LABELS, bestAward } from '../game'
 import type { GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
+import { patRemainingThisWeek } from '../social'
 
 interface WhoAmIScreenProps {
   state: GameState
@@ -77,6 +78,10 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
           onMain={onMain}
           onWho={() => undefined}
           onTA={onTA ?? (() => undefined)}
+          badges={{
+            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+            ta: patRemainingThisWeek(state) || undefined,
+          }}
         />
 
         <header className="whoami-head">

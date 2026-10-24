@@ -21,6 +21,7 @@ import { NpcConfessionModal } from './NpcConfession'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import {
   isDinnerFriend,
+  patRemainingThisWeek,
   relationshipKindLabel,
   relationshipStatsLine,
 } from '../social'
@@ -577,6 +578,10 @@ export function WeekScreen({
           onMain={() => undefined}
           onWho={onOpenWhoAmI ?? (() => undefined)}
           onTA={onOpenTA ?? (() => undefined)}
+          badges={{
+            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+            ta: patRemainingThisWeek(state) || undefined,
+          }}
         />
 
         <header className="game-head">

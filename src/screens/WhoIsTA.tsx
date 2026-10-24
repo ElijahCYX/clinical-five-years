@@ -83,6 +83,10 @@ export function WhoIsTAScreen({
           onMain={onMain}
           onWho={onWho}
           onTA={() => undefined}
+          badges={{
+            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+            ta: patRemaining || undefined,
+          }}
         />
 
         <header className="whois-head">

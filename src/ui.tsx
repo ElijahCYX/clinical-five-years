@@ -76,38 +76,49 @@ export function InterfaceNav({
   onMain,
   onWho,
   onTA,
+  badges = {},
 }: {
   active: 'main' | 'who' | 'ta'
   onMain: () => void
   onWho: () => void
   onTA: () => void
+  badges?: Partial<Record<'main' | 'who' | 'ta', string | number | boolean>>
 }) {
+  const renderBadge = (value: string | number | boolean | undefined) => {
+    if (value === undefined || value === false || value === 0 || value === '') {
+      return null
+    }
+    return (
+      <span className="interface-badge" aria-label="有未完成操作">
+        {typeof value === 'number' ? value : ''}
+      </span>
+    )
+  }
+
+  const item = (
+    key: 'main' | 'who' | 'ta',
+    label: string,
+    onClick: () => void,
+  ) => {
+    const badge = renderBadge(badges[key])
+    return (
+      <button
+        type="button"
+        className={`interface-btn ${active === key ? 'is-active' : ''} ${badge ? 'has-badge' : ''}`}
+        onClick={onClick}
+        aria-current={active === key ? 'page' : undefined}
+      >
+        {label}
+        {badge}
+      </button>
+    )
+  }
+
   return (
     <nav className="interface-nav" aria-label="界面切换">
-      <button
-        type="button"
-        className={`interface-btn ${active === 'main' ? 'is-active' : ''}`}
-        onClick={onMain}
-        aria-current={active === 'main' ? 'page' : undefined}
-      >
-        主界面
-      </button>
-      <button
-        type="button"
-        className={`interface-btn ${active === 'who' ? 'is-active' : ''}`}
-        onClick={onWho}
-        aria-current={active === 'who' ? 'page' : undefined}
-      >
-        我是谁
-      </button>
-      <button
-        type="button"
-        className={`interface-btn ${active === 'ta' ? 'is-active' : ''}`}
-        onClick={onTA}
-        aria-current={active === 'ta' ? 'page' : undefined}
-      >
-        TA 是谁
-      </button>
+      {item('main', '主界面', onMain)}
+      {item('who', '我是谁', onWho)}
+      {item('ta', 'TA 是谁', onTA)}
     </nav>
   )
 }
