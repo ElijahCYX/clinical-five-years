@@ -8906,3 +8906,28 @@ body.dinner-open {
     font-size: 8px;
   }
 }
+
+/* ---------- eight-dimension stat highlights ---------- */
+
+.whois-stat-chip {
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.whois-stat-chip.is-high {
+  border-color: #c48a37 !important;
+  background: rgba(196, 138, 55, 0.1);
+  color: #a66b1f !important;
+  font-weight: 600;
+}
+
+.whois-stat-chip.is-critical {
+  border-color: var(--red) !important;
+  background: rgba(155, 60, 48, 0.11);
+  color: var(--red) !important;
+  font-weight: 700;
+}
+
+.whois-stat-extra {
+  color: var(--muted);
+  font-size: 10px;
+}

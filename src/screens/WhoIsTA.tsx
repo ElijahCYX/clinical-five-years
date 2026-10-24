@@ -25,23 +25,33 @@ interface WhoIsTAScreenProps {
   onTitle?: () => void
 }
 
-function statsText(relation: Relationship): string[] {
-  const base = [
-    `建模 ${relation.stats.attrs.appearance}`,
-    `交际 ${relation.stats.attrs.social}`,
-  ]
-  if (!relation.statsKnown || !relation.knownStats) return base
-  const stats = relation.knownStats
+interface StatChip {
+  key: string
+  label: string
+  value: number
+}
+
+function statChips(relation: Relationship): StatChip[] {
+  if (!relation.statsKnown || !relation.knownStats) {
+    return [
+      {
+        key: 'appearance',
+        label: '建模',
+        value: relation.stats.attrs.appearance,
+      },
+      { key: 'social', label: '交际', value: relation.stats.attrs.social },
+    ]
+  }
+  const attrs = relation.knownStats.attrs
   return [
-    `GPA ${stats.gpa.toFixed(2)}`,
-    `记忆 ${stats.attrs.memory}`,
-    `悟性 ${stats.attrs.comprehension}`,
-    `操作 ${stats.attrs.dexterity}`,
-    `交际 ${stats.attrs.social}`,
-    `建模 ${stats.attrs.appearance}`,
-    `精力 ${stats.attrs.energy}`,
-    `体质 ${stats.attrs.constitution}`,
-    `抗压 ${stats.attrs.resilience}`,
+    { key: 'memory', label: '记忆', value: attrs.memory },
+    { key: 'comprehension', label: '悟性', value: attrs.comprehension },
+    { key: 'dexterity', label: '操作', value: attrs.dexterity },
+    { key: 'social', label: '交际', value: attrs.social },
+    { key: 'appearance', label: '建模', value: attrs.appearance },
+    { key: 'energy', label: '精力', value: attrs.energy },
+    { key: 'constitution', label: '体质', value: attrs.constitution },
+    { key: 'resilience', label: '抗压', value: attrs.resilience },
   ]
 }
 
@@ -182,7 +192,7 @@ export function WhoIsTAScreen({
           ) : (
             <div className="whois-list">
               {visibleRelations.map((relation) => {
-                const stats = statsText(relation)
+                const stats = statChips(relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
@@ -248,8 +258,24 @@ export function WhoIsTAScreen({
                         <span>{relation.intimacy} / 100</span>
                       </div>
                       <div className="whois-stats">
-                        {stats.map((line) => (
-                          <span key={line}>{line}</span>
+                        {relation.statsKnown && relation.knownStats && (
+                          <span className="whois-stat-extra">
+                            GPA {relation.knownStats.gpa.toFixed(2)}
+                          </span>
+                        )}
+                        {stats.map((stat) => (
+                          <span
+                            key={stat.key}
+                            className={`whois-stat-chip ${
+                              stat.value >= 9
+                                ? 'is-critical'
+                                : stat.value >= 7
+                                  ? 'is-high'
+                                  : ''
+                            }`}
+                          >
+                            {stat.label} {stat.value}
+                          </span>
                         ))}
                         {!relation.statsKnown && (
                           <span className="whois-hidden">
