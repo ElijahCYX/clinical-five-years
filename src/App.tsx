@@ -61,7 +61,7 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v8'
+const SAVE_KEY = 'clinical-five-years-save-v9'
 
 type View = ScreenName
 
@@ -303,6 +303,7 @@ function growAttributes(
   attrs: Record<AttrKey, number>,
   constitutionGrowth: number,
   appearanceGrowth: number,
+  socialGrowth: number,
 ) {
   let nextAttrs = attrs
   if (constitutionGrowth >= 100) {
@@ -321,7 +322,15 @@ function growAttributes(
       appearanceGrowth = 100
     }
   }
-  return { attrs: nextAttrs, constitutionGrowth, appearanceGrowth }
+  if (socialGrowth >= 100) {
+    if (nextAttrs.social < 10) {
+      nextAttrs = { ...nextAttrs, social: nextAttrs.social + 1 }
+      socialGrowth -= 100
+    } else {
+      socialGrowth = 100
+    }
+  }
+  return { attrs: nextAttrs, constitutionGrowth, appearanceGrowth, socialGrowth }
 }
 
 function getCount(selected: string[], id: string): number {
@@ -407,7 +416,12 @@ function RealApp() {
     if (!player) return
 
     const sim = simulateWeek(game)
-    const grown = growAttributes(sim.attrs, sim.constitutionGrowth, sim.appearanceGrowth)
+    const grown = growAttributes(
+      sim.attrs,
+      sim.constitutionGrowth,
+      sim.appearanceGrowth,
+      game.socialGrowth,
+    )
     const prepTotal = Object.values(sim.prep).reduce((sum, value) => sum + value, 0)
     const log = buildWeekLog(game, {
       energy: sim.energy,
@@ -439,6 +453,7 @@ function RealApp() {
       kaoyanPrep: sim.kaoyanPrep,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
+      socialGrowth: grown.socialGrowth,
       selected: [],
       actionsUsed: 0,
       logs: [...game.logs, log],
@@ -864,6 +879,7 @@ function RealApp() {
     let research = game.research
     let constitutionGrowth = game.constitutionGrowth
     let appearanceGrowth = game.appearanceGrowth
+    let socialGrowth = game.socialGrowth
     const attrs = { ...player.attrs }
 
     for (const id of game.selected) {
@@ -877,6 +893,9 @@ function RealApp() {
       research += action.research ?? 0
       if (action.growth === 'constitution') {
         constitutionGrowth += action.growthAmount ?? 0
+      }
+      if (action.growth === 'social') {
+        socialGrowth += action.growthAmount ?? 0
       }
     }
 
@@ -899,7 +918,7 @@ function RealApp() {
     stress = clamp(stress, 0, 100)
     money = Math.max(0, money - 250)
 
-    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth)
+    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })
     const isLastWeek = game.vacation.week >= game.vacation.totalWeeks
     const base: GameState = {
@@ -913,6 +932,7 @@ function RealApp() {
       research,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
+      socialGrowth: grown.socialGrowth,
       selected: [],
       actionsUsed: 0,
       logs: [...game.logs, log],

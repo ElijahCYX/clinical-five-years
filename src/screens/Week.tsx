@@ -111,6 +111,10 @@ export function WeekScreen({
           <span>体质成长</span>
           <strong>{Math.round(state.constitutionGrowth)}%</strong>
         </div>
+        <div>
+          <span>人际成长</span>
+          <strong>{Math.round(state.socialGrowth)}%</strong>
+        </div>
       </div>
       <p className="placeholder-note">人物关系与好感系统将在后续模块展开。</p>
     </div>

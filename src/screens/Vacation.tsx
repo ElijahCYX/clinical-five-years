@@ -20,6 +20,8 @@ const VISIBLE_VACATION_ACTIONS = [
   'vacEnglish',
   'vacRest',
   'vacFun',
+  'vacFriends',
+  'vacLab',
 ]
 
 export function VacationScreen({
@@ -47,6 +49,9 @@ export function VacationScreen({
   const archetype = archetypeFor(player.attrs)
 
   const lockReason = (action: ActionDef): string | null => {
+    if (action.requires === 'lab' && !(state.mentorSelected && state.labEntered)) {
+      return action.lockedNote ?? '需要先选导师并进入实验室'
+    }
     if (action.energy < 0 && state.energy + action.energy < 0) return '精力不足'
     if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null

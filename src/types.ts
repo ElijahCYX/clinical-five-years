@@ -128,9 +128,9 @@ export interface ActionDef {
   composite?: number
   research?: number
   kaoyanPrep?: number
-  growth?: 'constitution'
+  growth?: 'constitution' | 'appearance' | 'social'
   growthAmount?: number
-  requires?: 'club' | 'mentor' | 'partner'
+  requires?: 'club' | 'mentor' | 'partner' | 'lab'
   lockedNote?: string
 }
 
@@ -256,6 +256,9 @@ export interface GameState {
   yearRecords: YearRecord[]
   everFailed: boolean
   yearFailed: boolean
+  socialGrowth: number
+  mentorSelected: boolean
+  labEntered: boolean
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number
