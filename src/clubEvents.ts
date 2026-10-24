@@ -243,7 +243,7 @@ export const CLUB_EVENTS: ClubEvent[] = [
 
 export function pickClubEvent(category: OrganizationCategory): ClubEvent {
   const pool =
-    category === 'union'
+    category === 'union' || category === 'debate'
       ? CLUB_EVENTS
       : CLUB_EVENTS.filter((event) => event.category === category)
   return pool[Math.floor(Math.random() * pool.length)]

@@ -7,7 +7,7 @@ export const ORGANIZATIONS: Organization[] = [
   { id: 'org-ebm', name: '循证医学读书会', category: 'academic', description: '每周读一篇临床研究，练习把证据讲成人话。', benefit: { prep: 5, composite: 2 } },
   { id: 'org-imaging', name: '医学影像探索社', category: 'academic', description: '看片、认结构，在黑白灰里寻找病变。', benefit: { prep: 8, composite: 1 } },
   { id: 'org-humanities', name: '医学史与人文社', category: 'academic', description: '从医学史和叙事医学里，重新理解“人”。', benefit: { prep: 4, stress: -3, composite: 2 } },
-  { id: 'org-english', name: '医学英语角', category: 'academic', description: '读文献、练口语，把医学英语从考试科目变成能开口的东西。', benefit: { prep: 3, stress: -2, composite: 2 } },
+  { id: 'org-english', name: '医学英语角', category: 'academic', description: '读文献、练口语，把医学英语从考试科目变成能开口的东西。', benefit: { prep: 3, stress: -2, composite: 2, english: 4 } },
 
   // 兴趣爱好类 20
   { id: 'org-photo', name: '摄影社', category: 'interest', description: '扫街、拍人像，也拍食堂最难吃的菜。', benefit: { stress: -7, energy: 7, composite: 1 } },
@@ -42,6 +42,7 @@ export const ORGANIZATIONS: Organization[] = [
 
   // 医学院学生会
   { id: 'org-union', name: '医学院学生会', category: 'union', description: '办活动、写通知、在各方之间来回协调。', benefit: { composite: 4, stress: -3, energy: 3, socialGrowth: 10 } },
+  { id: 'org-debate', name: '医学院辩论队', category: 'debate', description: '查资料、立论、模拟攻防，把一个问题拆到不能再拆。', benefit: { stress: -5, energy: 5, composite: 3, socialGrowth: 15, allPrep: 10 } },
 ]
 
 export const ORG_BY_ID: Record<string, Organization> = Object.fromEntries(
@@ -53,6 +54,7 @@ export const ORG_CATEGORY_LABELS: Record<OrganizationCategory, string> = {
   interest: '兴趣爱好',
   practice: '社会实践',
   union: '学生会',
+  debate: '辩论队',
 }
 
 export function roleBenefitMultiplier(role: OrganizationRole): number {
@@ -71,6 +73,12 @@ export function roleLabel(
     if (role === 'honorary') return '荣誉会长'
     return '会员'
   }
+  if (category === 'debate') {
+    if (role === 'president') return '领队'
+    if (role === 'officer') return '副领队'
+    if (role === 'honorary') return '荣誉领队'
+    return '队员'
+  }
   if (role === 'president') return '社长'
   if (role === 'officer') return '干事'
   if (role === 'honorary') return '荣誉社长'
@@ -88,6 +96,8 @@ export function organizationBenefitLines(
   if (benefit.energy) lines.push(`精力 +${Math.round(benefit.energy * multiplier)}`)
   if (benefit.composite) lines.push(`综测 +${Math.round(benefit.composite * multiplier)}`)
   if (benefit.socialGrowth) lines.push(`人际成长 +${Math.round(benefit.socialGrowth * multiplier)}`)
+  if (benefit.english) lines.push(`英语 +${Math.round(benefit.english * multiplier)}`)
+  if (benefit.allPrep) lines.push(`全部在修课程准备度 +${Math.round(benefit.allPrep * multiplier)}`)
   return lines
 }
 

@@ -381,7 +381,7 @@ export function newGameState(player: Player): GameState {
     seenRelationIds: [],
     vacationTravel: null,
     vacationTravelInvites: null,
-    clubMembership: null,
+    clubMemberships: [],
     clubHistory: [],
     clubInitialRecruitmentDone: false,
     clubInvites: null,

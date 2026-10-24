@@ -5,27 +5,40 @@ import { Eyebrow, Pill, TopBar } from '../ui'
 
 interface ClubRecruitmentProps {
   mode: 'initial' | 'application'
+  hasExistingClub?: boolean
   onSubmit: (orgId: string) => void
   onSkip: () => void
   onTitle?: () => void
 }
 
-const CATEGORY_ORDER: OrganizationCategory[] = [
+type Track = 'club' | 'union' | 'debate'
+
+const TRACKS: { key: Track; label: string }[] = [
+  { key: 'club', label: '社团' },
+  { key: 'union', label: '学生会' },
+  { key: 'debate', label: '辩论队' },
+]
+
+const CLUB_CATEGORIES: OrganizationCategory[] = [
   'academic',
   'interest',
   'practice',
-  'union',
 ]
 
 export function ClubRecruitment({
   mode,
+  hasExistingClub = false,
   onSubmit,
   onSkip,
   onTitle,
 }: ClubRecruitmentProps) {
+  const [track, setTrack] = useState<Track>('club')
   const [category, setCategory] = useState<OrganizationCategory>('academic')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const organizations = ORGANIZATIONS.filter((org) => org.category === category)
+  const organizations =
+    track === 'club'
+      ? ORGANIZATIONS.filter((org) => org.category === category)
+      : ORGANIZATIONS.filter((org) => org.category === track)
   const selected = ORGANIZATIONS.find((org) => org.id === selectedId) ?? null
 
   return (
@@ -35,43 +48,74 @@ export function ClubRecruitment({
           onTitle={onTitle}
           right={
             <button className="text-btn" type="button" onClick={onSkip}>
-              跳过招新
+              跳过
             </button>
           }
         />
 
         <header className="club-recruit-head">
           <Eyebrow>
-            CLUB &amp; STUDENT UNION / {mode === 'initial' ? 'FRESHMAN RECRUITMENT' : 'SUPPLEMENTARY RECRUITMENT'}
+            CLUB / STUDENT UNION / DEBATE
           </Eyebrow>
-          <h1 className="page-title">社团与学生会</h1>
+          <h1 className="page-title">
+            {mode === 'initial' ? '社团与组织招新' : '补充招新'}
+          </h1>
           <p className="page-lede">
-            你可以在大一大二加入一个组织。现在先看看哪个地方让你想停下来。
+            社团、学生会、辩论队三者只能选择其一。社团最多可以加入两个。
           </p>
           {mode === 'application' && (
             <div className="club-application-note">
               本次申请已经消耗一次本周行动。无论结果如何，先去看看。
             </div>
           )}
+          {hasExistingClub && (
+            <div className="club-application-note">
+              你已加入一个社团，这次只能继续申请第二个社团，不能再加入学生会或辩论队。
+            </div>
+          )}
         </header>
 
-        <div className="club-category-tabs">
-          {CATEGORY_ORDER.map((key) => (
+        <div className="club-track-tabs">
+          {TRACKS.map((item) => (
             <button
-              key={key}
+              key={item.key}
               type="button"
-              className={category === key ? 'is-active' : ''}
+              className={track === item.key ? 'is-active' : ''}
+              disabled={hasExistingClub && item.key !== 'club'}
               onClick={() => {
-                setCategory(key)
+                setTrack(item.key)
                 setSelectedId(null)
+                if (item.key === 'club') setCategory('academic')
               }}
             >
-              {ORG_CATEGORY_LABELS[key]}
+              {item.label}
             </button>
           ))}
         </div>
 
-        <div className="club-recruit-grid">
+        {track === 'club' && (
+          <div className="club-category-tabs">
+            {CLUB_CATEGORIES.map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={category === key ? 'is-active' : ''}
+                onClick={() => {
+                  setCategory(key)
+                  setSelectedId(null)
+                }}
+              >
+                {ORG_CATEGORY_LABELS[key]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div
+          className={`club-recruit-grid ${
+            track !== 'club' ? 'is-single' : ''
+          }`}
+        >
           {organizations.map((org) => (
             <button
               key={org.id}
@@ -81,8 +125,12 @@ export function ClubRecruitment({
             >
               <div className="club-recruit-meta">
                 <span>{ORG_CATEGORY_LABELS[org.category]}</span>
-                <Pill tone={org.category === 'union' ? 'gold' : 'plain'}>
-                  {org.category === 'union' ? '学生会' : '社团'}
+                <Pill tone={org.category === 'union' || org.category === 'debate' ? 'gold' : 'plain'}>
+                  {org.category === 'union'
+                    ? '学生会'
+                    : org.category === 'debate'
+                      ? '辩论队'
+                      : '社团'}
                 </Pill>
               </div>
               <h3>{org.name}</h3>

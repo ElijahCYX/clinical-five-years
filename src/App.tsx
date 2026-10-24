@@ -153,8 +153,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v37'
+const SAVE_KEY = 'clinical-five-years-save-v38'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v37',
   'clinical-five-years-save-v36',
   'clinical-five-years-save-v35',
   'clinical-five-years-save-v34',
@@ -194,6 +195,15 @@ function readSave(): GameState | null {
     const parsed = JSON.parse(raw) as { game?: GameState }
     if (!parsed.game) return null
     const game = parsed.game
+    const legacyMembership = (
+      game as GameState & { clubMembership?: GameState['clubMemberships'][number] | null }
+    ).clubMembership
+    const clubMemberships = (
+      game.clubMemberships ?? (legacyMembership ? [legacyMembership] : [])
+    ).map((membership) => ({
+      ...membership,
+      inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
+    }))
     return ensureMentor({
       ...game,
       screen: game.screen === 'randomEvent' ? 'week' : game.screen,
@@ -237,13 +247,7 @@ function readSave(): GameState | null {
       vacationTravelInvites: game.vacationTravelInvites ?? null,
       pendingConsumption: game.pendingConsumption ?? null,
       consumptionEventWeek: game.consumptionEventWeek ?? 0,
-      clubMembership: game.clubMembership
-        ? {
-            ...game.clubMembership,
-            inactivityWarningIssued:
-              game.clubMembership.inactivityWarningIssued ?? false,
-          }
-        : null,
+      clubMemberships,
       clubHistory: game.clubHistory ?? [],
       clubInitialRecruitmentDone: game.clubInitialRecruitmentDone ?? false,
       clubInvites: game.clubInvites ?? null,
@@ -610,9 +614,14 @@ function RealApp() {
   useEffect(() => {
     if (!game || view !== 'week') return
 
-    if (game.week === 1 && game.clubMembership) {
-      const membership = game.clubMembership
-      if (membership.activitySeasonIndex !== game.seasonIndex) {
+    const memberships = game.clubMemberships ?? []
+
+    if (game.week === 1 && memberships.length > 0) {
+      const pendingIndex = memberships.findIndex(
+        (membership) => membership.activitySeasonIndex !== game.seasonIndex,
+      )
+      if (pendingIndex >= 0) {
+        const membership = memberships[pendingIndex]
         const wouldBeRemoved =
           membership.role !== 'honorary' &&
           membership.semesterActivities === 0 &&
@@ -620,12 +629,16 @@ function RealApp() {
         if (wouldBeRemoved && !(membership.inactivityWarningIssued ?? false)) {
           const next: GameState = {
             ...game,
-            clubMembership: {
-              ...membership,
-              semesterActivities: 0,
-              activitySeasonIndex: game.seasonIndex,
-              inactivityWarningIssued: true,
-            },
+            clubMemberships: memberships.map((item, index) =>
+              index === pendingIndex
+                ? {
+                    ...item,
+                    semesterActivities: 0,
+                    activitySeasonIndex: game.seasonIndex,
+                    inactivityWarningIssued: true,
+                  }
+                : item,
+            ),
           }
           setGame(next)
           persist(next)
@@ -639,7 +652,7 @@ function RealApp() {
         if (wouldBeRemoved) {
           const next: GameState = {
             ...game,
-            clubMembership: null,
+            clubMemberships: memberships.filter((_, index) => index !== pendingIndex),
             clubHistory: [
               ...game.clubHistory,
               {
@@ -663,11 +676,15 @@ function RealApp() {
         }
         const next: GameState = {
           ...game,
-          clubMembership: {
-            ...membership,
-            semesterActivities: 0,
-            activitySeasonIndex: game.seasonIndex,
-          },
+          clubMemberships: memberships.map((item, index) =>
+            index === pendingIndex
+              ? {
+                  ...item,
+                  semesterActivities: 0,
+                  activitySeasonIndex: game.seasonIndex,
+                }
+              : item,
+          ),
         }
         setGame(next)
         persist(next)
@@ -677,68 +694,76 @@ function RealApp() {
 
     if (
       game.week === 1 &&
-      game.clubMembership &&
+      memberships.length > 0 &&
       game.seasonIndex > 0 &&
       game.seasonIndex % 4 === 0 &&
       game.clubLastPromotionSeason !== game.season.id
     ) {
-      const membership = game.clubMembership
-      const org = ORG_BY_ID[membership.orgId]
-      let nextMembership = { ...membership }
-      let noticeTitle = ''
-      let noticeText = ''
-      if (
-        membership.role === 'president' &&
-        game.seasonIndex - (membership.presidentStartSeasonIndex ?? game.seasonIndex) >= 4
-      ) {
-        nextMembership = {
-          ...nextMembership,
-          role: 'honorary',
-          roleSinceSeasonIndex: game.seasonIndex,
-          highestRole: 'president',
+      const notices: string[] = []
+      const updatedMemberships = memberships.map((membership) => {
+        const org = ORG_BY_ID[membership.orgId]
+        const orgName = org?.name ?? '组织'
+        if (
+          membership.role === 'president' &&
+          game.seasonIndex -
+            (membership.presidentStartSeasonIndex ?? game.seasonIndex) >=
+            4
+        ) {
+          notices.push(
+            `你在${orgName}的${roleLabel(membership.category, 'president')}任期结束了。交接会上，大家把一本写满名字的旧笔记本递给你：“以后就是荣誉成员了，想来就来。”你继续保留组织领导层的福利，但不再需要参加每周活动。`,
+          )
+          return {
+            ...membership,
+            role: 'honorary' as const,
+            roleSinceSeasonIndex: game.seasonIndex,
+            highestRole: 'president' as const,
+          }
         }
-        noticeTitle = '工作交接'
-        noticeText = `你在${org?.name ?? '组织'}的社长/会长任期结束了。交接会上，大家把一本写满名字的旧笔记本递给你：“以后就是荣誉成员了，想来就来。”你继续保留组织领导层的福利，但不再需要参加每周活动。`
-      } else if (
-        membership.role === 'member' &&
-        membership.totalActivities >= 6 &&
-        game.seasonIndex - membership.roleSinceSeasonIndex >= 1
-      ) {
-        nextMembership = {
-          ...nextMembership,
-          role: 'officer',
-          roleSinceSeasonIndex: game.seasonIndex,
-          highestRole: 'officer',
+        if (
+          membership.role === 'member' &&
+          membership.totalActivities >= 6 &&
+          game.seasonIndex - membership.roleSinceSeasonIndex >= 1
+        ) {
+          notices.push(
+            `秋季例会上，${orgName}宣布你从${roleLabel(membership.category, 'member')}升为${roleLabel(membership.category, 'officer')}。你的组织收益提高了 15%，接下来要承担更多具体工作。`,
+          )
+          return {
+            ...membership,
+            role: 'officer' as const,
+            roleSinceSeasonIndex: game.seasonIndex,
+            highestRole: 'officer' as const,
+          }
         }
-        noticeTitle = '组织晋升'
-        noticeText = `秋季例会上，${org?.name ?? '组织'}宣布你从${roleLabel(membership.category, 'member')}升为${roleLabel(membership.category, 'officer')}。你的组织收益提高了 15%，接下来要承担更多具体工作。`
-      } else if (
-        membership.role === 'officer' &&
-        membership.totalActivities >= 12 &&
-        game.seasonIndex - membership.roleSinceSeasonIndex >= 4
-      ) {
-        nextMembership = {
-          ...nextMembership,
-          role: 'president',
-          roleSinceSeasonIndex: game.seasonIndex,
-          presidentStartSeasonIndex: game.seasonIndex,
-          highestRole: 'president',
+        if (
+          membership.role === 'officer' &&
+          membership.totalActivities >= 12 &&
+          game.seasonIndex - membership.roleSinceSeasonIndex >= 4
+        ) {
+          notices.push(
+            `经过一年的干事工作，你被推选为${orgName}的${roleLabel(membership.category, 'president')}。你的组织收益提高到 30%，同时也要开始为整个组织负责。`,
+          )
+          return {
+            ...membership,
+            role: 'president' as const,
+            roleSinceSeasonIndex: game.seasonIndex,
+            presidentStartSeasonIndex: game.seasonIndex,
+            highestRole: 'president' as const,
+          }
         }
-        noticeTitle = '组织晋升'
-        noticeText = `经过一年的干事工作，你被推选为${org?.name ?? '组织'}的${roleLabel(membership.category, 'president')}。你的组织收益提高到 30%，同时也要开始为整个组织负责。`
-      }
+        return membership
+      })
       const next: GameState = {
         ...game,
-        clubMembership: nextMembership,
+        clubMemberships: updatedMemberships,
         clubLastPromotionSeason: game.season.id,
       }
       setGame(next)
       persist(next)
-      if (noticeTitle) {
+      if (notices.length > 0) {
         showResearchNotice({
           kind: 'club',
-          title: noticeTitle,
-          text: noticeText,
+          title: notices.length > 1 ? '组织职务变动' : '组织晋升',
+          text: notices.join(' '),
         })
       }
       return
@@ -1434,9 +1459,26 @@ function RealApp() {
   }
 
   const joinClubState = (base: GameState, orgId: string): GameState => {
-    if (!base.player || base.clubMembership) return base
+    if (!base.player) return base
     const org = ORG_BY_ID[orgId]
     if (!org) return base
+    const existing = base.clubMemberships ?? []
+    if (existing.some((membership) => membership.orgId === orgId)) return base
+    if (existing.length >= 2) return base
+    const existingClubs = existing.filter(
+      (membership) =>
+        membership.category === 'academic' ||
+        membership.category === 'interest' ||
+        membership.category === 'practice',
+    )
+    if (org.category === 'union' || org.category === 'debate') {
+      if (existing.length > 0) return base
+    } else {
+      if (existing.some((membership) => membership.category === 'union' || membership.category === 'debate')) {
+        return base
+      }
+      if (existingClubs.length >= 2) return base
+    }
     const roles = [
       roleLabel(org.category, 'president'),
       roleLabel(org.category, 'member'),
@@ -1449,20 +1491,23 @@ function RealApp() {
     return {
       ...base,
       screen: 'week',
-      clubMembership: {
-        orgId: org.id,
-        category: org.category,
-        role: 'member',
-        joinedSeasonIndex: base.seasonIndex,
-        totalActivities: 0,
-        semesterActivities: 0,
-        roleSinceSeasonIndex: base.seasonIndex,
-        presidentStartSeasonIndex: null,
-        memberIds: newRelations.map((relation) => relation.id),
-        highestRole: 'member',
-        activitySeasonIndex: base.seasonIndex,
-        inactivityWarningIssued: false,
-      },
+      clubMemberships: [
+        ...existing,
+        {
+          orgId: org.id,
+          category: org.category,
+          role: 'member',
+          joinedSeasonIndex: base.seasonIndex,
+          totalActivities: 0,
+          semesterActivities: 0,
+          roleSinceSeasonIndex: base.seasonIndex,
+          presidentStartSeasonIndex: null,
+          memberIds: newRelations.map((relation) => relation.id),
+          highestRole: 'member',
+          activitySeasonIndex: base.seasonIndex,
+          inactivityWarningIssued: false,
+        },
+      ],
       clubInitialRecruitmentDone: true,
       clubInvites: null,
       relationships: [...base.relationships, ...newRelations],
@@ -1506,7 +1551,15 @@ function RealApp() {
   }
 
   const startClubApplication = () => {
-    if (!game || game.clubMembership) return
+    if (!game) return
+    const exists = game.clubMemberships ?? []
+    const allClubs = exists.every(
+      (membership) =>
+        membership.category === 'academic' ||
+        membership.category === 'interest' ||
+        membership.category === 'practice',
+    )
+    if (exists.length >= 2 || (exists.length > 0 && !allClubs)) return
     if (game.selected.includes('club') || game.selected.length >= 2) return
     const next: GameState = {
       ...game,
@@ -1533,6 +1586,18 @@ function RealApp() {
     const success = Math.random() < clubApplicationChance(game, org)
     if (success) {
       const joined = joinClubState(game, orgId)
+      if (joined === game) {
+        const next: GameState = { ...game, screen: 'week' }
+        setGame(next)
+        persist(next)
+        setView('week')
+        showResearchNotice({
+          kind: 'club',
+          title: '申请结果',
+          text: '你提交了申请，但组织那边表示你已经在名单里，或者名额已经满了。这次申请没有带来新的成员身份。',
+        })
+        return
+      }
       const next: GameState = {
         ...joined,
         screen: 'week',
@@ -1732,12 +1797,13 @@ function RealApp() {
     persist(next)
   }
 
-  const quitClub = () => {
-    if (!game || !game.clubMembership) return
-    const membership = game.clubMembership
+  const quitClub = (orgId: string) => {
+    if (!game) return
+    const membership = game.clubMemberships.find((item) => item.orgId === orgId)
+    if (!membership) return
     const next: GameState = {
       ...game,
-      clubMembership: null,
+      clubMemberships: game.clubMemberships.filter((item) => item.orgId !== orgId),
       clubInvites: null,
       clubActivityPlan: null,
       selected: game.selected.filter((id) => id !== 'club'),
@@ -1757,11 +1823,11 @@ function RealApp() {
     persist(next)
   }
 
-  const saveClubInvites = (results: DinnerInviteResult[]) => {
+  const saveClubInvites = (results: DinnerInviteResult[], orgId: string) => {
     if (!game) return
     const next: GameState = {
       ...game,
-      clubInvites: { weekKey: currentWeekKey(game), results },
+      clubInvites: { weekKey: currentWeekKey(game), orgId, results },
     }
     setGame(next)
     persist(next)
@@ -1769,10 +1835,9 @@ function RealApp() {
 
   const applyClubEvent = (
     base: GameState,
+    membership: GameState['clubMemberships'][number],
     event: ClubEvent,
   ): { next: GameState; lines: string[] } => {
-    const membership = base.clubMembership
-    if (!membership) return { next: base, lines: [] }
     const multiplier = roleBenefitMultiplier(membership.role)
     const scaled = (value?: number) =>
       value === undefined ? undefined : Math.round(value * multiplier)
@@ -1833,21 +1898,22 @@ function RealApp() {
   }
 
   const arrangeClubActivity = (
+    orgId: string,
     acceptedIds: string[],
     declinedIds: string[],
   ) => {
+    const membership = game?.clubMemberships.find((item) => item.orgId === orgId)
     if (
       !game ||
-      !game.clubMembership ||
+      !membership ||
       game.selected.includes('club') ||
       game.selected.length >= 2
     ) {
       return
     }
-    const roleMultiplier = roleBenefitMultiplier(game.clubMembership.role)
+    const roleMultiplier = roleBenefitMultiplier(membership.role)
     const socialGain = Math.round(5 * roleMultiplier)
     const intimacyGain = Math.round(5 * roleMultiplier)
-    const membership = game.clubMembership
     const next: GameState = {
       ...game,
       selected: [...game.selected, 'club'],
@@ -1855,13 +1921,18 @@ function RealApp() {
       stress: Math.min(100, game.stress + 5),
       money: Math.max(0, game.money - 20),
       socialGrowth: game.socialGrowth + socialGain,
-      clubMembership: {
-        ...membership,
-        totalActivities: membership.totalActivities + 1,
-        semesterActivities: membership.semesterActivities + 1,
-      },
+      clubMemberships: game.clubMemberships.map((item) =>
+        item.orgId === membership.orgId
+          ? {
+              ...item,
+              totalActivities: item.totalActivities + 1,
+              semesterActivities: item.semesterActivities + 1,
+            }
+          : item,
+      ),
       clubActivityPlan: {
         mode: 'activity',
+        orgId: membership.orgId,
         acceptedIds,
         declinedIds,
         committed: true,
@@ -1884,7 +1955,7 @@ function RealApp() {
     let clubEventNotice: { event: ClubEvent; lines: string[] } | null = null
     if (Math.random() < CLUB_EVENT_CHANCE) {
       const event = pickClubEvent(membership.category)
-      const applied = applyClubEvent(finalNext, event)
+      const applied = applyClubEvent(finalNext, membership, event)
       finalNext = applied.next
       clubEventNotice = { event, lines: applied.lines }
     }
@@ -2833,24 +2904,17 @@ function RealApp() {
     if (!game) return
     let current = game
     if (
-      current.clubMembership &&
+      current.clubMemberships.length > 0 &&
       current.seasonIndex % 4 === 3 &&
       current.clubAnnualBonusSeason !== current.season.id
     ) {
-      const role = current.clubMembership.role
-      const isUnion = current.clubMembership.category === 'union'
-      const bonus =
-        role === 'member'
-          ? isUnion
-            ? 2
-            : 1
-          : role === 'officer'
-            ? isUnion
-              ? 4
-              : 3
-            : isUnion
-              ? 6
-              : 5
+      const bonus = current.clubMemberships.reduce((sum, membership) => {
+        const high =
+          membership.category === 'union' || membership.category === 'debate'
+        if (membership.role === 'member') return sum + (high ? 2 : 1)
+        if (membership.role === 'officer') return sum + (high ? 4 : 3)
+        return sum + (high ? 6 : 5)
+      }, 0)
       current = {
         ...current,
         composite: current.composite + bonus,
@@ -3015,60 +3079,103 @@ function RealApp() {
     draft: GameState,
     base: GameState,
   ): { next: GameState; notice?: { title: string; text: string; lines: string[] } } => {
-    const membership = base.clubMembership
-    if (!membership || base.week !== 3) return { next: draft }
+    if (base.week !== 3) return { next: draft }
     if (base.clubLastBenefitSeason === base.season.id) return { next: draft }
-    if (membership.semesterActivities <= 0 && membership.role !== 'honorary') {
-      return { next: draft }
-    }
-    const org = ORG_BY_ID[membership.orgId]
-    if (!org) return { next: draft }
-    const multiplier = roleBenefitMultiplier(membership.role)
+    const memberships = base.clubMemberships ?? []
+    if (memberships.length === 0) return { next: draft }
+    const penalty = memberships.length === 2 ? 0.8 : 1
+    let next = { ...draft, clubLastBenefitSeason: base.season.id }
     const lines: string[] = []
-    let next = {
-      ...draft,
-      clubLastBenefitSeason: base.season.id,
-      stress: Math.max(0, Math.min(100, draft.stress + Math.round((org.benefit.stress ?? 0) * multiplier))),
-      energy: Math.max(0, Math.min(100, draft.energy + Math.round((org.benefit.energy ?? 0) * multiplier))),
-      composite: Math.max(0, draft.composite + Math.round((org.benefit.composite ?? 0) * multiplier)),
-      socialGrowth: Math.max(0, draft.socialGrowth + Math.round((org.benefit.socialGrowth ?? 0) * multiplier)),
-    }
-    if (org.benefit.prep) {
-      const courses = base.season.courses
-      if (courses.length > 0) {
-        const course = courses[Math.floor(Math.random() * courses.length)]
-        next = {
-          ...next,
-          prep: {
-            ...next.prep,
-            [course.id]: Math.min(100, (next.prep[course.id] ?? 0) + Math.round(org.benefit.prep * multiplier)),
-          },
+    for (const membership of memberships) {
+      if (
+        membership.semesterActivities <= 0 &&
+        membership.role !== 'honorary'
+      ) {
+        continue
+      }
+      const org = ORG_BY_ID[membership.orgId]
+      if (!org) continue
+      const multiplier = roleBenefitMultiplier(membership.role) * penalty
+      const prefix = memberships.length > 1 ? `${org.name}：` : ''
+      const round = (value: number) => Math.round(value * multiplier)
+      next = {
+        ...next,
+        stress: Math.max(0, Math.min(100, next.stress + round(org.benefit.stress ?? 0))),
+        energy: Math.max(0, Math.min(100, next.energy + round(org.benefit.energy ?? 0))),
+        composite: Math.max(0, next.composite + round(org.benefit.composite ?? 0)),
+        socialGrowth: Math.max(0, next.socialGrowth + round(org.benefit.socialGrowth ?? 0)),
+        english: Math.max(0, next.english + round(org.benefit.english ?? 0)),
+      }
+      if (org.benefit.stress) lines.push(`${prefix}压力 ${round(org.benefit.stress)}`)
+      if (org.benefit.energy) lines.push(`${prefix}精力 +${round(org.benefit.energy)}`)
+      if (org.benefit.composite) lines.push(`${prefix}综测 +${round(org.benefit.composite)}`)
+      if (org.benefit.socialGrowth) lines.push(`${prefix}人际成长 +${round(org.benefit.socialGrowth)}`)
+      if (org.benefit.english) lines.push(`${prefix}英语 +${round(org.benefit.english)}`)
+      if (org.benefit.allPrep) {
+        const prep = { ...next.prep }
+        for (const course of base.season.courses) {
+          prep[course.id] = Math.min(
+            100,
+            (prep[course.id] ?? 0) + round(org.benefit.allPrep),
+          )
         }
-        lines.push(`《${course.name}》准备度 +${Math.round(org.benefit.prep * multiplier)}`)
+        next = { ...next, prep }
+        lines.push(`${prefix}全部课程准备度 +${round(org.benefit.allPrep)}`)
+      }
+      if (org.benefit.prep) {
+        const courses = base.season.courses
+        if (courses.length > 0) {
+          const course = courses[Math.floor(Math.random() * courses.length)]
+          next = {
+            ...next,
+            prep: {
+              ...next.prep,
+              [course.id]: Math.min(
+                100,
+                (next.prep[course.id] ?? 0) + round(org.benefit.prep),
+              ),
+            },
+          }
+          lines.push(`${prefix}《${course.name}》准备度 +${round(org.benefit.prep)}`)
+        }
+      }
+      if (membership.memberIds.length > 0) {
+        const relation = base.relationships.find(
+          (item) =>
+            item.id ===
+            membership.memberIds[
+              Math.floor(Math.random() * membership.memberIds.length)
+            ],
+        )
+        if (relation) {
+          const gain = adjustIntimacyDelta(
+            base,
+            relation,
+            Math.max(1, Math.round(5 * multiplier)),
+          )
+          next = {
+            ...next,
+            relationships: next.relationships.map((item) =>
+              item.id === relation.id
+                ? { ...item, intimacy: Math.min(100, item.intimacy + gain) }
+                : item,
+            ),
+          }
+          lines.push(`${prefix}与${relation.name}亲密度 +${gain}`)
+        }
       }
     }
-    if (org.benefit.stress) lines.push(`压力 ${Math.round(org.benefit.stress * multiplier)}`)
-    if (org.benefit.energy) lines.push(`精力 +${Math.round(org.benefit.energy * multiplier)}`)
-    if (org.benefit.composite) lines.push(`综测 +${Math.round(org.benefit.composite * multiplier)}`)
-    if (org.benefit.socialGrowth) lines.push(`人际成长 +${Math.round(org.benefit.socialGrowth * multiplier)}`)
-    if (membership.memberIds.length > 0) {
-      const relation = base.relationships.find((item) => item.id === membership.memberIds[Math.floor(Math.random() * membership.memberIds.length)])
-      if (relation) {
-        const gain = adjustIntimacyDelta(base, relation, Math.max(1, Math.round(5 * multiplier)))
-        next = {
-          ...next,
-          relationships: next.relationships.map((item) =>
-            item.id === relation.id
-              ? { ...item, intimacy: Math.min(100, item.intimacy + gain) }
-              : item,
-          ),
-        }
-        lines.push(`与${relation.name}亲密度 +${gain}`)
-      }
-    }
+    if (lines.length === 0) return { next: draft }
     return {
       next,
-      notice: { title: '组织学期福利', text: `${org.name}给你发来了这学期的组织福利。`, lines },
+      notice: {
+        title: '组织学期福利',
+        text:
+          memberships.length === 2
+            ? '同时参与两个社团，本学期每个社团的收益按 80% 结算。'
+            : '你所在的社团/学生会发来了这学期的组织福利。',
+        lines,
+      },
     }
   }
 
@@ -3392,6 +3499,7 @@ function RealApp() {
     return (
       <ClubRecruitment
         mode={isApplication ? 'application' : 'initial'}
+        hasExistingClub={game.clubMemberships.length > 0}
         onSubmit={
           isApplication ? handleClubApplicationSubmit : handleInitialClubSubmit
         }

@@ -388,28 +388,21 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
 
           <section className="paper-card dossier-block dossier-wide">
             <SectionLabel right="组织履历">06 / 社团与学生会</SectionLabel>
-            {state.clubMembership ? (
+            {state.clubMemberships.length > 0 ? (
               <div className="dossier-list">
-                <div>
-                  <span>当前组织</span>
-                  <strong>{ORG_BY_ID[state.clubMembership.orgId]?.name ?? '组织'}</strong>
-                </div>
-                <div>
-                  <span>当前职务</span>
-                  <strong>
-                    {roleLabel(
-                      state.clubMembership.category,
-                      state.clubMembership.role,
-                    )}
-                  </strong>
-                </div>
-                <div>
-                  <span>累计活动</span>
-                  <strong>{state.clubMembership.totalActivities} 次</strong>
-                </div>
+                {state.clubMemberships.map((membership) => (
+                  <div key={membership.orgId}>
+                    <span>当前组织 / 职务</span>
+                    <strong>
+                      {ORG_BY_ID[membership.orgId]?.name ?? '组织'} ·{' '}
+                      {roleLabel(membership.category, membership.role)} · 累计活动{' '}
+                      {membership.totalActivities} 次
+                    </strong>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="dossier-empty">还没有加入社团或学生会。</p>
+              <p className="dossier-empty">还没有加入社团、学生会或辩论队。</p>
             )}
             {state.clubHistory.length > 0 && (
               <p className="dossier-muted">

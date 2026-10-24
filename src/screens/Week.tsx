@@ -59,9 +59,9 @@ interface WeekScreenProps {
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSaveDinnerResults?: (results: DinnerInviteResult[]) => void
   onApplyClub?: () => void
-  onArrangeClubActivity?: (acceptedIds: string[], declinedIds: string[]) => void
-  onSaveClubInvites?: (results: DinnerInviteResult[]) => void
-  onQuitClub?: () => void
+  onArrangeClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
+  onSaveClubInvites?: (results: DinnerInviteResult[], orgId: string) => void
+  onQuitClub?: (orgId: string) => void
   onNpcConfession?: (accept: boolean) => void
   onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
@@ -91,6 +91,8 @@ export function WeekScreen({
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
+  const [clubPickerOpen, setClubPickerOpen] = useState(false)
+  const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
   const player = state.player
   if (!player) return null
 
@@ -154,27 +156,43 @@ export function WeekScreen({
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
   const clubYear = Math.floor(state.seasonIndex / 4) + 1
+  const clubMemberships = state.clubMemberships ?? []
+  const existingClubs = clubMemberships.filter(
+    (membership) =>
+      membership.category === 'academic' ||
+      membership.category === 'interest' ||
+      membership.category === 'practice',
+  )
   const canApplyClub =
-    !state.clubMembership &&
     state.clubInitialRecruitmentDone &&
     clubYear <= 2 &&
-    state.week === 1
+    state.week === 1 &&
+    (clubMemberships.length === 0 ||
+      (clubMemberships.length === 1 && existingClubs.length === 1))
   const clubCommitted = Boolean(state.clubActivityPlan?.committed)
-  const clubMembers = state.clubMembership
-    ? state.clubMembership.memberIds
+  const selectedMembership =
+    clubMemberships.find((membership) => membership.orgId === selectedClubOrgId) ??
+    null
+  const clubMembers = selectedMembership
+    ? (selectedMembership.memberIds
         .map((id) => state.relationships.find((relation) => relation.id === id))
-        .filter(Boolean) as typeof state.relationships
+        .filter(Boolean) as typeof state.relationships)
     : []
   const dinnerCommitted = Boolean(state.dinnerPlan?.committed)
   const handleActionClick = (id: string) => {
     if (id === 'club') {
       if (clubCommitted) return
-      if (state.clubMembership) {
+      if (canApplyClub) {
+        onApplyClub?.()
+        return
+      }
+      if (clubMemberships.length === 1) {
+        setSelectedClubOrgId(clubMemberships[0].orgId)
         setClubActivityOpen(true)
         return
       }
-      if (canApplyClub) {
-        onApplyClub?.()
+      if (clubMemberships.length === 2) {
+        setClubPickerOpen(true)
       }
       return
     }
@@ -207,11 +225,11 @@ export function WeekScreen({
       : !state.researchStarted
         ? '实验室打杂'
         : researchStage(state.researchProgress).name
-  const clubActionName = state.clubMembership
-    ? '社团活动'
-    : canApplyClub
-      ? '申请加入社团学生会'
-      : '社团活动'
+  const clubActionName = canApplyClub
+    ? clubMemberships.length > 0
+      ? '申请加入第二个社团'
+      : '申请加入社团学生会'
+    : '社团活动'
   const displayActionName = (action: ActionDef) => {
     if (action.id === 'research') return researchActionName
     if (action.id === 'club') return clubActionName
@@ -230,10 +248,16 @@ export function WeekScreen({
       return `所有课程：准备度 +6 × K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
     }
     if (action.id === 'club') {
-      if (state.clubMembership) {
-        return `人际成长 +${Math.round(5 * (state.clubMembership.role === 'officer' ? 1.15 : state.clubMembership.role === 'president' || state.clubMembership.role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
+      if (canApplyClub) return '消耗一次本周行动，浏览新组织或申请第二个社团'
+      if (selectedMembership) {
+        const role = selectedMembership.role
+        return `人际成长 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
       }
-      if (canApplyClub) return '消耗一次本周行动，浏览社团与学生会招新'
+      if (clubMemberships.length > 1) return '精力 -12 · 压力 +5 · 生活费 -20 · 先选择参加哪个社团'
+      if (clubMemberships.length === 1) {
+        const role = clubMemberships[0].role
+        return `人际成长 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
+      }
       return '目前无法加入新的组织'
     }
     if (action.id === 'research') {
@@ -276,8 +300,10 @@ export function WeekScreen({
       return action.lockedNote ?? '尚未解锁'
     }
     if (action.id === 'club') {
-      if (state.clubMembership) return clubCommitted ? '本周已参加组织活动' : null
       if (canApplyClub) return null
+      if (clubMemberships.length > 0) {
+        return clubCommitted ? '本周已参加组织活动' : null
+      }
       if (!state.clubInitialRecruitmentDone) return '尚未完成入学招新'
       if (clubYear > 2) return '已错过加入时间'
       if (state.week !== 1) return '本学期申请时间已过'
@@ -558,8 +584,7 @@ export function WeekScreen({
 
 
   const renderClub = () => {
-    const membership = state.clubMembership
-    if (!membership) {
+    if (clubMemberships.length === 0) {
       return (
         <div className="tab-panel">
           <SectionLabel right="NOT JOINED">社团</SectionLabel>
@@ -571,52 +596,80 @@ export function WeekScreen({
         </div>
       )
     }
-    const org = ORG_BY_ID[membership.orgId]
-    const members = membership.memberIds
-      .map((id) => state.relationships.find((relation) => relation.id === id))
-      .filter(Boolean) as typeof state.relationships
-    const nextNeed =
-      membership.role === 'member'
-        ? 6
-        : membership.role === 'officer'
-          ? 12
-          : null
     return (
       <div className="tab-panel">
-        <SectionLabel right={roleLabel(membership.category, membership.role)}>
-          {org?.name ?? '组织'}
+        <SectionLabel right={`${clubMemberships.length} 个组织`}>
+          社团与学生会
         </SectionLabel>
-        <div className="club-panel">
-          <div className="club-panel-head">
-            <div>
-              <h3>{roleLabel(membership.category, membership.role)}</h3>
-              <p>{org?.description}</p>
-            </div>
-            <Pill tone="green">
-              {membership.semesterActivities} 次本学期活动
-            </Pill>
-          </div>
-          <div className="club-panel-stats">
-            <div>
-              <span>累计活动</span>
-              <strong>{membership.totalActivities}</strong>
-            </div>
-            <div>
-              <span>晋升进度</span>
-              <strong>{nextNeed ? `${membership.totalActivities} / ${nextNeed}` : '已到最高职务'}</strong>
-            </div>
-            <div>
-              <span>组织朋友</span>
-              <strong>{members.length} 人</strong>
-            </div>
-          </div>
-          <div className="club-panel-actions">
-            <p>每周选择「社团活动」参与；每学期第 3 周后可领取一次组织福利。</p>
-            <button type="button" className="text-btn" onClick={onQuitClub}>
-              退出组织
-            </button>
-          </div>
+        {clubMemberships.length === 2 && (
+          <p className="club-panel-note">
+            同时参与两个社团，每周活动与学期福利将按 80% 结算。
+          </p>
+        )}
+        <div className="club-membership-list">
+          {clubMemberships.map((membership) => {
+            const org = ORG_BY_ID[membership.orgId]
+            const members = membership.memberIds
+              .map((id) =>
+                state.relationships.find((relation) => relation.id === id),
+              )
+              .filter(Boolean) as typeof state.relationships
+            const nextNeed =
+              membership.role === 'member'
+                ? 6
+                : membership.role === 'officer'
+                  ? 12
+                  : null
+            return (
+              <div className="club-panel" key={membership.orgId}>
+                <div className="club-panel-head">
+                  <div>
+                    <h3>{roleLabel(membership.category, membership.role)}</h3>
+                    <p>{org?.description}</p>
+                  </div>
+                  <Pill tone="green">
+                    {membership.semesterActivities} 次本学期活动
+                  </Pill>
+                </div>
+                <div className="club-panel-stats">
+                  <div>
+                    <span>累计活动</span>
+                    <strong>{membership.totalActivities}</strong>
+                  </div>
+                  <div>
+                    <span>晋升进度</span>
+                    <strong>
+                      {nextNeed
+                        ? `${membership.totalActivities} / ${nextNeed}`
+                        : '已到最高职务'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>组织朋友</span>
+                    <strong>{members.length} 人</strong>
+                  </div>
+                </div>
+                <div className="club-panel-actions">
+                  <p>
+                    {org?.name} · 每学期第 3 周后可领取一次组织福利。
+                  </p>
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={() => onQuitClub?.(membership.orgId)}
+                  >
+                    退出组织
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
+        {canApplyClub && (
+          <p className="club-panel-note">
+            本周第一周，仍可通过「申请加入第二个社团」继续报名。
+          </p>
+        )}
       </div>
     )
   }
@@ -1186,20 +1239,68 @@ export function WeekScreen({
         />
       )}
 
-      {clubActivityOpen && state.clubMembership && (
+      {clubPickerOpen && (
+        <div className="dinner-overlay" role="dialog" aria-modal="true">
+          <div className="dinner-backdrop" onClick={() => setClubPickerOpen(false)} />
+          <section className="dinner-modal club-picker-modal">
+            <header className="dinner-head">
+              <div>
+                <span className="dinner-eyebrow">CHOOSE A CLUB / 选择组织</span>
+                <h2>这周参加哪个社团的活动？</h2>
+                <p>两个社团各自独立计算活动次数、晋升与学期福利。选择后，再邀请同组织的人一起共事。</p>
+              </div>
+            </header>
+            <div className="club-picker-list">
+              {clubMemberships.map((membership) => {
+                const org = ORG_BY_ID[membership.orgId]
+                return (
+                  <button
+                    key={membership.orgId}
+                    type="button"
+                    className="club-picker-item"
+                    onClick={() => {
+                      setSelectedClubOrgId(membership.orgId)
+                      setClubPickerOpen(false)
+                      setClubActivityOpen(true)
+                    }}
+                  >
+                    <span>
+                      <strong>{org?.name ?? membership.orgId}</strong>
+                      <small>
+                        {roleLabel(membership.category, membership.role)} · 累计活动{' '}
+                        {membership.totalActivities} 次
+                      </small>
+                    </span>
+                    <span className="club-picker-arrow">→</span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {clubActivityOpen && selectedMembership && (
         <ClubActivityModal
-          organizationName={ORG_BY_ID[state.clubMembership.orgId]?.name ?? state.clubMembership.orgId}
+          organizationName={ORG_BY_ID[selectedMembership.orgId]?.name ?? selectedMembership.orgId}
           members={clubMembers}
           initialResults={
-            state.clubInvites?.weekKey === currentWeekKey(state)
+            state.clubInvites?.weekKey === currentWeekKey(state) &&
+            state.clubInvites.orgId === selectedMembership.orgId
               ? state.clubInvites.results
               : null
           }
-          onSaveResults={onSaveClubInvites}
+          onSaveResults={(results) =>
+            onSaveClubInvites?.(results, selectedMembership.orgId)
+          }
           onCancel={() => setClubActivityOpen(false)}
           onConfirm={(acceptedIds, declinedIds) => {
             setClubActivityOpen(false)
-            onArrangeClubActivity?.(acceptedIds, declinedIds)
+            onArrangeClubActivity?.(
+              selectedMembership.orgId,
+              acceptedIds,
+              declinedIds,
+            )
           }}
         />
       )}

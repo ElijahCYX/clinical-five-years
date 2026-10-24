@@ -301,7 +301,12 @@ export interface PendingEvent {
 }
 
 
-export type OrganizationCategory = 'academic' | 'interest' | 'practice' | 'union'
+export type OrganizationCategory =
+  | 'academic'
+  | 'interest'
+  | 'practice'
+  | 'union'
+  | 'debate'
 export type OrganizationRole = 'member' | 'officer' | 'president' | 'honorary'
 
 export type RelationshipKind =
@@ -465,6 +470,8 @@ export interface OrganizationBenefit {
   energy?: number
   composite?: number
   socialGrowth?: number
+  english?: number
+  allPrep?: number
 }
 
 export interface Organization {
@@ -501,11 +508,13 @@ export interface ClubHistoryEntry {
 
 export interface ClubInvites {
   weekKey: string
+  orgId?: string
   results: DinnerInviteResult[]
 }
 
 export interface ClubActivityPlan {
   mode: 'application' | 'activity'
+  orgId?: string
   acceptedIds: string[]
   declinedIds: string[]
   committed: boolean
@@ -610,7 +619,7 @@ export interface GameState {
   seenRelationIds: string[]
   vacationTravel: VacationTravelPlan | null
   vacationTravelInvites: DinnerInvites | null
-  clubMembership: ClubMembership | null
+  clubMemberships: ClubMembership[]
   clubHistory: ClubHistoryEntry[]
   clubInitialRecruitmentDone: boolean
   clubInvites: ClubInvites | null
