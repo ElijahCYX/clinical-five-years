@@ -116,7 +116,7 @@ export function PlayerRail({
               )}
             </strong>
           </div>
-          <small>每周固定开销 250</small>
+          <small>每周固定开销 300</small>
         </div>
         <div className="mini-stats">
           <div>

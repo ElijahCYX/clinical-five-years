@@ -1,0 +1,11 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1100} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:5173/?demo=vacation',{waitUntil:'networkidle'}); await page.waitForTimeout(300)
+const hang=page.locator('.action-card',{hasText:'约朋友耍起'}).first()
+console.log('hangout:', (await hang.innerText()).replace(/\n/g,' | '))
+console.log('weekly label:', await page.locator('.status-card',{hasText:'VACATION STATUS'}).locator('small',{hasText:'每周固定开销'}).innerText().catch(()=> 'none'))
+console.log('version:', await page.locator('#app-version').innerText())
+console.log('errors:', errors.slice(0,5))
+await browser.close()

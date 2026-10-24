@@ -872,10 +872,10 @@ export const VACATION_ACTIONS: ActionDef[] = [
     flavor: '和很久没见的人碰头，把时间浪费在笑上。',
     energy: -5,
     stress: -15,
-    money: -50,
+    money: -200,
     growth: 'social',
     growthAmount: 20,
-    effectText: '人际成长 +20 · 精力 -5 · 压力 -15 · 生活费 -50',
+    effectText: '人际成长 +20 · 精力 -5 · 压力 -15 · 生活费 -200',
   },
   {
     id: 'vacLab',

@@ -33,6 +33,7 @@ import {
   planStress,
   simulateWeek,
   signed,
+  WEEKLY_FIXED_COST,
 } from './game'
 import type {
   AttrKey,
@@ -548,7 +549,7 @@ function RealApp() {
       100,
     )
     let stress = clamp(game.stress + effect.stress, 0, 100)
-    const money = Math.max(0, game.money - 250)
+    const money = Math.max(0, game.money - WEEKLY_FIXED_COST)
     const prep = { ...game.prep }
     const rewardedCourses = [...game.stressRewardedCourses]
 
@@ -1012,7 +1013,7 @@ function RealApp() {
 
     energy = clamp(energy + 15, 0, 100)
     stress = clamp(stress, 0, 100)
-    money = Math.max(0, money - 250)
+    money = Math.max(0, money - WEEKLY_FIXED_COST)
 
     const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })

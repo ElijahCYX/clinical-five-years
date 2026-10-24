@@ -27,6 +27,8 @@ import type {
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
+export const WEEKLY_FIXED_COST = 300
+
 export const ATTR_KEYS = ATTRS.map((attr) => attr.key)
 
 export const TOTAL_SEASONS = 21
@@ -493,7 +495,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     : 0
   energy = clamp(energy + 15 - planCost, 0, 100)
   stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
-  money = Math.max(0, money - 250)
+  money = Math.max(0, money - WEEKLY_FIXED_COST)
 
   return {
     energy,
