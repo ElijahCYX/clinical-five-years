@@ -113,6 +113,13 @@ export function TravelModal({
                 >
                   <span className="dinner-person-name">
                     {relation.name}
+                    <span
+                      className={`inline-gender ${relation.gender === '男' ? 'is-male' : 'is-female'}`}
+                      title={relation.gender === '男' ? '男性' : '女性'}
+                      aria-label={relation.gender === '男' ? '男性' : '女性'}
+                    >
+                      {relation.gender === '男' ? '♂' : '♀'}
+                    </span>
                     <small>
                       {relationshipKindLabel(relation.kind)} · 亲密度 {relation.intimacy}
                     </small>
