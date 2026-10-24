@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { GameState, Relationship } from '../types'
 import {
+  adjustIntimacyDelta,
   canConfess,
   canPat,
   confessionChance,
   currentWeekKey,
+  gameDate,
   patLimit,
   orientationLabel,
   patRemainingThisWeek,
@@ -20,6 +22,7 @@ interface WhoIsTAScreenProps {
   onAutoPat: () => string
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
+  onBirthdayGift?: (id: string) => string
   onMain: () => void
   onWho: () => void
   onTitle?: () => void
@@ -61,12 +64,14 @@ export function WhoIsTAScreen({
   onAutoPat,
   onConfess,
   onViewRelation,
+  onBirthdayGift,
   onMain,
   onWho,
   onTitle,
 }: WhoIsTAScreenProps) {
   const [message, setMessage] = useState<string | null>(null)
   const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
+  const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
   const player = state.player
   if (!player) return null
   const weekKey = currentWeekKey(state)
@@ -193,6 +198,11 @@ export function WhoIsTAScreen({
             <div className="whois-list">
               {visibleRelations.map((relation) => {
                 const stats = statChips(relation)
+                const currentDate = gameDate(state)
+                const isBirthdayMonth =
+                  relation.birthdayMonth === currentDate.month
+                const birthdayGiftedThisYear =
+                  relation.birthdayGiftYear === currentDate.year
                 const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
@@ -240,6 +250,40 @@ export function WhoIsTAScreen({
                             >
                               {orientationLabel(relation.orientation)}
                             </span>
+                          )}
+                          {relation.intimacy >= 40 && (
+                            <button
+                              type="button"
+                              className={`whois-birthday ${
+                                isBirthdayMonth && !birthdayGiftedThisYear
+                                  ? 'is-active'
+                                  : ''
+                              }`}
+                              disabled={
+                                !isBirthdayMonth || birthdayGiftedThisYear
+                              }
+                              title={
+                                birthdayGiftedThisYear
+                                  ? '本年生日礼物已送过'
+                                  : isBirthdayMonth
+                                    ? '可以赠送生日礼物'
+                                    : '生日月份尚未到'
+                              }
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (isBirthdayMonth && !birthdayGiftedThisYear) {
+                                  setBirthdayTarget(relation)
+                                }
+                              }}
+                            >
+                              生日 {relation.birthYear}.
+                              {String(relation.birthdayMonth).padStart(2, '0')}
+                              {birthdayGiftedThisYear
+                                ? ' · 已送'
+                                : isBirthdayMonth
+                                  ? ' · 可送礼'
+                                  : ''}
+                            </button>
                           )}
                         </span>
                         <span>{relation.identity}</span>
@@ -320,6 +364,60 @@ export function WhoIsTAScreen({
           )}
         </section>
       </div>
+      {birthdayTarget && (
+        <div className="random-event-overlay" role="dialog" aria-modal="true">
+          <div className="random-event-backdrop" />
+          <section className="random-event-modal birthday-gift-modal">
+            <header className="random-event-head">
+              <div className="random-event-kind-row">
+                <Pill tone="gold">生日礼物</Pill>
+              </div>
+              <h2 className="random-event-title">
+                要给 {birthdayTarget.name} 送生日礼物吗？
+              </h2>
+            </header>
+            <p className="random-event-text">
+              {birthdayTarget.name} 的生日是 {birthdayTarget.birthYear} 年{' '}
+              {birthdayTarget.birthdayMonth} 月。一份不算便宜但用心的礼物，
+              也许会让你们更靠近一点。
+            </p>
+            <div className="random-event-effects">
+              <span className="random-event-effects-label">本次花费</span>
+              <div>
+                <span className="random-event-effect">生活费 -150</span>
+                <span className="random-event-effect">
+                  亲密度 +{adjustIntimacyDelta(state, birthdayTarget, 15)}
+                </span>
+              </div>
+            </div>
+            <footer className="random-event-footer">
+              <p>当前生活费 ¥{state.money}</p>
+              <div className="consumption-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setBirthdayTarget(null)}
+                >
+                  不送了
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={state.money < 150}
+                  onClick={() => {
+                    const result = onBirthdayGift?.(birthdayTarget.id)
+                    if (result) setMessage(result)
+                    setBirthdayTarget(null)
+                  }}
+                >
+                  送去祝福
+                  <span className="btn-arrow">→</span>
+                </button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

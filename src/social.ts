@@ -105,6 +105,9 @@ function makeRelationship(
     weeklyAction: ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: '',
     lastPatAbsWeek: 0,
+    birthYear: randomBirthYear(kind),
+    birthdayMonth: randInt(1, 12),
+    birthdayGiftYear: 0,
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,
@@ -192,6 +195,37 @@ export function currentWeekKey(state: GameState): string {
 export function unseenRelationCount(state: GameState): number {
   const seen = new Set(state.seenRelationIds ?? [])
   return state.relationships.filter((relation) => !seen.has(relation.id)).length
+}
+
+export const GAME_START_YEAR = 2025
+
+export function gameDate(state: GameState): { year: number; month: number } {
+  const phase = state.seasonIndex % 4
+  const academicYear = Math.floor(state.seasonIndex / 4)
+  const baseYear = GAME_START_YEAR + academicYear
+  if (state.vacation) {
+    const week = Math.max(1, Math.min(3, state.vacation.week))
+    if (state.vacation.kind === 'winter') {
+      return { year: baseYear + 1, month: [1, 2, 2][week - 1] }
+    }
+    return { year: baseYear + 1, month: [7, 8, 8][week - 1] }
+  }
+  const week = Math.max(1, Math.min(4, state.week))
+  if (phase === 0) return { year: baseYear, month: [9, 10, 11, 11][week - 1] }
+  if (phase === 1) {
+    return {
+      year: week === 1 ? baseYear : baseYear + 1,
+      month: [12, 1, 2, 2][week - 1],
+    }
+  }
+  if (phase === 2) return { year: baseYear + 1, month: [3, 4, 5, 5][week - 1] }
+  return { year: baseYear + 1, month: [6, 7, 8, 8][week - 1] }
+}
+
+function randomBirthYear(kind: Relationship['kind']): number {
+  if (kind === 'mentor') return GAME_START_YEAR - randInt(38, 58)
+  if (kind === 'counselor') return GAME_START_YEAR - randInt(28, 42)
+  return GAME_START_YEAR - randInt(18, 21)
 }
 
 export const PAT_LIMIT = 3
@@ -310,6 +344,9 @@ export function normalizeRelationships(
       ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: relation.lastPatKey ?? '',
     lastPatAbsWeek: relation.lastPatAbsWeek ?? 0,
+    birthYear: relation.birthYear ?? randomBirthYear(relation.kind),
+    birthdayMonth: relation.birthdayMonth ?? randInt(1, 12),
+    birthdayGiftYear: relation.birthdayGiftYear ?? 0,
     partner: relation.partner ?? false,
     confessionRisk: relation.confessionRisk ?? 0,
     breakupRisk: relation.breakupRisk ?? 0,

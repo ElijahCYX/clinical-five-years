@@ -327,6 +327,9 @@ export interface Relationship {
   weeklyAction: string
   lastPatKey: string
   lastPatAbsWeek: number
+  birthYear: number
+  birthdayMonth: number
+  birthdayGiftYear: number
   partner: boolean
   confessionRisk: number
   breakupRisk: number

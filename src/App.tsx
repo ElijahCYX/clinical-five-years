@@ -112,6 +112,7 @@ import {
   normalizeRelationships,
   adjustIntimacyDelta,
   applyFriendContactDecay,
+  gameDate,
   intimacyMultiplier,
   patRelationship,
   progressWeek,
@@ -1145,6 +1146,38 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
+  }
+
+  const giveBirthdayGift = (relationshipId: string): string => {
+    if (!game) return '现在还不能送。'
+    const relation = game.relationships.find((item) => item.id === relationshipId)
+    if (!relation) return '你找不到这个人。'
+    if (relation.intimacy < 40) return '你们还没有熟到可以送生日礼物。'
+    const currentDate = gameDate(game)
+    if (relation.birthdayMonth !== currentDate.month) {
+      return '现在还不是 TA 的生日月份。'
+    }
+    if (relation.birthdayGiftYear === currentDate.year) {
+      return '今年的生日礼物已经送过了。'
+    }
+    if (game.money < 150) return '生活费不足，买不起生日礼物。'
+    const gain = adjustIntimacyDelta(game, relation, 15)
+    const updated: GameState = {
+      ...game,
+      money: game.money - 150,
+      relationships: game.relationships.map((item) =>
+        item.id === relationshipId
+          ? {
+              ...item,
+              intimacy: Math.min(100, item.intimacy + gain),
+              birthdayGiftYear: currentDate.year,
+            }
+          : item,
+      ),
+    }
+    setGame(updated)
+    persist(updated)
+    return `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`
   }
 
   const arrangeDinner = (
@@ -2416,6 +2449,7 @@ function RealApp() {
         onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
         onViewRelation={markRelationSeen}
+        onBirthdayGift={giveBirthdayGift}
         onMain={() => setView(whoisReturn)}
         onWho={() => setView('whoami')}
         onTitle={goTitle}
