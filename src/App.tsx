@@ -129,10 +129,12 @@ import {
   patRemainingThisWeek,
   isStaffRelation,
   revealMaybe,
+  vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v34'
+const SAVE_KEY = 'clinical-five-years-save-v35'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v34',
   'clinical-five-years-save-v33',
   'clinical-five-years-save-v32',
   'clinical-five-years-save-v31',
@@ -209,6 +211,7 @@ function readSave(): GameState | null {
       seenRelationIds:
         game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
       vacationTravel: game.vacationTravel ?? null,
+      vacationTravelInvites: game.vacationTravelInvites ?? null,
       pendingConsumption: game.pendingConsumption ?? null,
       consumptionEventWeek: game.consumptionEventWeek ?? 0,
       highPressureDebuff: game.highPressureDebuff ?? false,
@@ -458,6 +461,7 @@ function prepareVacation(base: GameState, kind: VacationKind): GameState {
     actionsUsed: 0,
     vacation: { kind, week: 1, totalWeeks: meta.weeks },
     vacationTravel: null,
+    vacationTravelInvites: null,
   }
 }
 
@@ -2383,6 +2387,19 @@ function RealApp() {
     if (nextIndex < SEASONS.length) startSeason(nextIndex)
   }
 
+  const saveVacationTravelResults = (results: DinnerInviteResult[]) => {
+    if (!game || !game.vacation) return
+    const next: GameState = {
+      ...game,
+      vacationTravelInvites: {
+        weekKey: vacationTravelInviteKey(game),
+        results,
+      },
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const arrangeVacationTravel = (
     acceptedIds: string[],
     declinedIds: string[],
@@ -2397,9 +2414,17 @@ function RealApp() {
     ) {
       return
     }
+    const travelAction = VACATION_ACTION_BY_ID.vacTravel
     const next: GameState = {
       ...game,
       selected: [...game.selected, 'vacTravel'],
+      energy: clamp(
+        game.energy + effectiveEnergyCost(travelAction.energy, game.energy),
+        0,
+        100,
+      ),
+      stress: clamp(game.stress + travelAction.stress, 0, 100),
+      money: game.money - cost,
       vacationTravel: {
         companionIds: acceptedIds,
         declinedIds,
@@ -2407,14 +2432,16 @@ function RealApp() {
         summary: acceptedIds
           .map((id) => game.relationships.find((r) => r.id === id)?.name)
           .filter(Boolean) as string[],
+        committed: true,
       },
+      vacationTravelInvites: null,
     }
     setGame(next)
     persist(next)
   }
 
   const removeVacationTravel = () => {
-    if (!game || !game.vacation) return
+    if (!game || !game.vacation || game.vacationTravel?.committed) return
     const next: GameState = {
       ...game,
       selected: game.selected.filter((id) => id !== 'vacTravel'),
@@ -2447,6 +2474,9 @@ function RealApp() {
     for (const id of game.selected) {
       const action = VACATION_ACTION_BY_ID[id]
       if (!action) continue
+      if (action.id === 'vacTravel' && game.vacationTravel?.committed) {
+        continue
+      }
       energy += effectiveEnergyCost(action.energy, game.energy)
       stress += action.stress
       if (action.id === 'vacTravel' && game.vacationTravel) {
@@ -2540,6 +2570,7 @@ function RealApp() {
       selected: [],
       actionsUsed: 0,
       vacationTravel: null,
+      vacationTravelInvites: null,
       logs: [...game.logs, log],
     }
 
@@ -2899,6 +2930,7 @@ function RealApp() {
         onTA={openWhoIs}
         onArrangeTravel={arrangeVacationTravel}
         onRemoveTravel={removeVacationTravel}
+        onSaveTravelResults={saveVacationTravelResults}
       />
     )
   }

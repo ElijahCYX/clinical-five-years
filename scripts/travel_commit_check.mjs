@@ -1,0 +1,15 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message))
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+async function setup(){await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const s=g.newGameState(demo.demoPlayer);s.screen='vacation';s.seasonIndex=1;s.season=d.SEASONS[1];s.week=1;s.plan='B';s.habits=[];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.money=1000;s.energy=80;s.stress=50;s.vacation={kind:'winter',week:1,totalWeeks:3};s.relationships=social.createInitialRelationships(demo.demoPlayer);s.seenRelationIds=s.relationships.map(r=>r.id);localStorage.setItem('clinical-five-years-save-v34',JSON.stringify({game:s,savedAt:Date.now()}))});await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400)}
+await setup();await page.evaluate(()=>{Math.random=()=>0.01})
+await page.locator('.action-card',{hasText:'出门旅行'}).click();await page.waitForTimeout(200)
+await page.locator('.dinner-person').first().click();await page.locator('.dinner-footer .btn-primary',{hasText:'发出邀请'}).click();await page.waitForTimeout(250)
+await page.locator('.dinner-footer .btn-primary',{hasText:'确认同行'}).click();await page.waitForTimeout(300)
+let s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v34')).game);console.log('immediate',{selected:s.selected,energy:s.energy,stress:s.stress,money:s.money,plan:s.vacationTravel,disabled:await page.locator('.action-card',{hasText:'出门旅行'}).isDisabled()})
+await page.locator('.action-card',{hasText:'纯粹的休息'}).click();await page.locator('.action-footer .btn-primary',{hasText:'结束本周'}).click();await page.waitForTimeout(600)
+s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v34')).game);console.log('after week',{energy:s.energy,stress:s.stress,money:s.money,plan:s.vacationTravel,invites:s.vacationTravelInvites})
+console.log('errors',errors.slice(0,5))
+await browser.close()

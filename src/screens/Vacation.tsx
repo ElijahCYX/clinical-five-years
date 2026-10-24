@@ -7,10 +7,10 @@ import {
   energyTone,
   stressTone,
 } from '../game'
-import type { ActionDef, GameState } from '../types'
+import type { ActionDef, DinnerInviteResult, GameState } from '../types'
 import { Bar, Dot, Eyebrow, InterfaceNav, Pill, StatBar, StressHearts, TopBar } from '../ui'
 import { TravelModal } from './Travel'
-import { patRemainingThisWeek, unseenRelationCount } from '../social'
+import { patRemainingThisWeek, unseenRelationCount, vacationTravelInviteKey } from '../social'
 
 interface VacationScreenProps {
   state: GameState
@@ -22,6 +22,7 @@ interface VacationScreenProps {
   onTA?: () => void
   onArrangeTravel?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onRemoveTravel?: () => void
+  onSaveTravelResults?: (results: DinnerInviteResult[]) => void
 }
 
 const VISIBLE_VACATION_ACTIONS = [
@@ -47,6 +48,7 @@ export function VacationScreen({
   onTA,
   onArrangeTravel,
   onRemoveTravel,
+  onSaveTravelResults,
 }: VacationScreenProps) {
   const [travelOpen, setTravelOpen] = useState(false)
   const player = state.player
@@ -289,7 +291,10 @@ export function VacationScreen({
                 if (!action) return null
                 const locked = lockReason(action)
                 const selected = state.selected.includes(action.id)
-                const disabled = Boolean(locked)
+                const committed =
+                  action.id === 'vacTravel' &&
+                  Boolean(state.vacationTravel?.committed)
+                const disabled = Boolean(locked) || committed
                 return (
                   <button
                     key={action.id}
@@ -300,6 +305,7 @@ export function VacationScreen({
                     onClick={() => {
                       if (disabled) return
                       if (action.id === 'vacTravel') {
+                        if (committed) return
                         if (selected) {
                           onRemoveTravel?.()
                         } else {
@@ -319,12 +325,17 @@ export function VacationScreen({
                     <p className="action-flavor">{action.flavor}</p>
                     <p className="action-effect">
                       {action.id === 'vacTravel'
-                        ? `精力 -5 · 压力 -30 · 生活费 -${state.vacationTravel?.cost ?? 500}`
+                        ? committed
+                          ? '精力、压力、生活费已立即结算 · 不可取消'
+                          : `精力 -5 · 压力 -30 · 生活费 -${state.vacationTravel?.cost ?? 500}`
                         : energyEffectText(action.effectText, action.energy, state.energy)}
                     </p>
                     <div className="action-bottom">
                       <span className="action-en">{action.en}</span>
                       {selected && <span className="action-selected">已排入本周</span>}
+                      {committed && (
+                        <span className="action-repeat">已出发 · 不可取消</span>
+                      )}
                       {locked && <span className="action-locked">{locked}</span>}
                     </div>
                   </button>
@@ -441,6 +452,13 @@ export function VacationScreen({
         <TravelModal
           relationships={state.relationships}
           money={state.money}
+          initialResults={
+            state.vacationTravelInvites?.weekKey ===
+            vacationTravelInviteKey(state)
+              ? state.vacationTravelInvites.results
+              : null
+          }
+          onSaveResults={onSaveTravelResults}
           onCancel={() => setTravelOpen(false)}
           onConfirm={(acceptedIds, declinedIds, cost) => {
             setTravelOpen(false)

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Relationship } from '../types'
+import type { DinnerInviteResult, Relationship } from '../types'
 import {
   isDinnerFriend,
   randomRefusalReason,
@@ -12,19 +12,19 @@ import { Pill } from '../ui'
 interface TravelModalProps {
   relationships: Relationship[]
   money: number
+  initialResults?: DinnerInviteResult[] | null
+  onSaveResults?: (results: DinnerInviteResult[]) => void
   onConfirm: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onCancel: () => void
 }
 
-interface TravelResult {
-  id: string
-  accepted: boolean
-  reason?: string
-}
+type TravelResult = DinnerInviteResult
 
 export function TravelModal({
   relationships,
   money,
+  initialResults = null,
+  onSaveResults,
   onConfirm,
   onCancel,
 }: TravelModalProps) {
@@ -32,8 +32,12 @@ export function TravelModal({
     () => relationships.filter(isDinnerFriend),
     [relationships],
   )
-  const [selected, setSelected] = useState<string[]>([])
-  const [results, setResults] = useState<TravelResult[] | null>(null)
+  const [selected, setSelected] = useState<string[]>(
+    initialResults?.map((item) => item.id) ?? [],
+  )
+  const [results, setResults] = useState<TravelResult[] | null>(
+    initialResults ?? null,
+  )
 
   useEffect(() => {
     document.body.classList.add('dinner-open')
@@ -74,6 +78,7 @@ export function TravelModal({
         : { ...item, reason: item.reason ?? randomRefusalReason() },
     )
     setResults(next)
+    onSaveResults?.(next)
   }
 
   return (

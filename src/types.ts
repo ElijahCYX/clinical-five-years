@@ -414,6 +414,7 @@ export interface VacationTravelPlan {
   declinedIds: string[]
   cost: number
   summary: string[]
+  committed?: boolean
 }
 
 export interface BirthdayGiftResult {
@@ -537,6 +538,7 @@ export interface GameState {
   familyReliefWeek: number
   seenRelationIds: string[]
   vacationTravel: VacationTravelPlan | null
+  vacationTravelInvites: DinnerInvites | null
   pendingConsumption: ConsumptionEvent | null
   consumptionEventWeek: number
 }

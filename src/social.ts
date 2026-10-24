@@ -240,6 +240,11 @@ export function progressWeek(state: GameState): number {
   )
 }
 
+export function vacationTravelInviteKey(state: GameState): string {
+  if (!state.vacation) return ''
+  return `vacation-${state.seasonIndex}-${state.vacation.kind}-w${state.vacation.week}`
+}
+
 export function patPeriodKey(state: GameState): string {
   return state.vacation
     ? `vacation-${state.vacation.kind}-${state.seasonIndex}`
