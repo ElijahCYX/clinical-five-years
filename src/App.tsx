@@ -633,6 +633,9 @@ function RealApp() {
           intimacy: Math.min(100, relation.intimacy + 5),
           confessionRisk: 0,
           breakupRisk: 0,
+          ex: false,
+          exWeek: 0,
+          exPenalty: false,
         }
       : {
           ...relation,
@@ -801,7 +804,15 @@ function RealApp() {
     const chance = confessionChance(game.player, relation)
     const success = Math.random() < chance
     const updated = success
-      ? { ...relation, partner: true, intimacy: Math.min(100, relation.intimacy + 5) }
+      ? {
+          ...relation,
+          partner: true,
+          intimacy: Math.min(100, relation.intimacy + 5),
+          ex: false,
+          exWeek: 0,
+          exPenalty: false,
+          breakupRisk: 0,
+        }
       : relation
     const next: GameState = {
       ...game,

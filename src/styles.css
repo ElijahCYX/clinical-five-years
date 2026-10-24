@@ -7716,3 +7716,9 @@ body.dinner-open {
     font-size: 9px;
   }
 }
+
+
+.whois-ex {
+  color: var(--ink-3) !important;
+  border-color: var(--line-strong);
+}

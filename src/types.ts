@@ -284,6 +284,7 @@ export interface EventEffect {
   romanceBreak?: boolean
   teacherBreak?: boolean
   breakupRelationId?: string
+  reconcileRelationId?: string
 }
 
 export interface PendingEvent {
@@ -326,6 +327,9 @@ export interface Relationship {
   partner: boolean
   confessionRisk: number
   breakupRisk: number
+  ex: boolean
+  exWeek: number
+  exPenalty: boolean
 }
 
 export interface PendingConfession {

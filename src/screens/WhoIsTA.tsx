@@ -148,6 +148,9 @@ export function WhoIsTAScreen({
                           </span>
                         )}
                         {relation.partner && <span className="whois-partner">恋人</span>}
+                        {relation.ex && !relation.partner && (
+                          <span className="whois-ex">前任</span>
+                        )}
                       </div>
                       <div className="whois-intimacy">
                         <Bar value={relation.intimacy} thin />

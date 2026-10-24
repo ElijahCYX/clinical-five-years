@@ -107,6 +107,9 @@ function makeRelationship(
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,
+    ex: false,
+    exWeek: 0,
+    exPenalty: false,
   }
 }
 
@@ -238,6 +241,9 @@ export function normalizeRelationships(
     partner: relation.partner ?? false,
     confessionRisk: relation.confessionRisk ?? 0,
     breakupRisk: relation.breakupRisk ?? 0,
+    ex: relation.ex ?? false,
+    exWeek: relation.exWeek ?? 0,
+    exPenalty: relation.exPenalty ?? false,
   }))
 }
 
@@ -280,7 +286,11 @@ export function confessionChance(player: Player, relation: Relationship): number
     0.08 + relation.intimacy / 200 + player.attrs.social * 0.025
   const attraction = npcOrientationAllows(relation, player.gender) ? 1 : 0.12
   const staffPenalty = isStaffRelation(relation) ? 0.16 : 1
-  return Math.max(0.02, Math.min(0.92, base * attraction * staffPenalty))
+  const exPenalty = relation.ex && relation.exPenalty ? 0.5 : 1
+  return Math.max(
+    0.02,
+    Math.min(0.92, base * attraction * staffPenalty * exPenalty),
+  )
 }
 
 export function nextRoommateAction(): string {

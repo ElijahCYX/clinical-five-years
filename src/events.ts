@@ -272,6 +272,7 @@ function effectLines(effect: EventEffect): string[] {
   if (effect.romanceBreak) lines.push('所有恋爱关系破裂')
   if (effect.teacherBreak) lines.push('师生关系破裂')
   if (effect.breakupRelationId) lines.push('这段恋爱关系结束')
+  if (effect.reconcileRelationId) lines.push('旧情复燃')
   return lines
 }
 
@@ -307,6 +308,10 @@ export function rollWeeklyEvent(state: GameState): PendingEvent | null {
     effectLines: effectLines(resolvedEffects),
     effects: resolvedEffects,
   }
+}
+
+function absoluteWeek(state: GameState): number {
+  return state.seasonIndex * 4 + state.week
 }
 
 export function applyEvent(state: GameState, event: PendingEvent): GameState {
@@ -352,6 +357,9 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ...relation,
             partner: false,
             intimacy: Math.max(0, relation.intimacy - 10),
+            ex: true,
+            exWeek: absoluteWeek(state),
+            exPenalty: false,
           }
         : relation,
     )
@@ -366,6 +374,9 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             partner: false,
             intimacy: Math.max(0, relation.intimacy - 18),
             breakupRisk: 0,
+            ex: true,
+            exWeek: absoluteWeek(state),
+            exPenalty: false,
           }
         : relation,
     )
@@ -379,9 +390,34 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             partner: false,
             intimacy: Math.max(0, relation.intimacy - 20),
             breakupRisk: 0,
+            ex: true,
+            exWeek: absoluteWeek(state),
+            exPenalty: false,
           }
         : relation,
     )
+  }
+  if (effect.reconcileRelationId) {
+    next.relationships = next.relationships.map((relation) =>
+      relation.id === effect.reconcileRelationId
+        ? {
+            ...relation,
+            partner: true,
+            ex: false,
+            exWeek: 0,
+            exPenalty: false,
+            intimacy: Math.min(100, relation.intimacy + 5),
+            confessionRisk: 0,
+            breakupRisk: 0,
+          }
+        : relation,
+    )
+    const reconciled = next.relationships.find(
+      (relation) => relation.id === effect.reconcileRelationId,
+    )
+    if (reconciled && isStaffRelation(reconciled)) {
+      next.teacherScandalRisk = Math.max(5, next.teacherScandalRisk)
+    }
   }
   if (effect.prep) {
     for (const course of state.season.courses) {
@@ -447,6 +483,17 @@ function createNpcConfession(relation: Relationship): PendingConfession {
     text: staff
       ? `${relation.name}（${relation.identity}）在办公室关上门，沉默了很久才开口。TA 说知道这不合规矩，也知道可能会影响你，但还是想认真问你一次：愿不愿意和 TA 在一起。`
       : `${relation.name}约你在操场看台见面，手里攥着一杯已经不太冰的奶茶。绕了三圈以后，TA 终于停下来，说：“我好像不只是想和你做朋友。”`,
+  }
+}
+
+function createReconcileEvent(relation: Relationship): PendingEvent {
+  return {
+    id: 'ev-reconcile',
+    kind: 'romance',
+    title: '旧情复燃',
+    text: `${relation.name}在食堂门口叫住你，说最近总想起你们以前一起走过的那条路。你们站在人来人往的门口聊了很久，最后 TA 问：“要不要再试一次？”你还没回答，TA 已经把手伸了过来。`,
+    effects: { reconcileRelationId: relation.id },
+    effectLines: [`与 ${relation.name} 复合`, '亲密度 +5'],
   }
 }
 
@@ -527,6 +574,37 @@ export function rollRelationshipWeekly(state: GameState): RelationshipWeeklyResu
     next = { ...next, romanceRisk: 0 }
   }
 
+  // 2.5 前任复合窗口：分手后 3 周内，每周最终概率 -10%
+  const totalWeek = state.seasonIndex * 4 + state.week
+  relationships = relationships.map((relation) => {
+    if (!relation.ex || relation.partner) return relation
+    const weeksSince = totalWeek - relation.exWeek
+    return { ...relation, exPenalty: weeksSince > 3 }
+  })
+  next = { ...next, relationships }
+  const exCandidates = relationships
+    .filter((relation) => relation.ex && !relation.partner)
+    .map((relation) => {
+      const weeksSince = totalWeek - relation.exWeek
+      const chance =
+        weeksSince >= 1 && weeksSince <= 3
+          ? Math.max(2, Math.round(relation.intimacy * 0.7) - (weeksSince - 1) * 10)
+          : 0
+      return { relation, chance }
+    })
+    .filter((item) => item.chance > 0)
+    .sort((a, b) => b.chance - a.chance)
+  const reconciled = exCandidates.find(
+    (item) => Math.random() < item.chance / 100,
+  )
+  if (reconciled) {
+    return {
+      state: next,
+      pendingEvent: createReconcileEvent(reconciled.relation),
+      pendingConfession: null,
+    }
+  }
+
   // 3. 低亲密度分手风险
   relationships = relationships.map((relation) => {
     if (!relation.partner) return relation
@@ -569,7 +647,13 @@ export function rollRelationshipWeekly(state: GameState): RelationshipWeeklyResu
     .map((relation) => {
       const staff = isStaffRelation(relation)
       const baseRate = Math.max(1, Math.round((relation.intimacy - 55) * 0.35))
-      const rate = staff ? Math.max(1, Math.round(baseRate * 0.15)) : baseRate
+      const exPenalty = relation.ex && relation.exPenalty ? 0.5 : 1
+      const rate = Math.max(
+        1,
+        Math.round(
+          baseRate * (staff ? 0.15 : 1) * (exPenalty < 1 ? 0.5 : 1),
+        ),
+      )
       return {
         relation,
         risk: Math.min(95, (relation.confessionRisk ?? 0) + rate),
