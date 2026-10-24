@@ -9003,3 +9003,85 @@ body.dinner-open {
   transform: none;
   box-shadow: none;
 }
+
+/* ---------- birthday gift reaction ---------- */
+
+.birthday-response-modal {
+  max-width: 720px;
+}
+
+.birthday-intimacy-animation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 22px 0 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(190, 145, 48, 0.32);
+  background: linear-gradient(
+    120deg,
+    rgba(190, 145, 48, 0.07),
+    rgba(246, 241, 230, 0.55)
+  );
+}
+
+.gift-heart {
+  color: var(--red);
+  font-size: 38px;
+  line-height: 1;
+  animation: giftHeartbeat 1.15s ease-in-out infinite;
+}
+
+.birthday-intimacy-animation > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.birthday-intimacy-animation > div > span {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.gift-intimacy-gain {
+  color: var(--red);
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1.1;
+  animation: giftGainPop 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.birthday-intimacy-animation small {
+  color: var(--ink-3);
+  font-size: 10px;
+}
+
+@keyframes giftHeartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  18% {
+    transform: scale(1.16);
+  }
+  34% {
+    transform: scale(0.98);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes giftGainPop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.55);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

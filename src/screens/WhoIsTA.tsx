@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { GameState, Relationship } from '../types'
+import type { BirthdayGiftResult, GameState, Relationship } from '../types'
+import { pickBirthdayReaction } from '../birthdayReactions'
 import {
   adjustIntimacyDelta,
   canConfess,
@@ -22,7 +23,7 @@ interface WhoIsTAScreenProps {
   onAutoPat: () => string
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
-  onBirthdayGift?: (id: string) => string
+  onBirthdayGift?: (id: string) => BirthdayGiftResult
   onMain: () => void
   onWho: () => void
   onTitle?: () => void
@@ -72,6 +73,9 @@ export function WhoIsTAScreen({
   const [message, setMessage] = useState<string | null>(null)
   const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
   const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
+  const [birthdayResult, setBirthdayResult] = useState<
+    (BirthdayGiftResult & { name: string; reaction: string }) | null
+  >(null)
   const player = state.player
   if (!player) return null
   const weekKey = currentWeekKey(state)
@@ -406,7 +410,15 @@ export function WhoIsTAScreen({
                   disabled={state.money < 150}
                   onClick={() => {
                     const result = onBirthdayGift?.(birthdayTarget.id)
-                    if (result) setMessage(result)
+                    if (result && result.gain > 0) {
+                      setBirthdayResult({
+                        ...result,
+                        name: birthdayTarget.name,
+                        reaction: pickBirthdayReaction(),
+                      })
+                    } else if (result) {
+                      setMessage(result.message)
+                    }
                     setBirthdayTarget(null)
                   }}
                 >
@@ -414,6 +426,48 @@ export function WhoIsTAScreen({
                   <span className="btn-arrow">→</span>
                 </button>
               </div>
+            </footer>
+          </section>
+        </div>
+      )}
+      {birthdayResult && (
+        <div className="random-event-overlay" role="dialog" aria-modal="true">
+          <div className="random-event-backdrop" />
+          <section className="random-event-modal birthday-response-modal">
+            <header className="random-event-head">
+              <div className="random-event-kind-row">
+                <Pill tone="green">生日礼物</Pill>
+                <span className="random-event-hint">TA 的回礼反应</span>
+              </div>
+              <h2 className="random-event-title">
+                礼物送出了
+              </h2>
+            </header>
+            <p className="random-event-text">
+              {birthdayResult.reaction.replaceAll('{name}', birthdayResult.name)}
+            </p>
+            <div className="birthday-intimacy-animation">
+              <span className="gift-heart" aria-hidden="true">♥</span>
+              <div>
+                <span>与{birthdayResult.name}的亲密度</span>
+                <strong className="gift-intimacy-gain">
+                  +{birthdayResult.gain}
+                </strong>
+                <small>
+                  {birthdayResult.before} → {birthdayResult.after} / 100
+                </small>
+              </div>
+            </div>
+            <footer className="random-event-footer">
+              <p>生日一年只有一次，但你们的关系又往前走了一点。</p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setBirthdayResult(null)}
+              >
+                收下这份回忆
+                <span className="btn-arrow">→</span>
+              </button>
             </footer>
           </section>
         </div>

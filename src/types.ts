@@ -412,6 +412,13 @@ export interface VacationTravelPlan {
   summary: string[]
 }
 
+export interface BirthdayGiftResult {
+  message: string
+  gain: number
+  before: number
+  after: number
+}
+
 export interface ConsumptionEffects {
   stress?: number
   energy?: number

@@ -51,6 +51,7 @@ import type {
   OpeningTalentId,
   PlanId,
   Player,
+  BirthdayGiftResult,
   DinnerInviteResult,
   PostgradChoice,
   Relationship,
@@ -1235,19 +1236,27 @@ function RealApp() {
     persist(next)
   }
 
-  const giveBirthdayGift = (relationshipId: string): string => {
-    if (!game) return '现在还不能送。'
+  const giveBirthdayGift = (
+    relationshipId: string,
+  ): BirthdayGiftResult => {
+    const fail = (message: string): BirthdayGiftResult => ({
+      message,
+      gain: 0,
+      before: game?.relationships.find((item) => item.id === relationshipId)?.intimacy ?? 0,
+      after: game?.relationships.find((item) => item.id === relationshipId)?.intimacy ?? 0,
+    })
+    if (!game) return fail('现在还不能送。')
     const relation = game.relationships.find((item) => item.id === relationshipId)
-    if (!relation) return '你找不到这个人。'
-    if (relation.intimacy < 40) return '你们还没有熟到可以送生日礼物。'
+    if (!relation) return fail('你找不到这个人。')
+    if (relation.intimacy < 40) return fail('你们还没有熟到可以送生日礼物。')
     const currentDate = gameDate(game)
     if (relation.birthdayMonth !== currentDate.month) {
-      return '现在还不是 TA 的生日月份。'
+      return fail('现在还不是 TA 的生日月份。')
     }
     if (relation.birthdayGiftYear === currentDate.year) {
-      return '今年的生日礼物已经送过了。'
+      return fail('今年的生日礼物已经送过了。')
     }
-    if (game.money < 150) return '生活费不足，买不起生日礼物。'
+    if (game.money < 150) return fail('生活费不足，买不起生日礼物。')
     const gain = adjustIntimacyDelta(game, relation, 15)
     const updated: GameState = {
       ...game,
@@ -1264,7 +1273,12 @@ function RealApp() {
     }
     setGame(updated)
     persist(updated)
-    return `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`
+    return {
+      message: `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`,
+      gain,
+      before: relation.intimacy,
+      after: Math.min(100, relation.intimacy + gain),
+    }
   }
 
   const saveDinnerResults = (results: DinnerInviteResult[]) => {
