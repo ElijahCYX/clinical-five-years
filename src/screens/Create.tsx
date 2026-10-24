@@ -206,7 +206,7 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
                 <span>入学档案称号</span>
                 <strong className="id-archetype">{archetype}</strong>
               </div>
-              <Stamp text="臨江大學醫學院" sub="新生档案" />
+              <Stamp text="漸江大學醫學院" sub="新生档案" />
             </div>
 
             <section className="basic-info">

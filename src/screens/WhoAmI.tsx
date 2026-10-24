@@ -86,7 +86,7 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
             </p>
           </div>
           <div className="whoami-mark">
-            <span>临江大学医学院</span>
+            <span>渐江大学医学院</span>
             <strong>PLAYER / 001</strong>
           </div>
         </header>

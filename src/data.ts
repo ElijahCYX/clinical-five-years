@@ -10,8 +10,8 @@ import type {
   TalentDef,
 } from './types'
 
-export const SCHOOL_NAME = '临江大学医学院'
-export const SCHOOL_EN = 'LINJIANG UNIVERSITY SCHOOL OF MEDICINE'
+export const SCHOOL_NAME = '渐江大学医学院'
+export const SCHOOL_EN = 'JIANJIANG UNIVERSITY SCHOOL OF MEDICINE'
 export const GAME_TITLE = '临床五年'
 export const GAME_SUBTITLE = '五年，二十一季，慢慢成为医生。'
 

@@ -65,7 +65,7 @@ export function PlayerRail({
           <strong>{background.money}</strong>
         </div>
         <span className="id-stamp" aria-hidden="true">
-          <span>臨江大學</span>
+          <span>漸江大學</span>
           <span>醫學院</span>
         </span>
       </div>

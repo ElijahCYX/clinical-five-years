@@ -199,7 +199,7 @@ export function StatBar({
   )
 }
 
-export function Stamp({ text = '臨江大學醫學院', sub = '教務處' }: { text?: string; sub?: string }) {
+export function Stamp({ text = '漸江大學醫學院', sub = '教務處' }: { text?: string; sub?: string }) {
   return (
     <div className="stamp" aria-hidden="true">
       <span className="stamp-inner">

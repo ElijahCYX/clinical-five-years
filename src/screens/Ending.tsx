@@ -122,7 +122,7 @@ export function EndingScreen({
               {note ??
                 'UI 初稿到此。接下来会接入：事件卡、人物关系、科研、奖学金与临床年。'}
             </p>
-            <Stamp text="臨江大學醫學院" sub="学生档案 · 待续" />
+            <Stamp text="漸江大學醫學院" sub="学生档案 · 待续" />
           </div>
         </main>
       </div>

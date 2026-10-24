@@ -395,7 +395,7 @@ export function GraduationScreen({
                 回到标题
               </button>
             </div>
-            <Stamp text="臨江大學醫學院" sub="教務處 · 畢業" />
+            <Stamp text="漸江大學醫學院" sub="教務處 · 畢業" />
           </div>
         </main>
       </div>
