@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import type { BirthdayGiftResult, GameState, Relationship } from '../types'
+import type {
+  BirthdayGiftResult,
+  GameState,
+  PatEvent,
+  PatResult,
+  Relationship,
+} from '../types'
 import { pickBirthdayReaction } from '../birthdayReactions'
 import {
   adjustIntimacyDelta,
@@ -20,8 +26,8 @@ import { romanceRiskAfterWeek } from '../events'
 
 interface WhoIsTAScreenProps {
   state: GameState
-  onPat: (id: string) => string
-  onAutoPat: () => string
+  onPat: (id: string) => PatResult
+  onAutoPat: () => PatResult
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
@@ -76,11 +82,17 @@ export function WhoIsTAScreen({
   const [message, setMessage] = useState<string | null>(null)
   const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
   const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
+  const [patEvents, setPatEvents] = useState<PatEvent[]>([])
   const [birthdayResult, setBirthdayResult] = useState<
     (BirthdayGiftResult & { name: string; reaction: string }) | null
   >(null)
   const player = state.player
   if (!player) return null
+  const handlePatResult = (result: PatResult) => {
+    setMessage(result.message)
+    if (result.events.length > 0) setPatEvents(result.events)
+  }
+
   const weekKey = currentWeekKey(state)
   const relations = state.relationships
   const visibleRelations = relations.filter((relation) =>
@@ -138,7 +150,7 @@ export function WhoIsTAScreen({
               type="button"
               className="whois-bulk-pat"
               disabled={patRemaining === 0 || !relations.some((r) => canPat(state, r))}
-              onClick={() => setMessage(onAutoPat())}
+              onClick={() => handlePatResult(onAutoPat())}
             >
               <span>本周拍一拍剩余 {patRemaining} / {patLimit(state)} 次</span>
               <small>
@@ -343,7 +355,7 @@ export function WhoIsTAScreen({
                         type="button"
                         className="whois-action"
                         disabled={!patAvailable}
-                        onClick={() => setMessage(onPat(relation.id))}
+                        onClick={() => handlePatResult(onPat(relation.id))}
                       >
                         {patBlocked
                           ? '心结未解'
@@ -482,6 +494,51 @@ export function WhoIsTAScreen({
                 onClick={() => setBirthdayResult(null)}
               >
                 收下这份回忆
+                <span className="btn-arrow">→</span>
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {patEvents.length > 0 && (
+        <div className="random-event-overlay" role="dialog" aria-modal="true">
+          <div className="random-event-backdrop" />
+          <section className="random-event-modal pat-event-modal">
+            <header className="random-event-head">
+              <div className="random-event-kind-row">
+                <Pill tone="gold">拍一拍</Pill>
+                <span className="random-event-hint">
+                  {patEvents.length > 1 ? '这次一拍，发生了好几件事' : '这次一拍，有回应'}
+                </span>
+              </div>
+              <h2 className="random-event-title">
+                {patEvents.length > 1 ? '不止一下' : '拍出了动静'}
+              </h2>
+            </header>
+            <div className="pat-event-list">
+              {patEvents.map((item) => (
+                <article key={item.id} className="pat-event-item">
+                  <div className="pat-event-top">
+                    <span>{item.name}</span>
+                    <strong>{item.title}</strong>
+                  </div>
+                  <p>{item.text}</p>
+                  <div className="pat-event-lines">
+                    {item.lines.map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+            <footer className="random-event-footer">
+              <p>拍一拍不一定有大事，但这次确实有。</p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setPatEvents([])}
+              >
+                收下这些动静
                 <span className="btn-arrow">→</span>
               </button>
             </footer>

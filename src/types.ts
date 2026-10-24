@@ -417,6 +417,19 @@ export interface VacationTravelPlan {
   committed?: boolean
 }
 
+export interface PatEvent {
+  id: string
+  name: string
+  title: string
+  text: string
+  lines: string[]
+}
+
+export interface PatResult {
+  message: string
+  events: PatEvent[]
+}
+
 export interface BirthdayGiftResult {
   message: string
   gain: number

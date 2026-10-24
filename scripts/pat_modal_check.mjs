@@ -1,0 +1,16 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message))
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+async function setup(){await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const s=g.newGameState(demo.demoPlayer);s.screen='week';s.seasonIndex=0;s.season=d.SEASONS[0];s.week=1;s.plan='B';s.habits=['timeManagement'];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.relationships=social.createInitialRelationships(demo.demoPlayer);s.seenRelationIds=s.relationships.map(r=>r.id);localStorage.setItem('clinical-five-years-save-v35',JSON.stringify({game:s,savedAt:Date.now()}))});await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400);await page.locator('.interface-btn',{hasText:'TA 是谁'}).click();await page.waitForTimeout(300)}
+await setup();await page.evaluate(()=>{Math.random=()=>0.01})
+await page.locator('.whois-action',{hasText:'拍一拍'}).first().click();await page.waitForTimeout(300)
+console.log('single modal',await page.locator('.pat-event-modal').count(),'cards',await page.locator('.pat-event-item').count())
+console.log((await page.locator('.pat-event-modal').innerText()).slice(0,220))
+await page.locator('.pat-event-modal .btn-primary').click();await page.waitForTimeout(200)
+await setup();await page.evaluate(()=>{Math.random=()=>0.01})
+await page.locator('.whois-bulk-pat').click();await page.waitForTimeout(400)
+console.log('auto modal',await page.locator('.pat-event-modal').count(),'cards',await page.locator('.pat-event-item').count())
+console.log('errors',errors.slice(0,5))
+await browser.close()

@@ -49,6 +49,8 @@ import type {
   GameState,
   HabitId,
   OpeningTalentId,
+  PatEvent,
+  PatResult,
   PlanId,
   Player,
   BirthdayGiftResult,
@@ -1476,6 +1478,7 @@ function RealApp() {
   ): {
     next: GameState
     message: string
+    events: PatEvent[]
     publication?: { journal: string }
   } => {
     const updatedRelation = patRelationship(relation, current)
@@ -1483,6 +1486,7 @@ function RealApp() {
       return {
         next: current,
         message: `${relation.name}本周已经拍过了。`,
+        events: [],
       }
     }
     const actualPatGain = updatedRelation.intimacy - relation.intimacy
@@ -1497,6 +1501,7 @@ function RealApp() {
         item.id === relation.id ? updatedRelation : item,
       ),
     }
+    const events: PatEvent[] = []
 
     if (relation.kind === 'mentor') {
       if (
@@ -1506,6 +1511,13 @@ function RealApp() {
       ) {
         const progress = Math.min(100, current.researchProgress + 2)
         messages.push('导师顺手提点了你的课题，科研进度 +2。')
+        events.push({
+          id: `${relation.id}-research`,
+          name: relation.name,
+          title: '导师的指点',
+          text: `${relation.name}顺手在你的论文草稿上圈了两处，说：“这里再补一组数据，就能讲故事了。”`,
+          lines: ['科研进度 +2'],
+        })
         next = { ...next, researchProgress: progress }
         if (progress >= 100) {
           const profile = current.mentorProfileId
@@ -1527,6 +1539,7 @@ function RealApp() {
           return {
             next,
             message: messages.join(' '),
+            events,
             publication: { journal },
           }
         }
@@ -1535,6 +1548,13 @@ function RealApp() {
       if (Math.random() < 0.25) {
         next = { ...next, stress: Math.max(0, next.stress - 5) }
         messages.push('辅导员找你谈心，压力 -5。')
+        events.push({
+          id: `${relation.id}-counselor`,
+          name: relation.name,
+          title: '辅导员的关心',
+          text: `${relation.name}看出你最近状态不太对，拉你聊了几句，没有问成绩，只问你昨晚睡得怎么样。`,
+          lines: ['压力 -5'],
+        })
       }
     } else {
       if (Math.random() < 0.2) {
@@ -1549,6 +1569,13 @@ function RealApp() {
             },
           }
           messages.push(`TA把《${course.name}》的笔记借给你看，准备度 +5。`)
+          events.push({
+            id: `${relation.id}-notes`,
+            name: relation.name,
+            title: '借你笔记',
+            text: `${relation.name}把《${course.name}》的笔记推到你面前：“重点我都标了，别客气。”`,
+            lines: [`《${course.name}》准备度 +5`],
+          })
         }
       }
       if (Math.random() < 0.1) {
@@ -1558,23 +1585,31 @@ function RealApp() {
           energy: Math.min(100, next.energy + 5),
         }
         messages.push('TA请你喝奶茶/吃饭，压力 -5，精力 +5。')
+        events.push({
+          id: `${relation.id}-treat`,
+          name: relation.name,
+          title: '请你喝奶茶',
+          text: `${relation.name}顺手给你带了一杯奶茶，说：“看你最近脸都绿了，补充点糖分。”`,
+          lines: ['压力 -5', '精力 +5'],
+        })
       }
     }
 
-    return { next, message: messages.join(' ') }
+    return { next, message: messages.join(' '), events }
   }
 
-  const autoPatTopRelations = (): string => {
-    if (!game) return ''
+  const autoPatTopRelations = (): PatResult => {
+    if (!game) return { message: '现在还不能拍。', events: [] }
     const remaining = patRemainingThisWeek(game)
-    if (remaining <= 0) return '本周的拍一拍次数已经用完了。'
+    if (remaining <= 0) return { message: '本周的拍一拍次数已经用完了。', events: [] }
     const targets = game.relationships
       .filter((relation) => canPat(game, relation))
       .sort((a, b) => b.intimacy - a.intimacy)
       .slice(0, remaining)
-    if (targets.length === 0) return '本周还没有可以拍的人。'
+    if (targets.length === 0) return { message: '本周还没有可以拍的人。', events: [] }
     let next = game
     const messages: string[] = []
+    const events: PatEvent[] = []
     let publication: { journal: string } | undefined
     for (const target of targets) {
       const relation = next.relationships.find((item) => item.id === target.id)
@@ -1582,6 +1617,7 @@ function RealApp() {
       const outcome = patOutcome(next, relation)
       next = outcome.next
       messages.push(outcome.message)
+      events.push(...outcome.events)
       if (outcome.publication) publication = outcome.publication
     }
     setGame(next)
@@ -1592,13 +1628,16 @@ function RealApp() {
         '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
       )
     }
-    return `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`
+    return {
+      message: `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`,
+      events,
+    }
   }
 
-  const patRelation = (id: string): string => {
-    if (!game || patRemainingThisWeek(game) <= 0) return '本周的拍一拍次数已经用完了。'
+  const patRelation = (id: string): PatResult => {
+    if (!game || patRemainingThisWeek(game) <= 0) return { message: '本周的拍一拍次数已经用完了。', events: [] }
     const relation = game.relationships.find((item) => item.id === id)
-    if (!relation) return '你找不到这个人。'
+    if (!relation) return { message: '你找不到这个人。', events: [] }
     const outcome = patOutcome(game, relation)
     setGame(outcome.next)
     persist(outcome.next)
@@ -1608,7 +1647,7 @@ function RealApp() {
         '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
       )
     }
-    return outcome.message
+    return { message: outcome.message, events: outcome.events }
   }
 
   const confessRelation = (id: string): string => {
