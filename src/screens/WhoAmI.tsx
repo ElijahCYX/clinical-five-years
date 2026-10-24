@@ -243,6 +243,12 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                   </strong>
                 </div>
                 <div>
+                  <span>思政进度</span>
+                  <strong>
+                    {state.politicsCompleted.length} / 5 · {state.politicsCredits} / 11 学分
+                  </strong>
+                </div>
+                <div>
                   <span>导师联系</span>
                   <strong>{state.mentorContactUnlocked ? '已解锁（待开发）' : '未解锁'}</strong>
                 </div>

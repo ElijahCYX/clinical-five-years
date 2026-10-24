@@ -565,6 +565,14 @@ export const ACTIONS: ActionDef[] = [
   },
 ]
 
+export const POLITICS_COURSES: Course[] = [
+  { id: 'politics-ethics', name: '思修', examType: '小考', credits: 2, memory: '低', comprehension: '中', electiveType: 'politics', selectionChance: 1 },
+  { id: 'politics-military', name: '军理', examType: '小考', credits: 2, memory: '中', comprehension: '低', electiveType: 'politics', selectionChance: 1 },
+  { id: 'politics-situation', name: '形势与政策', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'politics', selectionChance: 1 },
+  { id: 'politics-marx', name: '马原', examType: '小考', credits: 3, memory: '中', comprehension: '中', electiveType: 'politics', selectionChance: 1 },
+  { id: 'politics-mao', name: '毛概', examType: '小考', credits: 3, memory: '中', comprehension: '中', electiveType: 'politics', selectionChance: 1 },
+]
+
 export const ELECTIVE_COURSES: Course[] = [
   // 水课：3 学分，选中率 50%
   { id: 'elective-tcm', name: '中医养生与玄学', examType: '小考', credits: 3, memory: '低', comprehension: '低', electiveType: 'water', selectionChance: 0.5 },
@@ -587,17 +595,14 @@ export const ELECTIVE_COURSES: Course[] = [
   { id: 'elective-history', name: '医学史', examType: '小考', credits: 4, memory: '中', comprehension: '中', electiveType: 'group', selectionChance: 0.75 },
   { id: 'elective-english', name: '医学英语', examType: '小考', credits: 4, memory: '中', comprehension: '中', electiveType: 'group', selectionChance: 0.75 },
   { id: 'elective-lab', name: '实验技能与科研方法', examType: '小考', credits: 4, memory: '中', comprehension: '高', electiveType: 'group', selectionChance: 0.75 },
+
+  // 思政课：必选，概率 100%
+  ...POLITICS_COURSES,
 ]
 
 export const ELECTIVE_COURSE_BY_ID = Object.fromEntries(
   ELECTIVE_COURSES.map((course) => [course.id, course]),
 )
-
-export const POLITICS_ETHICS: Course = { id: 'politics-ethics', name: '思修', examType: '小考', credits: 2, memory: '低', comprehension: '中' }
-export const POLITICS_MILITARY: Course = { id: 'politics-military', name: '军理', examType: '小考', credits: 2, memory: '中', comprehension: '低' }
-export const POLITICS_SITUATION: Course = { id: 'politics-situation', name: '形势与政策', examType: '小考', credits: 1, memory: '低', comprehension: '低' }
-export const POLITICS_MARX: Course = { id: 'politics-marx', name: '马原', examType: '小考', credits: 3, memory: '中', comprehension: '中' }
-export const POLITICS_MAO: Course = { id: 'politics-mao', name: '毛概', examType: '小考', credits: 3, memory: '中', comprehension: '中' }
 
 export const FIRST_SEASON: Season = {
   id: 'y1-autumn',
@@ -625,7 +630,6 @@ export const FIRST_SEASON: Season = {
       memory: '低',
       comprehension: '低',
     },
-    POLITICS_ETHICS,
   ],
 }
 
@@ -643,7 +647,6 @@ export const SEASONS: Season[] = [
     courses: [
       { id: 'organic', name: '有机化学', examType: '大考', credits: 5, memory: '中', comprehension: '中' },
       { id: 'generalChem', name: '普通化学', examType: '大考', credits: 5, memory: '低', comprehension: '高' },
-      POLITICS_MILITARY,
     ],
   },
   {
@@ -657,7 +660,6 @@ export const SEASONS: Season[] = [
     examKind: '小考',
     courses: [
       { id: 'anatomy', name: '系统解剖学', examType: '小考', credits: 3, memory: '高', comprehension: '低' },
-      POLITICS_SITUATION,
     ],
   },
   {
@@ -686,7 +688,6 @@ export const SEASONS: Season[] = [
     courses: [
       { id: 'physiology', name: '生理学', examType: '大考', credits: 5, memory: '高', comprehension: '中' },
       { id: 'immunology', name: '医学免疫学', examType: '大考', credits: 3, memory: '中', comprehension: '中' },
-      POLITICS_MARX,
     ],
   },
   {
@@ -701,7 +702,6 @@ export const SEASONS: Season[] = [
     courses: [
       { id: 'pathology', name: '病理学', examType: '大考', credits: 5, memory: '高', comprehension: '中' },
       { id: 'pharmacology', name: '药理学', examType: '大考', credits: 5, memory: '中', comprehension: '高' },
-      POLITICS_MAO,
     ],
   },
   {

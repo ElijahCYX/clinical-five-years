@@ -5407,6 +5407,12 @@ input:focus-visible {
   background: #faf1e4;
 }
 
+.elective-type.type-politics {
+  color: #6b3b35;
+  border-color: #bd8a7e;
+  background: #f5e9e4;
+}
+
 .elective-type.type-group {
   color: #555e73;
   border-color: #9aa4b5;
@@ -5440,9 +5446,26 @@ input:focus-visible {
 .elective-pick {
   position: absolute;
   right: 13px;
-  bottom: 13px;
+  top: 15px;
   color: var(--muted);
   font-size: 7px;
+}
+
+.elective-refresh-btn {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-3);
+  font-family: var(--sans);
+  font-size: 7.5px;
+  cursor: pointer;
+}
+
+.elective-refresh-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .elective-card.is-selected .elective-pick {

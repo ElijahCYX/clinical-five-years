@@ -137,7 +137,7 @@ export interface ActionDef {
   lockedNote?: string
 }
 
-export type ElectiveType = 'water' | 'interest' | 'group'
+export type ElectiveType = 'water' | 'interest' | 'group' | 'politics'
 
 export interface Course {
   id: string
@@ -307,6 +307,8 @@ export interface GameState {
   electiveOffers: string[]
   electiveSelectionDone: boolean
   pendingElectiveRetakes: string[]
+  politicsCompleted: string[]
+  politicsCredits: number
   openingTalents: OpeningTalentId[]
   mentorContactUnlocked: boolean
   roommateBond: boolean

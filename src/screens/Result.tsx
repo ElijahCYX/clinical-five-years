@@ -138,8 +138,8 @@ export function ResultScreen({
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
                       </span>
-                      {result.course.electiveType &&
-                        result.course.electiveType !== 'group' &&
+                      {(result.course.electiveType === 'water' ||
+                        result.course.electiveType === 'interest') &&
                         result.score < 60 && (
                           <button
                             type="button"
@@ -149,9 +149,15 @@ export function ResultScreen({
                             放弃选修
                           </button>
                         )}
-                      {result.course.electiveType === 'group' && result.score < 60 && (
-                        <span className="elective-retake-tag">小组课挂科 · 下学期自动重修</span>
-                      )}
+                      {(result.course.electiveType === 'group' ||
+                        result.course.electiveType === 'politics') &&
+                        result.score < 60 && (
+                          <span className="elective-retake-tag">
+                            {result.course.electiveType === 'group'
+                              ? '小组课挂科 · 下学期自动重修'
+                              : '思政课挂科 · 下学期自动重修'}
+                          </span>
+                        )}
                     </td>
                     <td>{result.course.examType}</td>
                     <td>{result.course.credits}</td>

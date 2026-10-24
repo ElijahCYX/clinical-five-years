@@ -80,7 +80,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v18'
+const SAVE_KEY = 'clinical-five-years-save-v19'
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -306,6 +306,7 @@ function prepareSeason(base: GameState, index: number): GameState {
       index < 12
         ? generateElectiveOffers(
             base.electiveHistory ?? [],
+            base.politicsCompleted ?? [],
             base.pendingElectiveRetakes ?? [],
           )
         : [],
@@ -511,7 +512,14 @@ function RealApp() {
         ...game.season,
         courses: [...game.season.courses, ...electiveCourses],
       },
-      electiveHistory: [...new Set([...game.electiveHistory, ...acceptedIds])],
+      electiveHistory: [
+        ...new Set([
+          ...game.electiveHistory,
+          ...electiveCourses
+            .filter((course) => course.electiveType !== 'politics')
+            .map((course) => course.id),
+        ]),
+      ],
       electiveOffers: [],
       electiveSelectionDone: true,
     }
@@ -579,7 +587,13 @@ function RealApp() {
     if (!game) return
     const target = game.results.find((result) => result.course.id === courseId)
     if (!target || !target.course.electiveType) return
-    if (target.course.electiveType === 'group' || target.score >= 60) return
+    if (
+      target.course.electiveType === 'group' ||
+      target.course.electiveType === 'politics' ||
+      target.score >= 60
+    ) {
+      return
+    }
     const next: GameState = {
       ...game,
       results: game.results.filter((result) => result.course.id !== courseId),
@@ -739,7 +753,12 @@ function RealApp() {
     const passed = results.filter((result) => result.score >= 60)
     const failed = results.filter((result) => result.score < 60)
     const regularPassed = passed.filter((result) => !result.course.electiveType)
-    const electivePassed = passed.filter((result) => result.course.electiveType)
+    const electivePassed = passed.filter(
+      (result) => result.course.electiveType && result.course.electiveType !== 'politics',
+    )
+    const politicsPassed = passed.filter(
+      (result) => result.course.electiveType === 'politics',
+    )
     const regularCredits = regularPassed.reduce(
       (sum, result) => sum + result.course.credits,
       0,
@@ -758,8 +777,16 @@ function RealApp() {
       electivePointsGain += counted * result.gpa
       electiveCreditRoom -= counted
     }
-    const creditGain = regularCredits + electiveCreditsGain
-    const pointGain = regularPoints + electivePointsGain
+    const politicsCreditsGain = politicsPassed.reduce(
+      (sum, result) => sum + result.course.credits,
+      0,
+    )
+    const politicsPointsGain = politicsPassed.reduce(
+      (sum, result) => sum + result.course.credits * result.gpa,
+      0,
+    )
+    const creditGain = regularCredits + electiveCreditsGain + politicsCreditsGain
+    const pointGain = regularPoints + electivePointsGain + politicsPointsGain
     const pendingMakeups = failed
       .filter((result) => !result.course.electiveType)
       .map((result) =>
@@ -774,8 +801,12 @@ function RealApp() {
               originalScore: result.score,
             },
       )
-    const failedGroupElectives = failed
-      .filter((result) => result.course.electiveType === 'group')
+    const failedRequiredElectives = failed
+      .filter(
+        (result) =>
+          result.course.electiveType === 'group' ||
+          result.course.electiveType === 'politics',
+      )
       .map((result) => result.course.id)
     const next: GameState = {
       ...game,
@@ -796,8 +827,15 @@ function RealApp() {
         (game.electiveCredits ?? 0) + electiveCreditsGain,
       ),
       pendingElectiveRetakes: [
-        ...new Set([...game.pendingElectiveRetakes, ...failedGroupElectives]),
+        ...new Set([...game.pendingElectiveRetakes, ...failedRequiredElectives]),
       ],
+      politicsCompleted: [
+        ...new Set([
+          ...game.politicsCompleted,
+          ...politicsPassed.map((result) => result.course.id),
+        ]),
+      ],
+      politicsCredits: game.politicsCredits + politicsCreditsGain,
       stressRewardedCourses: rewardedCourses,
       selected: [],
       finalNote:

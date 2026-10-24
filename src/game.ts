@@ -16,6 +16,7 @@ import type {
   AwardLevel,
   Course,
   GameState,
+  ElectiveType,
   HabitId,
   OpeningTalentId,
   Player,
@@ -260,17 +261,25 @@ export function signed(value: number): string {
 
 export function generateElectiveOffers(
   history: string[],
+  completedPolitics: string[],
   retakes: string[],
 ): string[] {
-  const excluded = new Set([...history, ...retakes])
-  const pool = ELECTIVE_COURSES.filter((course) => !excluded.has(course.id))
+  const order: ElectiveType[] = ['water', 'interest', 'group', 'politics']
+  const excluded = new Set(retakes)
   const picked: string[] = []
-  while (picked.length < 3 && pool.length > 0) {
-    const index = Math.floor(Math.random() * pool.length)
-    picked.push(pool.splice(index, 1)[0].id)
+  for (const type of order) {
+    const pool = ELECTIVE_COURSES.filter((course) => {
+      if (course.electiveType !== type) return false
+      if (excluded.has(course.id)) return false
+      if (type === 'politics') return !completedPolitics.includes(course.id)
+      return !history.includes(course.id)
+    })
+    if (pool.length === 0) continue
+    picked.push(pool[Math.floor(Math.random() * pool.length)].id)
   }
   return picked
 }
+
 
 export function newGameState(player: Player): GameState {
   return {
@@ -322,9 +331,11 @@ export function newGameState(player: Player): GameState {
     stressRewardedCourses: [],
     electiveHistory: [],
     electiveCredits: 0,
-    electiveOffers: generateElectiveOffers([], []),
+    electiveOffers: generateElectiveOffers([], [], []),
     electiveSelectionDone: false,
     pendingElectiveRetakes: [],
+    politicsCompleted: [],
+    politicsCredits: 0,
     openingTalents: [],
     mentorContactUnlocked: false,
     roommateBond: false,
@@ -788,6 +799,9 @@ export function graduationReasons(state: GameState): string[] {
     reasons.push(
       `选修课学分不足：${state.electiveCredits} / ${ELECTIVE_CREDITS_REQUIRED}`,
     )
+  }
+  if ((state.politicsCompleted?.length ?? 0) < 5) {
+    reasons.push(`思政课未修完：${state.politicsCompleted?.length ?? 0} / 5`)
   }
   if ((state.cet6Score ?? 0) < 550) {
     reasons.push(`CET-6 未达到 550：${state.cet6Score ?? '未参加'}`)
