@@ -1,0 +1,17 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message))
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+// direct decay test
+const decay=await page.evaluate(async()=>{const s=await import('/src/social.ts');const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const base=g.newGameState(demo.demoPlayer);base.seasonIndex=0;base.season=d.SEASONS[0];base.week=4;base.relationships=base.relationships.map(r=>r.kind==='roommate'?{...r,intimacy:20,lastPatAbsWeek:0}:r);const out=s.applyFriendContactDecay(base,4);return {rooms:out.filter(r=>r.kind==='roommate').map(r=>r.intimacy),friend:out.filter(r=>r.kind==='counselor').map(r=>r.intimacy)}})
+console.log('decay',decay)
+await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const s=g.newGameState(demo.demoPlayer);s.screen='vacation';s.seasonIndex=1;s.season=d.SEASONS[1];s.week=1;s.plan='B';s.habits=['timeManagement'];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.money=1000;s.vacation={kind:'winter',week:1,totalWeeks:3};s.relationships=social.createInitialRelationships(demo.demoPlayer);s.seenRelationIds=s.relationships.map(r=>r.id);localStorage.setItem('clinical-five-years-save-v27',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400)
+await page.locator('.interface-btn',{hasText:'TA 是谁'}).click();await page.waitForTimeout(300)
+console.log('vacation pat label',await page.locator('.whois-bulk-pat > span').innerText())
+console.log('vacation nav badges',await page.locator('.interface-badge').allInnerTexts())
+await page.locator('.whois-action',{hasText:'拍一拍'}).first().click();await page.waitForTimeout(250)
+console.log('after pat',await page.locator('.whois-bulk-pat > span').innerText())
+console.log('errors',errors.slice(0,5))
+await browser.close()

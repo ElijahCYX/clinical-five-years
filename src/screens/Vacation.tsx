@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { VACATION_ACTION_BY_ID, VACATION_ACTIONS, VACATIONS, HABIT_BY_ID, BACKGROUND_BY_ID, TALENT_BY_ID, SEASONS } from '../data'
 import {
   cetHint,
@@ -7,7 +8,9 @@ import {
   stressTone,
 } from '../game'
 import type { ActionDef, GameState } from '../types'
-import { Bar, Dot, Eyebrow, Pill, StatBar, TopBar } from '../ui'
+import { Bar, Dot, Eyebrow, InterfaceNav, Pill, StatBar, TopBar } from '../ui'
+import { TravelModal } from './Travel'
+import { patRemainingThisWeek, unseenRelationCount } from '../social'
 
 interface VacationScreenProps {
   state: GameState
@@ -15,6 +18,10 @@ interface VacationScreenProps {
   onEndWeek: () => void
   onSave?: () => void
   onTitle?: () => void
+  onWho?: () => void
+  onTA?: () => void
+  onArrangeTravel?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
+  onRemoveTravel?: () => void
 }
 
 const VISIBLE_VACATION_ACTIONS = [
@@ -36,7 +43,12 @@ export function VacationScreen({
   onEndWeek,
   onSave,
   onTitle,
+  onWho,
+  onTA,
+  onArrangeTravel,
+  onRemoveTravel,
 }: VacationScreenProps) {
+  const [travelOpen, setTravelOpen] = useState(false)
   const player = state.player
   const vacation = state.vacation
   if (!player || !vacation) return null
@@ -60,9 +72,14 @@ export function VacationScreen({
     if (action.requires === 'lab' && !(state.mentorSelected && state.labEntered)) {
       return action.lockedNote ?? '需要先选导师并进入实验室'
     }
+    if (action.id === 'vacTravel') {
+      const cost = state.vacationTravel?.cost ?? 250
+      if (state.money < cost) return '生活费不足'
+    } else if (action.money < 0 && state.money + action.money < 0) {
+      return '生活费不足'
+    }
     const energyCost = effectiveEnergyCost(action.energy, state.energy)
     if (energyCost < 0 && state.energy + energyCost < 0) return '精力不足'
-    if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null
   }
 
@@ -76,6 +93,19 @@ export function VacationScreen({
               返回标题
             </button>
           }
+        />
+        <InterfaceNav
+          active="main"
+          onMain={() => undefined}
+          onWho={onWho ?? (() => undefined)}
+          onTA={onTA ?? (() => undefined)}
+          badges={{
+            main: remainingActions > 0 ? remainingActions : undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
+          }}
         />
 
         <header className="game-head">
@@ -266,7 +296,18 @@ export function VacationScreen({
                     className={`action-card ${selected ? 'is-selected' : ''} ${
                       disabled ? 'is-locked' : ''
                     }`}
-                    onClick={() => !disabled && onToggleAction(action.id)}
+                    onClick={() => {
+                      if (disabled) return
+                      if (action.id === 'vacTravel') {
+                        if (selected) {
+                          onRemoveTravel?.()
+                        } else {
+                          setTravelOpen(true)
+                        }
+                        return
+                      }
+                      onToggleAction(action.id)
+                    }}
                     disabled={disabled}
                   >
                     <div className="action-meta">
@@ -276,7 +317,9 @@ export function VacationScreen({
                     <h3>{action.name}</h3>
                     <p className="action-flavor">{action.flavor}</p>
                     <p className="action-effect">
-                      {energyEffectText(action.effectText, action.energy, state.energy)}
+                      {action.id === 'vacTravel'
+                        ? `精力 -5 · 压力 -30 · 生活费 -${state.vacationTravel?.cost ?? 500}`
+                        : energyEffectText(action.effectText, action.energy, state.energy)}
                     </p>
                     <div className="action-bottom">
                       <span className="action-en">{action.en}</span>
@@ -393,6 +436,17 @@ export function VacationScreen({
           <span>假期结束后：{nextLabel}</span>
         </footer>
       </div>
+      {travelOpen && (
+        <TravelModal
+          relationships={state.relationships}
+          money={state.money}
+          onCancel={() => setTravelOpen(false)}
+          onConfirm={(acceptedIds, declinedIds, cost) => {
+            setTravelOpen(false)
+            onArrangeTravel?.(acceptedIds, declinedIds, cost)
+          }}
+        />
+      )}
     </div>
   )
 }

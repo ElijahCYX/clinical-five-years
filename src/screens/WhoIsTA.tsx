@@ -5,6 +5,7 @@ import {
   canPat,
   confessionChance,
   currentWeekKey,
+  patLimit,
   patRemainingThisWeek,
   relationshipKindLabel,
   unseenRelationCount,
@@ -110,7 +111,7 @@ export function WhoIsTAScreen({
               disabled={patRemaining === 0 || !relations.some((r) => canPat(state, r))}
               onClick={() => setMessage(onAutoPat())}
             >
-              <span>本周拍一拍剩余 {patRemaining} / 3 次</span>
+              <span>本周拍一拍剩余 {patRemaining} / {patLimit(state)} 次</span>
               <small>
                 {patRemaining === 0
                   ? '本周次数已用完'

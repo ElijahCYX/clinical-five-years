@@ -95,6 +95,8 @@ import {
   useResearchNotice,
 } from './screens/ResearchNotice'
 import { EncounterProvider, useEncounter } from './screens/Encounter'
+import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
+import { pickTravelEvent } from './travelEvents'
 import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { pickHypothesis } from './hypotheses'
@@ -107,14 +109,17 @@ import {
   createInitialRelationships,
   nextRoommateAction,
   normalizeRelationships,
+  applyFriendContactDecay,
   patRelationship,
+  progressWeek,
   patRemainingThisWeek,
   isStaffRelation,
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v27'
+const SAVE_KEY = 'clinical-five-years-save-v28'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v27',
   'clinical-five-years-save-v26',
   'clinical-five-years-save-v25',
   'clinical-five-years-save-v24',
@@ -180,6 +185,7 @@ function readSave(): GameState | null {
       familyReliefWeek: game.familyReliefWeek ?? 0,
       seenRelationIds:
         game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
+      vacationTravel: game.vacationTravel ?? null,
     })
   } catch {
     return null
@@ -421,6 +427,7 @@ function prepareVacation(base: GameState, kind: VacationKind): GameState {
     selected: [],
     actionsUsed: 0,
     vacation: { kind, week: 1, totalWeeks: meta.weeks },
+    vacationTravel: null,
   }
 }
 
@@ -469,6 +476,7 @@ function absoluteWeek(state: GameState): number {
 function RealApp() {
   const { showResearchNotice } = useResearchNotice()
   const { showEncounter } = useEncounter()
+  const { showTravelEvents } = useTravelEvents()
   const [view, setView] = useState<View>('title')
   const [game, setGame] = useState<GameState | null>(null)
   const [hasSave, setHasSave] = useState(false)
@@ -1353,25 +1361,35 @@ function RealApp() {
       dinnerAccepted.length > 0
         ? Math.max(1, Math.floor(6 / dinnerAccepted.length))
         : 0
-    const relationships = game.relationships.map((relation) => {
-      let updated = relation
-      if (relation.kind === 'roommate') {
-        updated = { ...updated, weeklyAction: nextRoommateAction() }
-      }
-      if (dinnerAccepted.includes(relation.id)) {
-        updated = revealMaybe({
-          ...updated,
-          intimacy: Math.min(100, updated.intimacy + dinnerIntimacyGain),
-        })
-      }
-      if (relation.kind === 'mentor' && sim.mentorIntimacyGain > 0) {
-        updated = {
-          ...updated,
-          intimacy: Math.min(100, updated.intimacy + sim.mentorIntimacyGain),
-        }
-      }
-      return updated
-    })
+    const relationships = applyFriendContactDecay(
+      {
+        ...game,
+        relationships: game.relationships.map((relation) => {
+          let updated = relation
+          if (relation.kind === 'roommate') {
+            updated = {
+              ...updated,
+              weeklyAction: nextRoommateAction(),
+              intimacy: Math.min(100, updated.intimacy + 3),
+            }
+          }
+          if (dinnerAccepted.includes(relation.id)) {
+            updated = revealMaybe({
+              ...updated,
+              intimacy: Math.min(100, updated.intimacy + dinnerIntimacyGain),
+            })
+          }
+          if (relation.kind === 'mentor' && sim.mentorIntimacyGain > 0) {
+            updated = {
+              ...updated,
+              intimacy: Math.min(100, updated.intimacy + sim.mentorIntimacyGain),
+            }
+          }
+          return updated
+        }),
+      },
+      progressWeek(game),
+    )
     const next: GameState = {
       ...game,
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
@@ -1942,6 +1960,47 @@ function RealApp() {
     if (nextIndex < SEASONS.length) startSeason(nextIndex)
   }
 
+  const arrangeVacationTravel = (
+    acceptedIds: string[],
+    declinedIds: string[],
+    cost: number,
+  ) => {
+    if (
+      !game ||
+      !game.vacation ||
+      game.selected.includes('vacTravel') ||
+      game.selected.length >= 2 ||
+      cost > game.money
+    ) {
+      return
+    }
+    const next: GameState = {
+      ...game,
+      selected: [...game.selected, 'vacTravel'],
+      vacationTravel: {
+        companionIds: acceptedIds,
+        declinedIds,
+        cost,
+        summary: acceptedIds
+          .map((id) => game.relationships.find((r) => r.id === id)?.name)
+          .filter(Boolean) as string[],
+      },
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const removeVacationTravel = () => {
+    if (!game || !game.vacation) return
+    const next: GameState = {
+      ...game,
+      selected: game.selected.filter((id) => id !== 'vacTravel'),
+      vacationTravel: null,
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const endVacationWeek = () => {
     if (!game || !game.vacation || !game.player || game.selected.length !== 2) return
     const player = game.player
@@ -1966,7 +2025,11 @@ function RealApp() {
       if (!action) continue
       energy += effectiveEnergyCost(action.energy, game.energy)
       stress += action.stress
-      money += action.money
+      if (action.id === 'vacTravel' && game.vacationTravel) {
+        money -= game.vacationTravel.cost
+      } else {
+        money += action.money
+      }
       english += action.english ?? 0
       composite += action.composite ?? 0
       research += action.research ?? 0
@@ -2004,6 +2067,7 @@ function RealApp() {
     const base: GameState = {
       ...game,
       player: { ...player, attrs: grown.attrs },
+      relationships: applyFriendContactDecay(game, progressWeek(game)),
       energy,
       stress,
       money,
@@ -2015,7 +2079,69 @@ function RealApp() {
       socialGrowth: grown.socialGrowth,
       selected: [],
       actionsUsed: 0,
+      vacationTravel: null,
       logs: [...game.logs, log],
+    }
+
+    const travelPlan = game.vacationTravel
+    const travelCompanions =
+      travelPlan && game.selected.includes('vacTravel')
+        ? travelPlan.companionIds
+            .map((id) => game.relationships.find((relation) => relation.id === id))
+            .filter(Boolean)
+        : []
+    if (travelCompanions.length > 0) {
+      let eventCount = 1
+      if (Math.random() < 0.5) eventCount = 2
+      if (eventCount === 2 && Math.random() < 0.25) eventCount = 3
+      const items = Array.from({ length: eventCount }, () => {
+        const companion =
+          travelCompanions[
+            Math.floor(Math.random() * travelCompanions.length)
+          ]!
+        return {
+          event: pickTravelEvent(),
+          companionId: companion.id,
+          companionName: companion.name,
+        }
+      })
+      showTravelEvents({
+        items,
+        onResolve: (item, option) => {
+          setGame((previous) => {
+            if (!previous) return previous
+            const effects = option.effects
+            const updated: GameState = {
+              ...previous,
+              money: Math.max(0, previous.money + (effects.money ?? 0)),
+              energy: Math.max(
+                0,
+                Math.min(100, previous.energy + (effects.energy ?? 0)),
+              ),
+              stress: Math.max(
+                0,
+                Math.min(100, previous.stress + (effects.stress ?? 0)),
+              ),
+              relationships: previous.relationships.map((relation) =>
+                relation.id === item.companionId
+                  ? {
+                      ...relation,
+                      intimacy: Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          relation.intimacy + (effects.intimacy ?? 0),
+                        ),
+                      ),
+                    }
+                  : relation,
+              ),
+            }
+            persist(updated)
+            return updated
+          })
+        },
+      })
     }
 
     if (!isLastWeek) {
@@ -2298,6 +2424,10 @@ function RealApp() {
         onEndWeek={endVacationWeek}
         onSave={saveNow}
         onTitle={goTitle}
+        onWho={openWhoAmI}
+        onTA={openWhoIs}
+        onArrangeTravel={arrangeVacationTravel}
+        onRemoveTravel={removeVacationTravel}
       />
     )
   }
@@ -2488,7 +2618,9 @@ export default function App() {
   return (
     <ResearchNoticeProvider>
       <EncounterProvider>
-        <RealApp />
+        <TravelEventProvider>
+          <RealApp />
+        </TravelEventProvider>
       </EncounterProvider>
     </ResearchNoticeProvider>
   )

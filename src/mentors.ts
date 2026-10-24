@@ -414,6 +414,7 @@ export function createMentorRelationship(
     stats: randomStats(),
     weeklyAction: '在办公室改论文、开组会、催学生补实验。',
     lastPatKey: '',
+    lastPatAbsWeek: 0,
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,

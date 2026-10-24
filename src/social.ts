@@ -104,6 +104,7 @@ function makeRelationship(
     stats: randomStats(),
     weeklyAction: ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: '',
+    lastPatAbsWeek: 0,
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,
@@ -187,17 +188,34 @@ export function unseenRelationCount(state: GameState): number {
 
 export const PAT_LIMIT = 3
 
+export function progressWeek(state: GameState): number {
+  return (
+    state.seasonIndex * 4 +
+    (state.vacation ? 4 + state.vacation.week : state.week)
+  )
+}
+
+export function patPeriodKey(state: GameState): string {
+  return state.vacation
+    ? `vacation-${state.vacation.kind}-${state.seasonIndex}`
+    : currentWeekKey(state)
+}
+
+export function patLimit(state: GameState): number {
+  return state.vacation ? 5 : PAT_LIMIT
+}
+
 export function patUsedThisWeek(state: GameState): number {
-  const key = currentWeekKey(state)
+  const key = patPeriodKey(state)
   return state.relationships.filter((relation) => relation.lastPatKey === key).length
 }
 
 export function patRemainingThisWeek(state: GameState): number {
-  return Math.max(0, PAT_LIMIT - patUsedThisWeek(state))
+  return Math.max(0, patLimit(state) - patUsedThisWeek(state))
 }
 
 export function canPat(state: GameState, relation: Relationship): boolean {
-  return relation.lastPatKey !== currentWeekKey(state)
+  return relation.lastPatKey !== patPeriodKey(state)
 }
 
 export function patRelationship(relation: Relationship, state: GameState): Relationship {
@@ -205,7 +223,32 @@ export function patRelationship(relation: Relationship, state: GameState): Relat
   return revealMaybe({
     ...relation,
     intimacy: Math.min(100, relation.intimacy + 2),
-    lastPatKey: currentWeekKey(state),
+    lastPatKey: patPeriodKey(state),
+    lastPatAbsWeek: progressWeek(state),
+  })
+}
+
+export function applyFriendContactDecay(
+  state: GameState,
+  now = progressWeek(state),
+): Relationship[] {
+  return state.relationships.map((relation) => {
+    if (
+      relation.kind !== 'roommate' &&
+      relation.kind !== 'friend' &&
+      relation.kind !== 'classmate'
+    ) {
+      return relation
+    }
+    if (now - (relation.lastPatAbsWeek ?? 0) < 3) return relation
+    const delta =
+      relation.intimacy > 15
+        ? -Math.min(5, relation.intimacy - 15)
+        : -1
+    return {
+      ...relation,
+      intimacy: Math.max(0, relation.intimacy + delta),
+    }
   })
 }
 
@@ -234,6 +277,7 @@ export function normalizeRelationships(
       relation.weeklyAction ??
       ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: relation.lastPatKey ?? '',
+    lastPatAbsWeek: relation.lastPatAbsWeek ?? 0,
     partner: relation.partner ?? false,
     confessionRisk: relation.confessionRisk ?? 0,
     breakupRisk: relation.breakupRisk ?? 0,
@@ -304,6 +348,16 @@ export function dinnerCost(acceptedCount: number): number {
 
 export function dinnerAttendanceChance(relation: Relationship): number {
   return Math.min(0.95, 0.25 + relation.intimacy / 100 * 0.7)
+}
+
+export function travelJoinChance(relation: Relationship): number {
+  return Math.min(0.9, Math.max(0.08, 0.15 + relation.intimacy / 120))
+}
+
+export function travelCost(acceptedCount: number): number {
+  if (acceptedCount <= 0) return 500
+  if (acceptedCount === 1) return 300
+  return 250
 }
 
 export function isDinnerFriend(relation: Relationship): boolean {

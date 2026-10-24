@@ -326,6 +326,7 @@ export interface Relationship {
   stats: RelationshipStats
   weeklyAction: string
   lastPatKey: string
+  lastPatAbsWeek: number
   partner: boolean
   confessionRisk: number
   breakupRisk: number
@@ -387,6 +388,13 @@ export interface EncounterChat {
   id: string
   intro: string
   options: EncounterChatOption[]
+}
+
+export interface VacationTravelPlan {
+  companionIds: string[]
+  declinedIds: string[]
+  cost: number
+  summary: string[]
 }
 
 export interface GameState {
@@ -479,6 +487,7 @@ export interface GameState {
   familyAffection: number
   familyReliefWeek: number
   seenRelationIds: string[]
+  vacationTravel: VacationTravelPlan | null
 }
 
 export type DemoName =
