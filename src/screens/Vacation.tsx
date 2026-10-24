@@ -8,7 +8,7 @@ import {
   stressTone,
 } from '../game'
 import type { ActionDef, GameState } from '../types'
-import { Bar, Dot, Eyebrow, InterfaceNav, Pill, StatBar, TopBar } from '../ui'
+import { Bar, Dot, Eyebrow, InterfaceNav, Pill, StatBar, StressHearts, TopBar } from '../ui'
 import { TravelModal } from './Travel'
 import { patRemainingThisWeek, unseenRelationCount } from '../social'
 
@@ -178,6 +178,7 @@ export function VacationScreen({
                 tone={stressTone(state.stress)}
                 sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
               />
+              <StressHearts value={state.stressHearts} />
               {(state.highPressureDebuff || state.stress > 70 || state.energy < 60) && (
                 <div className="condition-notes">
                   {state.highPressureDebuff && (

@@ -1,0 +1,23 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message))
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+async function setup(stress,hearts,week=1,breakWeek=0){await page.evaluate(async({stress,hearts,week,breakWeek})=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const m=await import('/src/mentors.ts');const s=g.newGameState(demo.demoPlayer);s.screen='week';s.seasonIndex=0;s.season=d.SEASONS[0];s.week=week;s.plan='B';s.habits=[];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=week;s.stress=stress;s.stressHearts=hearts;s.stressHeartBreakWeek=breakWeek;s.highPressureDebuff=false;s.relationships=[...social.createInitialRelationships(demo.demoPlayer),m.createMentorRelationship(m.MENTOR_LIBRARY[0],demo.demoPlayer)];s.seenRelationIds=s.relationships.map(r=>r.id);localStorage.setItem('clinical-five-years-save-v32',JSON.stringify({game:s,savedAt:Date.now()}))},{stress,hearts,week,breakWeek});await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(500)}
+await setup(80,3)
+console.log('stage1 modal',await page.locator('.research-notice-modal .random-event-title').innerText().catch(()=>''))
+console.log('hearts UI',await page.locator('.stress-hearts').innerText().catch(()=>''))
+let s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v32')).game);console.log('stage1 state',{stress:s.stress,hearts:s.stressHearts,breakWeek:s.stressHeartBreakWeek})
+await page.locator('.research-notice-modal .btn-primary').click();await page.waitForTimeout(300)
+await setup(80,2,2)
+console.log('stage2 title',await page.locator('.research-notice-modal .random-event-title').innerText().catch(()=>''))
+s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v32')).game);console.log('stage2 state',{stress:s.stress,hearts:s.stressHearts})
+await page.locator('.research-notice-modal .btn-primary').click();await page.waitForTimeout(300)
+await setup(80,1,2)
+console.log('stage3 title',await page.locator('.research-notice-modal .random-event-title').innerText().catch(()=>''))
+s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v32')).game);console.log('stage3 state',{stress:s.stress,hearts:s.stressHearts})
+// suicide next week
+await setup(80,0,3,1)
+await page.waitForTimeout(300);console.log('ending?',await page.locator('.ending-screen').count(),await page.locator('.ending-title').innerText().catch(()=>''))
+console.log('errors',errors.slice(0,6))
+await browser.close()

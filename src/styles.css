@@ -9142,3 +9142,48 @@ body.dinner-open {
     text-align: left;
   }
 }
+
+/* ---------- stress hearts ---------- */
+
+.stress-hearts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.stress-hearts-label {
+  margin-right: 2px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.stress-heart {
+  color: var(--red);
+  font-size: 17px;
+  line-height: 1;
+  animation: heartRemainPulse 2.4s ease-in-out infinite;
+}
+
+.stress-heart.is-broken {
+  color: rgba(155, 60, 48, 0.28);
+  animation: none;
+  transform: rotate(-12deg);
+}
+
+.stress-hearts-note {
+  margin-left: 3px;
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+@keyframes heartRemainPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}

@@ -100,6 +100,7 @@ import { EncounterProvider, useEncounter } from './screens/Encounter'
 import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
 import { pickTravelEvent } from './travelEvents'
 import { pickConsumptionEvent } from './consumptionEvents'
+import { ROOMMATE_TALKS, STRESS_ENDING_TEXT, STRESS_TALKS } from './stressTalks'
 import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { pickHypothesis } from './hypotheses'
@@ -125,8 +126,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v32'
+const SAVE_KEY = 'clinical-five-years-save-v33'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v32',
   'clinical-five-years-save-v31',
   'clinical-five-years-save-v30',
   'clinical-five-years-save-v29',
@@ -203,6 +205,9 @@ function readSave(): GameState | null {
       vacationTravel: game.vacationTravel ?? null,
       pendingConsumption: game.pendingConsumption ?? null,
       consumptionEventWeek: game.consumptionEventWeek ?? 0,
+      highPressureDebuff: game.highPressureDebuff ?? false,
+      stressHearts: game.stressHearts ?? 3,
+      stressHeartBreakWeek: game.stressHeartBreakWeek ?? 0,
     })
   } catch {
     return null
@@ -554,6 +559,16 @@ function RealApp() {
 
   useEffect(() => {
     if (!game || view !== 'week') return
+
+    if (
+      game.stressHearts <= 0 &&
+      game.stress >= 80 &&
+      game.selected.length === 0 &&
+      progressWeek(game) > game.stressHeartBreakWeek
+    ) {
+      commit({ ...game, screen: 'stressEnding' }, 'stressEnding')
+      return
+    }
 
     if (game.awaitingNextProject) {
       if (publicationNoticeOpenRef.current) return
@@ -950,21 +965,60 @@ function RealApp() {
   useEffect(() => {
     if (
       !game ||
+      view === 'title' ||
+      view === 'create' ||
+      view === 'stressEnding' ||
+      game.stress < 80 ||
+      game.stressHearts <= 0
+    ) {
+      return
+    }
+    const heartsBefore = game.stressHearts
+    const stage = 4 - heartsBefore
+    const mentor = game.relationships.find((relation) => relation.kind === 'mentor')
+    const counselor = game.relationships.find((relation) => relation.kind === 'counselor')
+    const speaker =
+      stage === 3
+        ? '舍友们'
+        : stage === 2 && mentor
+          ? mentor.name
+          : counselor?.name ?? '辅导员'
+    const title =
+      stage === 3
+        ? '舍友们的夜谈'
+        : stage === 2 && mentor
+          ? '导师的谈心'
+          : '辅导员的谈心'
+    const pool =
+      stage === 3
+        ? ROOMMATE_TALKS
+        : STRESS_TALKS
+    const text = pool[Math.floor(Math.random() * pool.length)]
+    const nextStress = stage === 1 ? 60 : stage === 2 ? 70 : game.stress
+    const next: GameState = {
+      ...game,
+      stressHearts: Math.max(0, game.stressHearts - 1),
+      stressHeartBreakWeek: progressWeek(game),
+      stress: Math.max(0, Math.min(100, nextStress)),
+      highPressureDebuff: stage === 3,
+    }
+    setGame(next)
+    persist(next)
+    showResearchNotice({
+      kind: 'warning',
+      title,
+      text,
+    })
+  }, [game, view])
+
+  useEffect(() => {
+    if (
+      !game ||
       crisisKind ||
       view === 'title' ||
       view === 'create' ||
       view === 'crisis'
     ) {
-      return
-    }
-
-    if (game.stress > 80 && !game.highPressureDebuff) {
-      const next = { ...game, highPressureDebuff: true }
-      setGame(next)
-      persist(next)
-      setCrisisReturn(view)
-      setCrisisKind('stress')
-      setView('crisis')
       return
     }
 
@@ -2858,6 +2912,21 @@ function RealApp() {
         note={notes[completedYear]}
         continueLabel={nextSeason ? `继续：${nextSeason.seasonLabel}` : undefined}
         onContinue={nextSeason ? handleYearEndContinue : undefined}
+        onRestart={handleRestart}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'stressEnding') {
+    return (
+      <EndingScreen
+        state={game}
+        eyebrow="INCIDENT / PRESSURE ENDING"
+        titleMain="这一局，"
+        titleAccent="停在这里"
+        description={STRESS_ENDING_TEXT}
+        note="如果身边有人正在经历类似的痛苦，请让 TA 去求助。游戏可以重开，人不能。"
         onRestart={handleRestart}
         onTitle={goTitle}
       />

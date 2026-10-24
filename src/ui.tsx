@@ -245,6 +245,25 @@ export function Stamp({ text = '漸江大學醫學院', sub = '教務處' }: { t
   )
 }
 
+export function StressHearts({ value }: { value: number }) {
+  const hearts = Math.max(0, Math.min(3, value))
+  return (
+    <div className="stress-hearts" aria-label={`剩余心力 ${hearts} / 3`}>
+      <span className="stress-hearts-label">心力</span>
+      {[0, 1, 2].map((index) => (
+        <span
+          key={index}
+          className={`stress-heart ${index >= hearts ? 'is-broken' : ''}`}
+          aria-hidden="true"
+        >
+          {index >= hearts ? '♡' : '♥'}
+        </span>
+      ))}
+      <span className="stress-hearts-note">{hearts === 0 ? '已经碎完了' : `${hearts} / 3`}</span>
+    </div>
+  )
+}
+
 export function Pill({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'green' | 'red' | 'gold' }) {
   return <span className={`pill pill-${tone}`}>{children}</span>
 }

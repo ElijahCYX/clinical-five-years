@@ -1,7 +1,7 @@
 import { BACKGROUND_BY_ID, HABIT_BY_ID, PLAN_BY_ID, TALENT_BY_ID } from '../data'
 import { cetHint, type WeekSimulation } from '../game'
 import type { GameState } from '../types'
-import { Dot, StatBar } from '../ui'
+import { Dot, StatBar, StressHearts } from '../ui'
 import {
   energyCostMultiplier,
   energyTone,
@@ -89,6 +89,7 @@ export function PlayerRail({
           previewValue={preview?.stress}
           sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
         />
+        <StressHearts value={state.stressHearts} />
         {(state.highPressureDebuff || state.stress > 70 || energyCostMultiplier(state.energy) > 1) && (
           <div className="condition-notes">
             {state.highPressureDebuff && (

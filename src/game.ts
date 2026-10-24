@@ -327,6 +327,8 @@ export function newGameState(player: Player): GameState {
     mentorSelected: false,
     labEntered: false,
     highPressureDebuff: false,
+    stressHearts: 3,
+    stressHeartBreakWeek: 0,
     lowEnergyAlert: false,
     stressRewardedCourses: [],
     electiveHistory: [],

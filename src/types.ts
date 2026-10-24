@@ -57,6 +57,7 @@ export type ScreenName =
   | 'yearend'
   | 'graduation'
   | 'ending'
+  | 'stressEnding'
 
 export type ReviewChoice =
   | 'full'
@@ -482,6 +483,8 @@ export interface GameState {
   mentorSelected: boolean
   labEntered: boolean
   highPressureDebuff: boolean
+  stressHearts: number
+  stressHeartBreakWeek: number
   lowEnergyAlert: boolean
   stressRewardedCourses: string[]
   electiveHistory: string[]
@@ -552,3 +555,4 @@ export type DemoName =
   | 'randomEvent'
   | 'yearend'
   | 'ending'
+  | 'stressEnding'
