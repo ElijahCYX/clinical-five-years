@@ -36,7 +36,9 @@ export function PrepScreen({
   const player = state.player
   if (!player) return null
 
-  const habit = state.habit ? HABIT_BY_ID[state.habit] : null
+  const habits = (state.habits ?? [])
+    .map((id) => HABIT_BY_ID[id])
+    .filter(Boolean)
   const courses = state.season.courses
   const isBig = courses.length > 1
   const planId = state.plan ?? 'B'
@@ -286,7 +288,7 @@ export function PrepScreen({
               <div className="prep-k-row prep-plan-row">
                 <span>计划倍率 ×{multiplier.toFixed(2)}</span>
                 <span>
-                  习惯：{habit?.name ?? '无'} {state.stress <= 60 ? '生效中' : '失效'}
+                  习惯：{habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'} {habits.length > 0 && state.stress <= 60 ? '生效中' : '失效'}
                 </span>
               </div>
             </div>

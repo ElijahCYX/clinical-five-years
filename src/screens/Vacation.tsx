@@ -48,8 +48,10 @@ export function VacationScreen({
   const nextLabel = nextSeason?.seasonLabel ?? '下一学年'
   const talent = TALENT_BY_ID[player.talent]
   const background = BACKGROUND_BY_ID[player.background]
-  const habit = state.habit ? HABIT_BY_ID[state.habit] : null
-  const habitActive = state.stress <= 60
+  const habits = (state.habits ?? [])
+    .map((id) => HABIT_BY_ID[id])
+    .filter(Boolean)
+  const habitActive = habits.length > 0 && state.stress <= 60
   const latestLog = state.logs[state.logs.length - 1]
   const vacationLog = latestLog?.title.startsWith(meta.name) ? latestLog : null
   const remainingActions = Math.max(0, 2 - state.selected.length)
@@ -209,7 +211,7 @@ export function VacationScreen({
               <div className="plan-mini-row">
                 <span>养成习惯</span>
                 <strong>
-                  {habit ? habit.name : '无'}
+                  {habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'}
                   <Dot active={habitActive} />
                 </strong>
               </div>
@@ -355,7 +357,7 @@ export function VacationScreen({
               <div className="vacation-habit">
                 <span>当前习惯</span>
                 <strong>
-                  {habit ? habit.name : '无'}
+                  {habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'}
                   <Dot active={habitActive} />
                 </strong>
               </div>

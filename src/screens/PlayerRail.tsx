@@ -32,8 +32,10 @@ export function PlayerRail({
   const talent = TALENT_BY_ID[player.talent]
   const background = BACKGROUND_BY_ID[player.background]
   const plan = state.plan ? PLAN_BY_ID[state.plan] : null
-  const habit = state.habit ? HABIT_BY_ID[state.habit] : null
-  const habitActive = state.stress <= 60
+  const habits = (state.habits ?? [])
+    .map((id) => HABIT_BY_ID[id])
+    .filter(Boolean)
+  const habitActive = habits.length > 0 && state.stress <= 60
   const remainingActions = Math.max(0, 2 - state.selected.length)
   const isExam = mode === 'exam'
 
@@ -169,7 +171,7 @@ export function PlayerRail({
         <div className="plan-mini-row">
           <span>养成习惯</span>
           <strong>
-            {habit ? habit.name : '未选择'}
+            {habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '未选择'}
             <Dot active={habitActive} />
           </strong>
         </div>

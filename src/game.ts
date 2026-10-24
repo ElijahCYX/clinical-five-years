@@ -235,7 +235,7 @@ export function newGameState(player: Player): GameState {
     seasonIndex: 0,
     vacation: null,
     plan: null,
-    habit: null,
+    habits: [],
     week: 1,
     energy: 100,
     stress: 22,
@@ -389,7 +389,8 @@ export function cetScore(
   if (kind === 'cet4' && english >= 40) score = Math.max(score, CET.pass4)
   if (kind === 'cet6' && english >= 75) score = Math.max(score, CET.pass6)
   if (kind === 'cet6' && english >= 100) score = Math.max(score, CET.graduate6)
-  return clamp(Math.round(score), 0, CET.total)
+  const floor = kind === 'cet4' ? 200 : 150
+  return clamp(Math.round(score), floor, CET.total)
 }
 
 export interface WeekSimulation {
@@ -412,9 +413,13 @@ export interface WeekSimulation {
 export function simulateWeek(state: GameState): WeekSimulation {
   const player = state.player!
   const plan = state.plan ? PLAN_BY_ID[state.plan] : null
-  const habit = state.habit ? HABIT_BY_ID[state.habit] : null
-  const habitApplied = state.stress <= 60
-  const studyBonus = habit && habitApplied ? (habit.studyBonus ?? 0) : 0
+  const habits = (state.habits ?? [])
+    .map((id) => HABIT_BY_ID[id])
+    .filter(Boolean)
+  const habitApplied = habits.length > 0 && state.stress <= 60
+  const studyBonus = habitApplied
+    ? habits.reduce((sum, habit) => sum + (habit.studyBonus ?? 0), 0)
+    : 0
   const prepMultiplier = prepGainMultiplier(state)
 
   let energy = state.energy
@@ -467,17 +472,19 @@ export function simulateWeek(state: GameState): WeekSimulation {
     }
   }
 
-  if (habitApplied && habit) {
-    energy += habit.energy ?? 0
-    stress += habit.stress ?? 0
-    money += habit.money ?? 0
-    english += habit.english ?? 0
-    research += habit.research ?? 0
-    if (habit.growth === 'constitution') {
-      constitutionGrowth += habit.growthAmount ?? 0
-    }
-    if (habit.growth === 'appearance') {
-      appearanceGrowth += habit.growthAmount ?? 0
+  if (habitApplied) {
+    for (const habit of habits) {
+      energy += habit.energy ?? 0
+      stress += habit.stress ?? 0
+      money += habit.money ?? 0
+      english += habit.english ?? 0
+      research += habit.research ?? 0
+      if (habit.growth === 'constitution') {
+        constitutionGrowth += habit.growthAmount ?? 0
+      }
+      if (habit.growth === 'appearance') {
+        appearanceGrowth += habit.growthAmount ?? 0
+      }
     }
   }
 

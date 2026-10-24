@@ -4,7 +4,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } })
 const errors=[]; page.on('pageerror', e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
 const wait=(ms=300)=>page.waitForTimeout(ms)
 const click=async(sel)=>{await page.locator(sel).first().click(); await wait(160)}
-async function choosePlan(){ await page.locator('.plan-card',{hasText:'周期回顾'}).click(); await page.locator('.habit-card',{hasText:'时间管理'}).click(); await page.locator('.plan-footer .btn-primary').click(); await wait(350) }
+async function choosePlan(){ await page.locator('.plan-card',{hasText:'周期回顾'}).click(); await page.locator('.habit-card',{hasText:'时间管理'}).click(); await page.locator('.habit-card',{hasText:'早睡'}).click(); await page.locator('.plan-footer .btn-primary').click(); await wait(350) }
 async function week(){ await page.locator('.action-card',{hasText:'泡图书馆'}).first().click(); await page.locator('.action-card',{hasText:'纯粹的休息'}).first().click(); await page.locator('.action-footer .btn-primary').click(); await wait(300) }
 async function prep(){ await page.locator('.review-card',{hasText:'历年卷'}).first().click(); await page.locator('.prep-confirm .btn-primary').click(); await wait(450) }
 async function vacationWeek(){ await page.locator('.action-card',{hasText:'纯粹的休息'}).first().click(); await page.locator('.action-card',{hasText:'健身 / 运动'}).first().click(); await page.locator('.action-footer .btn-primary').click(); await wait(350) }

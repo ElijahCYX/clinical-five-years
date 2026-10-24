@@ -1512,6 +1512,30 @@ input:focus-visible {
   border-color: var(--line-strong);
 }
 
+.habit-card.is-disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.habit-check {
+  margin-left: 7px;
+  padding: 1px 4px;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: var(--sans);
+  font-size: 6.5px;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+
+.habit-count {
+  margin-left: 7px;
+  font-family: var(--sans);
+  font-size: 8px;
+  font-style: normal;
+  color: var(--muted);
+}
+
 .habit-card.is-selected {
   border-color: var(--ink);
   background: #f6f2e6;

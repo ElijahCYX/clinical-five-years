@@ -227,7 +227,7 @@ export interface GameState {
   seasonIndex: number
   vacation: VacationState | null
   plan: PlanId | null
-  habit: HabitId | null
+  habits: HabitId[]
   week: number
   energy: number
   stress: number

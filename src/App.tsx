@@ -67,7 +67,7 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v11'
+const SAVE_KEY = 'clinical-five-years-save-v12'
 
 type View = ScreenName | 'crisis'
 
@@ -275,7 +275,7 @@ function prepareSeason(base: GameState, index: number): GameState {
     season,
     seasonIndex: index,
     plan: null,
-    habit: null,
+    habits: [],
     week: 1,
     money: base.money + (base.player ? backgroundAllowance(base.player) : 0),
     prep: Object.fromEntries(season.courses.map((course) => [course.id, 0])),
@@ -426,13 +426,13 @@ function RealApp() {
     commit(newGameState(player), 'plan')
   }
 
-  const handlePlan = (plan: PlanId, habit: HabitId) => {
+  const handlePlan = (plan: PlanId, habits: HabitId[]) => {
     if (!game) return
     const next: GameState = {
       ...game,
       screen: 'week',
       plan,
-      habit,
+      habits,
       week: 1,
       selected: [],
       actionsUsed: 0,
@@ -946,8 +946,10 @@ function RealApp() {
   const endVacationWeek = () => {
     if (!game || !game.vacation || !game.player || game.selected.length !== 2) return
     const player = game.player
-    const habit = game.habit
-    const habitApplied = game.stress <= 60
+    const habits = (game.habits ?? [])
+      .map((id) => HABIT_BY_ID[id])
+      .filter(Boolean)
+    const habitApplied = habits.length > 0 && game.stress <= 60
 
     let energy = game.energy
     let stress = game.stress
@@ -977,18 +979,19 @@ function RealApp() {
       }
     }
 
-    if (habitApplied && habit) {
-      const habitDef = HABIT_BY_ID[habit]
-      energy += habitDef.energy ?? 0
-      stress += habitDef.stress ?? 0
-      money += habitDef.money ?? 0
-      english += habitDef.english ?? 0
-      research += habitDef.research ?? 0
-      if (habitDef.growth === 'constitution') {
-        constitutionGrowth += habitDef.growthAmount ?? 0
-      }
-      if (habitDef.growth === 'appearance') {
-        appearanceGrowth += habitDef.growthAmount ?? 0
+    if (habitApplied) {
+      for (const habitDef of habits) {
+        energy += habitDef.energy ?? 0
+        stress += habitDef.stress ?? 0
+        money += habitDef.money ?? 0
+        english += habitDef.english ?? 0
+        research += habitDef.research ?? 0
+        if (habitDef.growth === 'constitution') {
+          constitutionGrowth += habitDef.growthAmount ?? 0
+        }
+        if (habitDef.growth === 'appearance') {
+          appearanceGrowth += habitDef.growthAmount ?? 0
+        }
       }
     }
 
@@ -1171,7 +1174,7 @@ function RealApp() {
         player={game.player}
         seasonLabel={game.season.seasonLabel}
         initialPlan={game.plan}
-        initialHabit={game.habit}
+        initialHabits={game.habits}
         onBack={() => setView('create')}
         onConfirm={handlePlan}
       />
@@ -1326,7 +1329,7 @@ function DemoApp({ screen }: { screen: DemoName }) {
       <PlanScreen
         player={demoPlayer}
         initialPlan="B"
-        initialHabit="timeManagement"
+        initialHabits={["timeManagement", "earlySleep"]}
         onBack={() => goDemo('create')}
         onConfirm={() => goDemo('week')}
       />

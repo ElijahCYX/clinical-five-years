@@ -7,23 +7,31 @@ interface PlanScreenProps {
   player: Player
   seasonLabel?: string
   initialPlan?: PlanId | null
-  initialHabit?: HabitId | null
+  initialHabits?: HabitId[]
   onBack?: () => void
-  onConfirm: (plan: PlanId, habit: HabitId) => void
+  onConfirm: (plan: PlanId, habits: HabitId[]) => void
 }
 
 export function PlanScreen({
   player,
   seasonLabel = '大一 · 秋',
   initialPlan = null,
-  initialHabit = null,
+  initialHabits = [],
   onBack,
   onConfirm,
 }: PlanScreenProps) {
   const [plan, setPlan] = useState<PlanId | null>(initialPlan)
-  const [habit, setHabit] = useState<HabitId | null>(initialHabit)
+  const [habits, setHabits] = useState<HabitId[]>(initialHabits)
 
-  const canStart = plan !== null && habit !== null
+  const canStart = plan !== null && habits.length === 2
+
+  const toggleHabit = (id: HabitId) => {
+    setHabits((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id)
+      if (current.length >= 2) return current
+      return [...current, id]
+    })
+  }
 
   return (
     <div className="screen plan-screen">
@@ -48,7 +56,7 @@ export function PlanScreen({
             <p className="page-lede">
               {player.name}，欢迎来到{SCHOOL_NAME}。
               在正式开始之前，先决定这学期怎么过。计划会影响你每周能积累多少准备度，
-              习惯则在你压力不太高的时候悄悄生效。
+              习惯则在你压力不太高的时候悄悄生效。这学期可以选两个习惯，让它们一起陪你。
             </p>
           </div>
           <div className="plan-seal">
@@ -91,22 +99,29 @@ export function PlanScreen({
 
           <section className="habit-section">
             <SectionLabel
-              right={<span className="muted-note">压力 &gt; 60 时，习惯当周失效</span>}
+              right={<span className="muted-note">选 2 个 · 压力 &gt; 60 时当周失效</span>}
             >
               02 / 养成习惯
             </SectionLabel>
             <div className="habit-grid">
               {HABITS.map((item) => {
-                const selected = item.id === habit
+                const selected = habits.includes(item.id)
+                const disabled = !selected && habits.length >= 2
                 return (
                   <button
                     type="button"
                     key={item.id}
-                    className={`habit-card ${selected ? 'is-selected' : ''}`}
-                    onClick={() => setHabit(item.id)}
+                    className={`habit-card ${selected ? 'is-selected' : ''} ${
+                      disabled ? 'is-disabled' : ''
+                    }`}
+                    onClick={() => toggleHabit(item.id)}
+                    disabled={disabled}
                   >
                     <span className="habit-en">{item.en}</span>
-                    <span className="habit-name">{item.name}</span>
+                    <span className="habit-name">
+                      {item.name}
+                      {selected && <span className="habit-check">已选</span>}
+                    </span>
                     <span className="habit-desc">{item.desc}</span>
                     <span className="habit-effect">{item.effect}</span>
                   </button>
@@ -121,13 +136,21 @@ export function PlanScreen({
               <strong>{plan ? PLANS.find((item) => item.id === plan)?.name : '尚未选择'}</strong>
               <i />
               <span>养成习惯</span>
-              <strong>{habit ? HABITS.find((item) => item.id === habit)?.name : '尚未选择'}</strong>
+              <strong>
+                {habits.length > 0
+                  ? habits
+                      .map((id) => HABITS.find((item) => item.id === id)?.name)
+                      .filter(Boolean)
+                      .join(' / ')
+                  : '尚未选择'}
+                <em className="habit-count">{habits.length} / 2</em>
+              </strong>
             </div>
             <button
               type="button"
               className="btn btn-primary"
               disabled={!canStart}
-              onClick={() => plan && habit && onConfirm(plan, habit)}
+              onClick={() => plan && canStart && onConfirm(plan, habits)}
             >
               签下这份计划，开学
               <span className="btn-arrow">→</span>
