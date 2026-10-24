@@ -357,6 +357,8 @@ export function newGameState(player: Player): GameState {
     romanceUnlocked: false,
     courseRecords: [],
     romanceRisk: 0,
+    teacherScandalRisk: 0,
+    pendingConfession: null,
   }
 }
 

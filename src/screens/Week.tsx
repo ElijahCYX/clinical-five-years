@@ -16,6 +16,7 @@ import type { ActionDef, GameState } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
+import { NpcConfessionModal } from './NpcConfession'
 import {
   isDinnerFriend,
   relationshipKindLabel,
@@ -46,6 +47,7 @@ interface WeekScreenProps {
   onOpenWhoAmI?: () => void
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
+  onNpcConfession?: (accept: boolean) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -59,6 +61,7 @@ export function WeekScreen({
   onOpenWhoAmI,
   onOpenTA,
   onArrangeDinner,
+  onNpcConfession,
   onSave,
   onTitle,
 }: WeekScreenProps) {
@@ -825,6 +828,14 @@ export function WeekScreen({
             </p>
           </div>
         </div>
+      )}
+
+      {state.pendingConfession && (
+        <NpcConfessionModal
+          confession={state.pendingConfession}
+          onAccept={() => onNpcConfession?.(true)}
+          onDecline={() => onNpcConfession?.(false)}
+        />
       )}
 
       {dinnerOpen && (

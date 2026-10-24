@@ -105,6 +105,8 @@ function makeRelationship(
     weeklyAction: ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: '',
     partner: false,
+    confessionRisk: 0,
+    breakupRisk: 0,
   }
 }
 
@@ -234,6 +236,8 @@ export function normalizeRelationships(
       ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: relation.lastPatKey ?? '',
     partner: relation.partner ?? false,
+    confessionRisk: relation.confessionRisk ?? 0,
+    breakupRisk: relation.breakupRisk ?? 0,
   }))
 }
 
@@ -258,6 +262,10 @@ export function npcOrientationAllows(relation: Relationship, gender: Gender): bo
   return relation.gender === gender
 }
 
+export function isStaffRelation(relation: Relationship): boolean {
+  return relation.kind === 'mentor' || relation.kind === 'counselor'
+}
+
 export function canConfess(player: Player, relation: Relationship): boolean {
   return (
     relation.intimacy > 60 &&
@@ -271,7 +279,8 @@ export function confessionChance(player: Player, relation: Relationship): number
   const base =
     0.08 + relation.intimacy / 200 + player.attrs.social * 0.025
   const attraction = npcOrientationAllows(relation, player.gender) ? 1 : 0.12
-  return Math.max(0.03, Math.min(0.92, base * attraction))
+  const staffPenalty = isStaffRelation(relation) ? 0.16 : 1
+  return Math.max(0.02, Math.min(0.92, base * attraction * staffPenalty))
 }
 
 export function nextRoommateAction(): string {

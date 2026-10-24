@@ -82,8 +82,7 @@ import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 import {
   applyEvent,
-  createRomanceDiscoveryEvent,
-  romanceRiskAfterWeek,
+  rollRelationshipWeekly,
   rollWeeklyEvent,
 } from './events'
 import { RandomEventModal } from './screens/RandomEvent'
@@ -97,11 +96,13 @@ import {
   normalizeRelationships,
   patRelationship,
   patRemainingThisWeek,
+  isStaffRelation,
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v23'
+const SAVE_KEY = 'clinical-five-years-save-v24'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v23',
   'clinical-five-years-save-v22',
   'clinical-five-years-save-v21',
   'clinical-five-years-save-v20',
@@ -468,7 +469,13 @@ function RealApp() {
 
   useEffect(() => {
     if (!game || view !== 'week') return
-    if (game.pendingEvent || game.eventWeek === game.week) return
+    if (
+      game.pendingEvent ||
+      game.pendingConfession ||
+      game.eventWeek === game.week
+    ) {
+      return
+    }
     if (game.week < 1 || game.week > 3) return
     if (
       (!game.highPressureDebuff && game.stress > 80) ||
@@ -476,25 +483,25 @@ function RealApp() {
     ) {
       return
     }
-    const risk = romanceRiskAfterWeek(game)
-    const riskBase: GameState = { ...game, romanceRisk: risk }
-    if (risk > 0 && Math.random() < risk / 100) {
-      const discovery = createRomanceDiscoveryEvent(game)
+    const social = rollRelationshipWeekly(game)
+    if (social.pendingEvent || social.pendingConfession) {
       const next: GameState = {
-        ...riskBase,
+        ...social.state,
         eventWeek: game.week,
-        pendingEvent: discovery,
+        pendingEvent: social.pendingEvent,
+        pendingConfession: social.pendingConfession,
         screen: 'week',
       }
       setGame(next)
       persist(next)
       return
     }
-    const pending = rollWeeklyEvent(riskBase)
+    const pending = rollWeeklyEvent(social.state)
     const next: GameState = {
-      ...riskBase,
+      ...social.state,
       eventWeek: game.week,
       pendingEvent: pending,
+      pendingConfession: null,
       screen: 'week',
     }
     setGame(next)
@@ -605,6 +612,45 @@ function RealApp() {
   const handleRandomEventContinue = () => {
     if (!game || !game.pendingEvent) return
     const next = applyEvent(game, game.pendingEvent)
+    commit(next, 'week')
+  }
+
+  const handleNpcConfession = (accept: boolean) => {
+    if (!game || !game.pendingConfession) return
+    const pending = game.pendingConfession
+    const relation = game.relationships.find(
+      (item) => item.id === pending.relationshipId,
+    )
+    if (!relation) {
+      commit({ ...game, pendingConfession: null }, 'week')
+      return
+    }
+    const updated: typeof relation = accept
+      ? {
+          ...relation,
+          partner: true,
+          intimacy: Math.min(100, relation.intimacy + 5),
+          confessionRisk: 0,
+          breakupRisk: 0,
+        }
+      : {
+          ...relation,
+          intimacy: Math.max(0, relation.intimacy - 5),
+          confessionRisk: 0,
+        }
+    const next: GameState = {
+      ...game,
+      pendingConfession: null,
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id ? updated : item,
+      ),
+      romanceUnlocked: game.romanceUnlocked || accept,
+      teacherScandalRisk:
+        accept && isStaffRelation(relation)
+          ? Math.max(5, game.teacherScandalRisk)
+          : game.teacherScandalRisk,
+      stress: accept ? game.stress : clamp(game.stress + 2, 0, 100),
+    }
     commit(next, 'week')
   }
 
@@ -1709,6 +1755,7 @@ function RealApp() {
           onOpenWhoAmI={openWhoAmI}
           onOpenTA={openWhoIs}
           onArrangeDinner={arrangeDinner}
+          onNpcConfession={handleNpcConfession}
           onSave={saveNow}
           onTitle={goTitle}
         />

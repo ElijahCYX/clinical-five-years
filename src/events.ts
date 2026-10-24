@@ -1,10 +1,17 @@
 import type {
   EventEffect,
   GameState,
+  PendingConfession,
   PendingEvent,
   Player,
+  Relationship,
 } from './types'
-import { createEventFriend } from './social'
+import {
+  createEventFriend,
+  isStaffRelation,
+  npcOrientationAllows,
+  playerAllowsGender,
+} from './social'
 
 interface EventSeed {
   id: string
@@ -263,6 +270,8 @@ function effectLines(effect: EventEffect): string[] {
   push('交际', effect.socialAttr)
   if (effect.socialUnlock) lines.push('社交模块解锁（后续开发）')
   if (effect.romanceBreak) lines.push('所有恋爱关系破裂')
+  if (effect.teacherBreak) lines.push('师生关系破裂')
+  if (effect.breakupRelationId) lines.push('这段恋爱关系结束')
   return lines
 }
 
@@ -349,6 +358,31 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     next.romanceRisk = 0
     next.stress = clamp(next.stress + 10, 0, 100)
   }
+  if (effect.teacherBreak) {
+    next.relationships = next.relationships.map((relation) =>
+      relation.partner && isStaffRelation(relation)
+        ? {
+            ...relation,
+            partner: false,
+            intimacy: Math.max(0, relation.intimacy - 18),
+            breakupRisk: 0,
+          }
+        : relation,
+    )
+    next.teacherScandalRisk = 0
+  }
+  if (effect.breakupRelationId) {
+    next.relationships = next.relationships.map((relation) =>
+      relation.id === effect.breakupRelationId
+        ? {
+            ...relation,
+            partner: false,
+            intimacy: Math.max(0, relation.intimacy - 20),
+            breakupRisk: 0,
+          }
+        : relation,
+    )
+  }
   if (effect.prep) {
     for (const course of state.season.courses) {
       next.prep[course.id] = clamp(
@@ -390,6 +424,175 @@ export function createRomanceDiscoveryEvent(state: GameState): PendingEvent {
     effects: { socialAttr: -3, romanceBreak: true },
     effectLines: ['交际 -3', '压力 +10', '所有恋爱关系破裂'],
   }
+}
+
+function createNpcConfession(relation: Relationship): PendingConfession {
+  const staff = isStaffRelation(relation)
+  return {
+    relationshipId: relation.id,
+    name: relation.name,
+    identity: relation.identity,
+    staff,
+    text: staff
+      ? `${relation.name}（${relation.identity}）在办公室关上门，沉默了很久才开口。TA 说知道这不合规矩，也知道可能会影响你，但还是想认真问你一次：愿不愿意和 TA 在一起。`
+      : `${relation.name}约你在操场看台见面，手里攥着一杯已经不太冰的奶茶。绕了三圈以后，TA 终于停下来，说：“我好像不只是想和你做朋友。”`,
+  }
+}
+
+function createBreakupEvent(relation: Relationship): PendingEvent {
+  return {
+    id: 'ev-breakup',
+    kind: 'romance',
+    title: '分手',
+    text: `${relation.name}约你在操场见面，说最近总觉得你们之间少了点什么。TA 没有吵架，也没有责怪你，只是很轻地说：“我们先到这里吧。”你看着跑道尽头，突然不知道该把手里那杯奶茶放哪里。`,
+    effects: { breakupRelationId: relation.id, stress: 3 },
+    effectLines: [`与 ${relation.name} 分手`, '压力 +3'],
+  }
+}
+
+function createTeacherScandalEvent(state: GameState): PendingEvent {
+  const names = state.relationships
+    .filter((relation) => relation.partner && isStaffRelation(relation))
+    .map((relation) => relation.name)
+  return {
+    id: 'ev-teacher-scandal',
+    kind: 'romance',
+    title: '匿名信',
+    text: `教务处收到一封匿名信，说你和${names.length > 0 ? names.join('、') : '某位老师'}走得太近。调查组找你谈话时语气很客气，但每一句都像在问病史。事情很快传开，你失去了那段关系，也第一次知道“公序良俗”四个字有多重。`,
+    effects: { teacherBreak: true, socialAttr: -2, stress: 8 },
+    effectLines: ['师生关系破裂', '交际 -2', '压力 +8'],
+  }
+}
+
+export interface RelationshipWeeklyResult {
+  state: GameState
+  pendingEvent: PendingEvent | null
+  pendingConfession: PendingConfession | null
+}
+
+export function rollRelationshipWeekly(state: GameState): RelationshipWeeklyResult {
+  if (!state.player) {
+    return { state, pendingEvent: null, pendingConfession: null }
+  }
+  let next: GameState = { ...state }
+  let relationships = [...state.relationships]
+
+  // 1. 师生恋被发现风险
+  const staffPartners = relationships.filter(
+    (relation) => relation.partner && isStaffRelation(relation),
+  )
+  if (staffPartners.length > 0) {
+    const risk = Math.min(90, (state.teacherScandalRisk ?? 0) + 8)
+    next = { ...next, teacherScandalRisk: risk }
+    if (Math.random() < risk / 100) {
+      return {
+        state: next,
+        pendingEvent: createTeacherScandalEvent(next),
+        pendingConfession: null,
+      }
+    }
+  } else if ((state.teacherScandalRisk ?? 0) !== 0) {
+    next = { ...next, teacherScandalRisk: 0 }
+  }
+
+  // 2. 多线恋爱修罗场
+  const partners = relationships.filter((relation) => relation.partner)
+  if (partners.length >= 2) {
+    const risk = Math.min(
+      95,
+      (state.romanceRisk ?? 0) + 8 + (partners.length - 2) * 4,
+    )
+    next = { ...next, romanceRisk: risk }
+    if (Math.random() < risk / 100) {
+      const names = partners.map((relation) => relation.name).join('、')
+      const event: PendingEvent = {
+        id: 'ev-romance-discovery',
+        kind: 'romance',
+        title: '修罗场',
+        text: `你的手机在同一时间弹出了几条消息。${names}分别问你现在在哪，随后她们/他们发现彼此认识的是同一个你。宿舍楼下、食堂门口和图书馆门口同时上演了不同版本的质问，你站在中间，第一次觉得“同时处理多份病史”是一件如此困难的事。所有恋爱关系当场破裂，你的交际名声也一落千丈。`,
+        effects: { socialAttr: -3, romanceBreak: true },
+        effectLines: ['交际 -3', '压力 +10', '所有恋爱关系破裂'],
+      }
+      return { state: next, pendingEvent: event, pendingConfession: null }
+    }
+  } else if ((state.romanceRisk ?? 0) !== 0) {
+    next = { ...next, romanceRisk: 0 }
+  }
+
+  // 3. 低亲密度分手风险
+  relationships = relationships.map((relation) => {
+    if (!relation.partner) return relation
+    if (relation.intimacy >= 60) return { ...relation, breakupRisk: 0 }
+    const rate = Math.min(
+      48,
+      Math.max(2, Math.round((60 - relation.intimacy) * 0.8)),
+    )
+    return {
+      ...relation,
+      breakupRisk: Math.min(95, (relation.breakupRisk ?? 0) + rate),
+    }
+  })
+  next = { ...next, relationships }
+  const breakupTarget = relationships
+    .filter(
+      (relation) =>
+        relation.partner &&
+        relation.intimacy < 60 &&
+        Math.random() < (relation.breakupRisk ?? 0) / 100,
+    )
+    .sort((a, b) => (b.breakupRisk ?? 0) - (a.breakupRisk ?? 0))[0]
+  if (breakupTarget) {
+    return {
+      state: next,
+      pendingEvent: createBreakupEvent(breakupTarget),
+      pendingConfession: null,
+    }
+  }
+
+  // 4. 虚拟角色主动表白
+  const confessionTargets = relationships
+    .filter(
+      (relation) =>
+        !relation.partner &&
+        relation.intimacy >= 60 &&
+        playerAllowsGender(state.player!, relation.gender) &&
+        npcOrientationAllows(relation, state.player!.gender),
+    )
+    .map((relation) => {
+      const staff = isStaffRelation(relation)
+      const baseRate = Math.max(1, Math.round((relation.intimacy - 55) * 0.35))
+      const rate = staff ? Math.max(1, Math.round(baseRate * 0.15)) : baseRate
+      return {
+        relation,
+        risk: Math.min(95, (relation.confessionRisk ?? 0) + rate),
+      }
+    })
+  const confessed = confessionTargets.find(
+    (item) => Math.random() < item.risk / 100,
+  )
+  if (confessed) {
+    relationships = relationships.map((relation) =>
+      relation.id === confessed.relation.id
+        ? { ...relation, confessionRisk: confessed.risk }
+        : relation,
+    )
+    next = { ...next, relationships }
+    return {
+      state: next,
+      pendingEvent: null,
+      pendingConfession: createNpcConfession(confessed.relation),
+    }
+  }
+  const riskById = new Map(
+    confessionTargets.map((item) => [item.relation.id, item.risk]),
+  )
+  relationships = relationships.map((relation) =>
+    riskById.has(relation.id)
+      ? { ...relation, confessionRisk: riskById.get(relation.id) ?? 0 }
+      : relation,
+  )
+  next = { ...next, relationships, pendingConfession: null }
+  return { state: next, pendingEvent: null, pendingConfession: null }
 }
 
 export function eventKindLabel(kind: PendingEvent['kind']): string {

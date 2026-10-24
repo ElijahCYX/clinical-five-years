@@ -282,6 +282,8 @@ export interface EventEffect {
   socialUnlock?: boolean
   socialAttr?: number
   romanceBreak?: boolean
+  teacherBreak?: boolean
+  breakupRelationId?: string
 }
 
 export interface PendingEvent {
@@ -322,6 +324,16 @@ export interface Relationship {
   weeklyAction: string
   lastPatKey: string
   partner: boolean
+  confessionRisk: number
+  breakupRisk: number
+}
+
+export interface PendingConfession {
+  relationshipId: string
+  name: string
+  identity: string
+  staff: boolean
+  text: string
 }
 
 export interface DinnerPlan {
@@ -417,6 +429,8 @@ export interface GameState {
   romanceUnlocked: boolean
   courseRecords: CourseRecord[]
   romanceRisk: number
+  teacherScandalRisk: number
+  pendingConfession: PendingConfession | null
 }
 
 export type DemoName =
