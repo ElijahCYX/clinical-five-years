@@ -485,6 +485,8 @@ export interface GameState {
   highPressureDebuff: boolean
   stressHearts: number
   stressHeartBreakWeek: number
+  stressEndingText: string | null
+  stressEndingMethod: string | null
   lowEnergyAlert: boolean
   stressRewardedCourses: string[]
   electiveHistory: string[]

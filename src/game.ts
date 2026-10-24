@@ -329,6 +329,8 @@ export function newGameState(player: Player): GameState {
     highPressureDebuff: false,
     stressHearts: 3,
     stressHeartBreakWeek: 0,
+    stressEndingText: null,
+    stressEndingMethod: null,
     lowEnergyAlert: false,
     stressRewardedCourses: [],
     electiveHistory: [],

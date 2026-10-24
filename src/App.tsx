@@ -100,7 +100,12 @@ import { EncounterProvider, useEncounter } from './screens/Encounter'
 import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
 import { pickTravelEvent } from './travelEvents'
 import { pickConsumptionEvent } from './consumptionEvents'
-import { ROOMMATE_TALKS, STRESS_ENDING_TEXT, STRESS_TALKS } from './stressTalks'
+import {
+  ROOMMATE_TALKS,
+  STRESS_ENDING_TEXT,
+  STRESS_TALKS,
+  pickStressEnding,
+} from './stressTalks'
 import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { pickHypothesis } from './hypotheses'
@@ -126,8 +131,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v33'
+const SAVE_KEY = 'clinical-five-years-save-v34'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v33',
   'clinical-five-years-save-v32',
   'clinical-five-years-save-v31',
   'clinical-five-years-save-v30',
@@ -208,6 +214,8 @@ function readSave(): GameState | null {
       highPressureDebuff: game.highPressureDebuff ?? false,
       stressHearts: game.stressHearts ?? 3,
       stressHeartBreakWeek: game.stressHeartBreakWeek ?? 0,
+      stressEndingText: game.stressEndingText ?? null,
+      stressEndingMethod: game.stressEndingMethod ?? null,
     })
   } catch {
     return null
@@ -566,7 +574,16 @@ function RealApp() {
       game.selected.length === 0 &&
       progressWeek(game) > game.stressHeartBreakWeek
     ) {
-      commit({ ...game, screen: 'stressEnding' }, 'stressEnding')
+      const ending = pickStressEnding()
+      commit(
+        {
+          ...game,
+          screen: 'stressEnding',
+          stressEndingText: ending.text,
+          stressEndingMethod: ending.method,
+        },
+        'stressEnding',
+      )
       return
     }
 
@@ -2922,10 +2939,10 @@ function RealApp() {
     return (
       <EndingScreen
         state={game}
-        eyebrow="INCIDENT / PRESSURE ENDING"
+        eyebrow={`INCIDENT / PRESSURE ENDING · ${game.stressEndingMethod ?? ''}`}
         titleMain="这一局，"
         titleAccent="停在这里"
-        description={STRESS_ENDING_TEXT}
+        description={game.stressEndingText ?? STRESS_ENDING_TEXT}
         note="如果身边有人正在经历类似的痛苦，请让 TA 去求助。游戏可以重开，人不能。"
         onRestart={handleRestart}
         onTitle={goTitle}
