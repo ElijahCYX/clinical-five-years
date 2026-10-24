@@ -225,11 +225,20 @@ export function StatBar({
 }
 
 export function Stamp({ text = '漸江大學醫學院', sub = '教務處' }: { text?: string; sub?: string }) {
+  const college = text.endsWith('醫學院')
+    ? '醫學院'
+    : text.endsWith('医学院')
+      ? '医学院'
+      : ''
+  const university = college ? text.slice(0, -college.length) : text
   return (
     <div className="stamp" aria-hidden="true">
       <span className="stamp-inner">
         <span className="stamp-top">★</span>
-        <span className="stamp-text">{text}</span>
+        <span className="stamp-text">
+          <span>{university}</span>
+          {college && <span>{college}</span>}
+        </span>
         <span className="stamp-sub">{sub}</span>
       </span>
     </div>

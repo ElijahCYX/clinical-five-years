@@ -713,10 +713,20 @@ input:focus-visible {
 }
 
 .stamp-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
   font-family: var(--serif);
   font-size: 10px;
-  letter-spacing: 0.08em;
-  margin: 3px 0 2px;
+  line-height: 1.28;
+  letter-spacing: 0.06em;
+  margin: 2px 0 2px;
+}
+
+.stamp-text > span {
+  display: block;
+  white-space: nowrap;
 }
 
 .stamp-sub {
@@ -942,6 +952,7 @@ input:focus-visible {
 
 .enroll-card .stamp-text {
   font-size: 8.5px;
+  line-height: 1.24;
 }
 
 .enroll-caption {
@@ -1262,6 +1273,7 @@ input:focus-visible {
 
 .id-preview .stamp-text {
   font-size: 7.5px;
+  line-height: 1.2;
 }
 
 .id-preview .stamp-sub {
@@ -3086,6 +3098,7 @@ input:focus-visible {
 
 .result-sheet .stamp-text {
   font-size: 8px;
+  line-height: 1.22;
 }
 
 .result-quote {
