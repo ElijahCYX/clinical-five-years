@@ -361,7 +361,6 @@ function RealApp() {
 
     const shouldPrepare = game.week >= 3
     const isCetEvent =
-      game.seasonIndex < 12 &&
       game.season.seasonLabel.endsWith('夏') &&
       game.week === 2 &&
       !game.cetEventDone
@@ -519,8 +518,51 @@ function RealApp() {
     commit({ ...game, cetEventDone: true, screen: 'week' }, 'week')
   }
 
+  const finalizeGraduation = (base: GameState) => {
+    const failedPe = base.peResults.filter((item) => !item.passed)
+    let peMakeupPassed = base.peMakeupPassed
+    let peMakeupScore = base.peMakeupScore
+    let current = base
+    if (failedPe.length > 0) {
+      peMakeupScore = peScoreFor(base.player!.attrs.constitution)
+      peMakeupPassed = peMakeupScore >= 60
+      if (peMakeupPassed) {
+        const gpa = peGpaFor(peMakeupScore)
+        current = {
+          ...base,
+          cumulativeCredits: base.cumulativeCredits + failedPe.length * 2,
+          cumulativePoints: base.cumulativePoints + failedPe.length * 2 * gpa,
+        }
+      }
+    }
+    commit(
+      { ...current, peMakeupPassed, peMakeupScore, screen: 'graduation' },
+      'graduation',
+    )
+  }
+
+  const withCetResults = (base: GameState): GameState => {
+    const tookCet4 = base.cet4Registered
+    const tookCet6 = base.cet6Registered
+    let cet4Score = base.cet4Score
+    let cet6Score = base.cet6Score
+    if (tookCet4) cet4Score = cetScore('cet4', base.english, base.player!.attrs.memory)
+    if (tookCet6) cet6Score = cetScore('cet6', base.english, base.player!.attrs.memory)
+    return {
+      ...base,
+      cet4Score,
+      cet6Score,
+      cet4Registered: false,
+      cet6Registered: false,
+    }
+  }
+
   const handleCetResultContinue = () => {
     if (!game) return
+    if (game.seasonIndex === 19) {
+      finalizeGraduation(game)
+      return
+    }
     commit({ ...game, screen: 'yearend', vacation: null }, 'yearend')
   }
 
@@ -592,33 +634,23 @@ function RealApp() {
 
     // 大三临床前、大四夏：学年结算（大四无暑假）
     if (index === 11 || index === 15) {
+      if (index === 15 && (current.cet4Registered || current.cet6Registered)) {
+        current = withCetResults(current)
+        commit({ ...current, screen: 'cetResult' }, 'cetResult')
+        return
+      }
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
       return
     }
 
     // 大五夏：毕业结算 + 毕业生体育补考
     if (index === 19) {
-      const failedPe = current.peResults.filter((item) => !item.passed)
-      let peMakeupPassed = current.peMakeupPassed
-      let peMakeupScore = current.peMakeupScore
-      if (failedPe.length > 0) {
-        peMakeupScore = peScoreFor(current.player!.attrs.constitution)
-        peMakeupPassed = peMakeupScore >= 60
-        if (peMakeupPassed) {
-          const gpa = peGpaFor(peMakeupScore)
-          current = {
-            ...current,
-            cumulativeCredits:
-              current.cumulativeCredits + failedPe.length * 2,
-            cumulativePoints:
-              current.cumulativePoints + failedPe.length * 2 * gpa,
-          }
-        }
+      if (current.cet4Registered || current.cet6Registered) {
+        current = withCetResults(current)
+        commit({ ...current, screen: 'cetResult' }, 'cetResult')
+        return
       }
-      commit(
-        { ...current, peMakeupPassed, peMakeupScore, screen: 'graduation' },
-        'graduation',
-      )
+      finalizeGraduation(current)
       return
     }
 

@@ -3436,6 +3436,32 @@ input:focus-visible {
   background: #f3eee2;
 }
 
+.pe-transcript {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.pe-transcript > span {
+  flex: none;
+  padding-top: 2px;
+}
+
+.pe-transcript > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+}
+
+.pe-transcript > div span {
+  color: var(--ink-3);
+}
+
 .graduation-reasons {
   margin: 16px 0 0;
   padding: 12px 14px;

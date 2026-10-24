@@ -1,3 +1,4 @@
+import { PE_NAMES } from '../data'
 import {
   GRADUATION_CREDITS,
   KAOYAN_PASS,
@@ -358,6 +359,19 @@ export function GraduationScreen({
                 <strong>{state.pendingMakeups.length === 0 ? '无' : `${state.pendingMakeups.length} 门未过`}</strong>
               </div>
             </div>
+
+            {state.peResults.length > 0 && (
+              <div className="pe-transcript">
+                <span>体育成绩</span>
+                <div>
+                  {state.peResults.map((item) => (
+                    <span key={item.year}>
+                      {PE_NAMES[item.year - 1]} {item.score} 分 / {item.gpa.toFixed(1)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!graduated && (
               <div className="graduation-reasons">

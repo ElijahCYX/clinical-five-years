@@ -13,6 +13,8 @@ export const SCHOOL_EN = 'LINJIANG UNIVERSITY SCHOOL OF MEDICINE'
 export const GAME_TITLE = '临床五年'
 export const GAME_SUBTITLE = '五年，二十一季，慢慢成为医生。'
 
+export const PE_NAMES = ['体育（一）', '体育（二）', '体育（三）', '体育（四）', '体育（五）']
+
 export const CET = {
   total: 750,
   pass4: 425,
@@ -193,9 +195,9 @@ export const HABITS: HabitDef[] = [
     name: '健身',
     en: 'FIT',
     desc: '每周三次，操场或健身房。',
-    effect: '体质成长 +17 / 周 · 压力 -1',
+    effect: '体质成长 +18 / 周 · 压力 -1',
     growth: 'constitution',
-    growthAmount: 17,
+    growthAmount: 18,
     stress: -1,
   },
   {
@@ -375,9 +377,9 @@ export const ACTIONS: ActionDef[] = [
     energy: -3,
     stress: -5,
     money: 0,
-    effectText: '体质成长 +35 · 精力 -3 · 压力 -5',
+    effectText: '体质成长 +42 · 精力 -3 · 压力 -5',
     growth: 'constitution',
-    growthAmount: 35,
+    growthAmount: 42,
   },
   {
     id: 'english',
