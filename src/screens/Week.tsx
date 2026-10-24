@@ -18,6 +18,7 @@ import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
 import { NpcConfessionModal } from './NpcConfession'
+import { MENTOR_BY_ID, researchStage } from '../mentors'
 import {
   isDinnerFriend,
   relationshipKindLabel,
@@ -188,7 +189,14 @@ export function WeekScreen({
       }
       if (state.money < 50) return '生活费不足'
     }
-    if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
+    if (action.id === 'research') {
+      if (!state.mentorContactUnlocked) return '还没有导师'
+      if (!state.labEntered) return '导师还没有允许你进实验室'
+      if (state.researchPublished) return '论文已经发表'
+    }
+    if (action.requires === 'mentor' && action.id !== 'research') {
+      return action.lockedNote ?? '尚未解锁'
+    }
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'partner') return action.lockedNote ?? '尚未解锁'
     const energyCost =
@@ -317,19 +325,104 @@ export function WeekScreen({
   )
 
 
-  const renderResearch = () => (
-    <div className="tab-panel">
-      <SectionLabel right="LOCKED">科研</SectionLabel>
-      <div className="locked-panel">
-        <span className="lock-glyph">✳</span>
-        <h3>还没有人带你进实验室</h3>
-        <p>
-          联系导师后，科研进度会在这里出现。每一条进度满了，代表一篇论文的产出。
-          科研系统会在后续模块接入。
-        </p>
+  const renderResearch = () => {
+    const mentorRelation = state.relationships.find(
+      (relation) => relation.kind === 'mentor',
+    )
+    const profile = state.mentorProfileId
+      ? MENTOR_BY_ID[state.mentorProfileId]
+      : null
+    const stage = researchStage(state.researchProgress)
+
+    if (!state.mentorContactUnlocked) {
+      return (
+        <div className="tab-panel">
+          <SectionLabel right="LOCKED">科研</SectionLabel>
+          <div className="locked-panel">
+            <span className="lock-glyph">✳</span>
+            <h3>还没有找到导师</h3>
+            <p>
+              科研系统需要通过随机事件结识一位导师才会解锁。
+              先去过几周，留意讲台边、讲座后和实验室门口。
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    if (!state.labEntered) {
+      return (
+        <div className="tab-panel">
+          <SectionLabel right="WAITING FOR LAB">科研</SectionLabel>
+          <div className="research-locked-card">
+            <span className="lock-glyph">⌁</span>
+            <h3>导师已经联系上了</h3>
+            <p>
+              导师愿意先和你聊聊，但还没有允许你进入课题组。
+              和导师的亲密度达到 60 后，TA 会通知你进实验室。
+            </p>
+            {mentorRelation && (
+              <div className="research-mentor-line">
+                <span>{mentorRelation.name}</span>
+                <strong>亲密度 {mentorRelation.intimacy} / 60</strong>
+              </div>
+            )}
+            {profile && (
+              <p className="research-mentor-meta">
+                {profile.department} · {profile.title} · {profile.field}
+              </p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="tab-panel">
+        <SectionLabel right={state.researchPublished ? 'PUBLISHED' : stage.name}>
+          课题组
+        </SectionLabel>
+        <div className="research-panel">
+          <div className="research-panel-head">
+            <div>
+              <h3>{profile?.alias ?? mentorRelation?.name ?? '导师'}</h3>
+              <p>
+                {profile ? `${profile.department} · ${profile.title}` : '导师'} ·{' '}
+                {profile?.field ?? '科研训练'}
+              </p>
+            </div>
+            <Pill tone={state.researchPublished ? 'green' : 'gold'}>
+              {state.researchPublished ? '已发表' : stage.name}
+            </Pill>
+          </div>
+
+          <div className="research-progress-row">
+            <div>
+              <span>科研进度</span>
+              <strong>{state.researchProgress} / 100</strong>
+            </div>
+            <Bar value={state.researchProgress} max={100} />
+            <p>{stage.description}</p>
+          </div>
+
+          {state.researchPublished ? (
+            <div className="research-published">
+              <span>论文已刊登</span>
+              <strong>{state.researchJournal ?? '待定期刊'}</strong>
+              <p>科研阶段完成。之后可以继续以其他方式积累科研经历。</p>
+            </div>
+          ) : (
+            <div className="research-action-note">
+              <span>本周科研行动</span>
+              <strong>科研进度随机 +1–5</strong>
+              <p>悟性越高，抽出 4、5 点的概率越高。科研进度会显示在「本周安排」的科研相关行动中。</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
 
   const renderRoommates = () => (
     <div className="tab-panel">

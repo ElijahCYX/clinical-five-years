@@ -285,6 +285,7 @@ export interface EventEffect {
   teacherBreak?: boolean
   breakupRelationId?: string
   reconcileRelationId?: string
+  mentorUnlock?: boolean
 }
 
 export interface PendingEvent {
@@ -356,6 +357,17 @@ export interface CourseRecord {
   gpa: number
   score: number
   category: CourseCategory
+}
+
+export interface MentorProfile {
+  id: string
+  alias: string
+  department: string
+  title: string
+  field: string
+  level: number
+  journals: string[]
+  confidence: string
 }
 
 export interface GameState {
@@ -435,6 +447,10 @@ export interface GameState {
   romanceRisk: number
   teacherScandalRisk: number
   pendingConfession: PendingConfession | null
+  mentorProfileId: string | null
+  researchProgress: number
+  researchPublished: boolean
+  researchJournal: string | null
 }
 
 export type DemoName =

@@ -359,6 +359,10 @@ export function newGameState(player: Player): GameState {
     romanceRisk: 0,
     teacherScandalRisk: 0,
     pendingConfession: null,
+    mentorProfileId: null,
+    researchProgress: 0,
+    researchPublished: false,
+    researchJournal: null,
   }
 }
 
@@ -589,6 +593,7 @@ export interface WeekSimulation {
   english: number
   composite: number
   research: number
+  researchProgressGain: number
   prep: Record<string, number>
   kaoyanPrep: number
   constitutionGrowth: number
@@ -600,6 +605,24 @@ export interface WeekSimulation {
 }
 
 /** 与 App.endWeek 共用同一套周结算公式，用于选择行动时预览。 */
+/** 科研进度收益：1-5 点，悟性越高越容易抽到高值。 */
+export function researchGainForComprehension(comprehension: number): number {
+  const comp = Math.max(2, Math.min(10, comprehension))
+  let weights: number[]
+  if (comp <= 2) weights = [40, 30, 20, 8, 2]
+  else if (comp <= 4) weights = [30, 28, 24, 13, 5]
+  else if (comp <= 6) weights = [20, 26, 28, 18, 8]
+  else if (comp <= 8) weights = [10, 20, 30, 25, 15]
+  else weights = [5, 12, 25, 33, 25]
+  const roll = Math.random() * weights.reduce((a, b) => a + b, 0)
+  let acc = 0
+  for (let i = 0; i < weights.length; i += 1) {
+    acc += weights[i]
+    if (roll < acc) return i + 1
+  }
+  return 3
+}
+
 export function simulateWeek(state: GameState): WeekSimulation {
   const player = state.player!
   const plan = state.plan ? PLAN_BY_ID[state.plan] : null
@@ -620,6 +643,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   let english = state.english
   let composite = state.composite
   let research = state.research
+  let researchProgressGain = 0
   let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
@@ -650,6 +674,13 @@ export function simulateWeek(state: GameState): WeekSimulation {
     composite += action.composite ?? 0
     research += action.research ?? 0
     kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
+    if (
+      action.id === 'research' &&
+      state.labEntered &&
+      !state.researchPublished
+    ) {
+      researchProgressGain += researchGainForComprehension(attrs.comprehension)
+    }
     if (action.id === 'electiveHomework') {
       for (const course of state.season.courses) {
         if (!course.electiveType) continue
@@ -756,6 +787,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     english,
     composite,
     research,
+    researchProgressGain,
     prep,
     kaoyanPrep,
     constitutionGrowth,

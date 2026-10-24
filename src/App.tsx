@@ -82,11 +82,17 @@ import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 import {
   applyEvent,
+  createMentorEncounterEvent,
   rollRelationshipWeekly,
   rollWeeklyEvent,
 } from './events'
 import { RandomEventModal } from './screens/RandomEvent'
 import { WhoIsTAScreen } from './screens/WhoIsTA'
+import {
+  ResearchNoticeProvider,
+  useResearchNotice,
+} from './screens/ResearchNotice'
+import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import {
   canConfess,
   canPat,
@@ -101,8 +107,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v24'
+const SAVE_KEY = 'clinical-five-years-save-v25'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v24',
   'clinical-five-years-save-v23',
   'clinical-five-years-save-v22',
   'clinical-five-years-save-v21',
@@ -129,7 +136,7 @@ function readSave(): GameState | null {
     const parsed = JSON.parse(raw) as { game?: GameState }
     if (!parsed.game) return null
     const game = parsed.game
-    return {
+    return ensureMentor({
       ...game,
       screen: game.screen === 'randomEvent' ? 'week' : game.screen,
       player: game.player
@@ -147,7 +154,15 @@ function readSave(): GameState | null {
             : [],
       dinnerPlan: game.dinnerPlan ?? null,
       romanceUnlocked: game.romanceUnlocked ?? false,
-    }
+      courseRecords: game.courseRecords ?? [],
+      romanceRisk: game.romanceRisk ?? 0,
+      teacherScandalRisk: game.teacherScandalRisk ?? 0,
+      pendingConfession: game.pendingConfession ?? null,
+      mentorProfileId: game.mentorProfileId ?? null,
+      researchProgress: game.researchProgress ?? 0,
+      researchPublished: game.researchPublished ?? false,
+      researchJournal: game.researchJournal ?? null,
+    })
   } catch {
     return null
   }
@@ -430,6 +445,7 @@ function getCount(selected: string[], id: string): number {
 }
 
 function RealApp() {
+  const { showResearchNotice } = useResearchNotice()
   const [view, setView] = useState<View>('title')
   const [game, setGame] = useState<GameState | null>(null)
   const [hasSave, setHasSave] = useState(false)
@@ -482,6 +498,52 @@ function RealApp() {
       (!game.highPressureDebuff && game.stress > 80) ||
       (!game.lowEnergyAlert && game.energy < 20)
     ) {
+      return
+    }
+    const mentorRelation = game.relationships.find(
+      (relation) => relation.kind === 'mentor',
+    )
+    if (
+      mentorRelation &&
+      game.mentorContactUnlocked &&
+      !game.labEntered &&
+      mentorRelation.intimacy >= 60
+    ) {
+      const mentorName = mentorRelation.name
+      const next: GameState = {
+        ...game,
+        eventWeek: game.week,
+        pendingEvent: null,
+        pendingConfession: null,
+        screen: 'week',
+      }
+      setGame(next)
+      persist(next)
+      showResearchNotice({
+        kind: 'lab',
+        title: '导师的通知',
+        text: `${mentorName}在群里艾特你：“下周起跟着组会听一听，实验室门禁我帮你开好了。先别碰贵重仪器，先学会给移液枪装枪头。”你盯着这条消息看了三遍，确定自己没有看错。`,
+        onAcknowledge: () => {
+          setGame((previous) => {
+            if (!previous) return previous
+            const updated = { ...previous, labEntered: true }
+            persist(updated)
+            return updated
+          })
+        },
+      })
+      return
+    }
+    if (!game.mentorContactUnlocked && Math.random() < 0.28) {
+      const next: GameState = {
+        ...game,
+        eventWeek: game.week,
+        pendingEvent: createMentorEncounterEvent(),
+        pendingConfession: null,
+        screen: 'week',
+      }
+      setGame(next)
+      persist(next)
       return
     }
     const social = rollRelationshipWeekly(game)
@@ -589,6 +651,7 @@ function RealApp() {
   const handleOpeningTalent = (talents: OpeningTalentId[]) => {
     if (!game) return
     let next = applyOpeningTalent({ ...game, screen: 'plan' }, talents)
+    next = ensureMentor(next)
     if (talents.includes('modelMonster') && next.player) {
       const chance = Math.min(0.75, next.player.attrs.appearance * 0.08)
       if (Math.random() < chance) {
@@ -917,6 +980,22 @@ function RealApp() {
       habitApplied: sim.habitApplied,
     })
 
+    const researchProgress = clamp(
+      game.researchProgress + sim.researchProgressGain,
+      0,
+      100,
+    )
+    const publishedNow = researchProgress >= 100 && !game.researchPublished
+    const mentorProfile = game.mentorProfileId
+      ? MENTOR_BY_ID[game.mentorProfileId]
+      : null
+    const publishedJournal =
+      publishedNow && mentorProfile && mentorProfile.journals.length > 0
+        ? mentorProfile.journals[
+            Math.floor(Math.random() * mentorProfile.journals.length)
+          ]
+        : game.researchJournal
+
     const shouldPrepare = game.week >= 3
     const isCetEvent =
       (game.season.seasonLabel.endsWith('夏') || game.season.seasonLabel.endsWith('冬')) &&
@@ -959,16 +1038,30 @@ function RealApp() {
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,
+      researchProgress,
+      researchPublished: game.researchPublished || publishedNow,
+      researchJournal: publishedJournal,
       weekFocus: null,
       selected: [],
       actionsUsed: 0,
       logs: [...game.logs, log],
     }
 
+    const finalNext = applyWeeklyOpeningTalent(next)
     commit(
-      applyWeeklyOpeningTalent(next),
+      finalNext,
       isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
     )
+    if (publishedNow) {
+      showResearchNotice({
+        kind: 'published',
+        title: '论文发表',
+        text: `你的论文被正式接收了。导师在群里发了一个很克制的“恭喜”，随后把组会 PPT 的最后一页换成了你的文章截图。你盯着屏幕看了很久，决定今晚奖励自己一顿食堂小炒。`,
+        journal:
+          publishedJournal ??
+          '待定期刊',
+      })
+    }
   }
 
   const chooseReview = (choice: ReviewChoice) => {
@@ -2028,5 +2121,9 @@ function DemoApp({ screen }: { screen: DemoName }) {
 export default function App() {
   const demo = new URLSearchParams(window.location.search).get('demo') as DemoName | null
   if (demo) return <DemoApp screen={demo} />
-  return <RealApp />
+  return (
+    <ResearchNoticeProvider>
+      <RealApp />
+    </ResearchNoticeProvider>
+  )
 }

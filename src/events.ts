@@ -12,6 +12,7 @@ import {
   npcOrientationAllows,
   playerAllowsGender,
 } from './social'
+import { unlockMentor } from './mentors'
 
 interface EventSeed {
   id: string
@@ -216,7 +217,8 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-social-random-07', kind: 'random', title: '深夜卧谈', text: '宿舍熄灯后，大家开始聊以后想去哪个科室。有人说想赚钱，有人说想躺平，你听着听着，突然觉得未来好像也没那么可怕。', effects: {socialGrowth: 5, stress: -4, energy: -2} },
   { id: 'ev-social-random-08', kind: 'random', title: '室友出卖', text: '室友把你的糗事讲给了全班，你在食堂被三个人笑着问“真的假的”。你决定今晚回去把他的洗发水藏起来。', effects: {socialGrowth: 3, stress: 3} },
   { id: 'ev-social-random-09', kind: 'random', title: '操场看球', text: '傍晚操场有人打球，你被拉去凑数。你一个球都没进，但场边的人一直在给你加油，结束以后还一起去喝了水。', effects: {socialGrowth: 5, stress: -3, energy: -2} },
-  { id: 'ev-social-random-10', kind: 'random', title: '毕业合影', text: '毕业季的校园到处是拍照的人，你被{npc}拉去合影。快门按下时，你突然发现自己已经能熟练地说出“以后常联系”。', effects: {socialGrowth: 5, stress: -2} },
+  { id: 'ev-social-random-10', kind: 'random', title: '毕业合影', text: '毕业季的校园到处是拍照的人，你被{npc}拉去合影。快门按下时，你突然发现自己已经能熟练地说出“以后常联系”。', effects: {socialGrowth: 5, stress: -2} },  // 科研导师解锁事件
+  { id: 'ev-scene-mentor', kind: 'scene', title: '讲台边的导师', text: '讲座结束后，你留下来问了一个有点笨的问题。讲台上的老师没有笑你，反而把电脑合上，和你聊了十分钟。临走时，TA说：“有兴趣的话，来实验室看看。”', effects: { mentorUnlock: true }, condition: (s) => !s.mentorContactUnlocked },
 ]
 
 const KIND_LABEL = {
@@ -273,6 +275,7 @@ function effectLines(effect: EventEffect): string[] {
   if (effect.teacherBreak) lines.push('师生关系破裂')
   if (effect.breakupRelationId) lines.push('这段恋爱关系结束')
   if (effect.reconcileRelationId) lines.push('旧情复燃')
+  if (effect.mentorUnlock) lines.push('科研系统解锁')
   return lines
 }
 
@@ -419,6 +422,9 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
       next.teacherScandalRisk = Math.max(5, next.teacherScandalRisk)
     }
   }
+  if (effect.mentorUnlock && !next.mentorContactUnlocked) {
+    Object.assign(next, unlockMentor(next))
+  }
   if (effect.prep) {
     for (const course of state.season.courses) {
       next.prep[course.id] = clamp(
@@ -439,6 +445,17 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     ]
   }
   return next
+}
+
+export function createMentorEncounterEvent(): PendingEvent {
+  return {
+    id: 'ev-mentor-encounter',
+    kind: 'scene',
+    title: '讲台边的导师',
+    text: '讲座结束后，你留下来问了一个有点笨的问题。讲台上的老师没有笑你，反而把电脑合上，和你聊了十分钟。临走时，TA说：“有兴趣的话，来实验室看看。”你还没反应过来，手里已经多了一张写着办公室门牌号的便签。',
+    effects: { mentorUnlock: true },
+    effectLines: ['结识一位导师', '科研系统解锁'],
+  }
 }
 
 export function romanceRiskAfterWeek(state: GameState): number {

@@ -136,15 +136,6 @@ export function createInitialRelationships(player: Player): Relationship[] {
       Math.max(8, Math.min(40, baseIntimacy(player))),
     ),
   )
-  relationships.push(
-    makeRelationship(
-      player,
-      'mentor',
-      '导师',
-      Math.random() < 0.5 ? '女' : '男',
-      Math.max(0, Math.min(35, baseIntimacy(player) - 8)),
-    ),
-  )
   return relationships
 }
 
