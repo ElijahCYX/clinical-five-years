@@ -89,6 +89,7 @@ import { RandomEventModal } from './screens/RandomEvent'
 import { WhoIsTAScreen } from './screens/WhoIsTA'
 import {
   canConfess,
+  canPat,
   confessionChance,
   createCourseFriend,
   createInitialRelationships,
@@ -750,6 +751,29 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
+  }
+
+  const autoPatTopRelations = (): string => {
+    if (!game) return ''
+    const remaining = patRemainingThisWeek(game)
+    if (remaining <= 0) return '本周的拍一拍次数已经用完了。'
+    const targets = game.relationships
+      .filter((relation) => canPat(game, relation))
+      .sort((a, b) => b.intimacy - a.intimacy)
+      .slice(0, remaining)
+    if (targets.length === 0) return '本周还没有可以拍的人。'
+    let relationships = game.relationships
+    for (const target of targets) {
+      relationships = relationships.map((relation) =>
+        relation.id === target.id
+          ? patRelationship(relation, game)
+          : relation,
+      )
+    }
+    const next: GameState = { ...game, relationships }
+    setGame(next)
+    persist(next)
+    return `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。`
   }
 
   const patRelation = (id: string) => {
@@ -1643,6 +1667,7 @@ function RealApp() {
       <WhoIsTAScreen
         state={game}
         onPat={patRelation}
+        onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
         onMain={() => setView(whoisReturn)}
         onWho={() => setView('whoami')}

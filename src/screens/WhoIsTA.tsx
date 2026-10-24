@@ -13,6 +13,7 @@ import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 interface WhoIsTAScreenProps {
   state: GameState
   onPat: (id: string) => void
+  onAutoPat: () => string
   onConfess: (id: string) => string
   onMain: () => void
   onWho: () => void
@@ -38,6 +39,7 @@ function statsText(relation: Relationship): string[] {
 export function WhoIsTAScreen({
   state,
   onPat,
+  onAutoPat,
   onConfess,
   onMain,
   onWho,
@@ -85,7 +87,19 @@ export function WhoIsTAScreen({
           </div>
           <div className="whois-summary">
             <Pill tone="green">{relations.length} 段关系</Pill>
-            <Pill>本周拍一拍剩余 {patRemaining} / 3 次</Pill>
+            <button
+              type="button"
+              className="whois-bulk-pat"
+              disabled={patRemaining === 0 || !relations.some((r) => canPat(state, r))}
+              onClick={() => setMessage(onAutoPat())}
+            >
+              <span>本周拍一拍剩余 {patRemaining} / 3 次</span>
+              <small>
+                {patRemaining === 0
+                  ? '本周次数已用完'
+                  : '点击自动拍亲密度最高的前三位'}
+              </small>
+            </button>
             {state.romanceUnlocked && <Pill tone="gold">恋爱模块已解锁</Pill>}
             {partnerCount > 1 && (
               <Pill tone="red">多线恋爱 · 下周风险 {state.romanceRisk}%</Pill>

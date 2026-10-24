@@ -7669,3 +7669,50 @@ body.dinner-open {
     justify-content: space-between;
   }
 }
+
+
+/* clickable auto-pat summary */
+.whois-bulk-pat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--ink-2);
+  font-family: var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.whois-bulk-pat > span {
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+}
+
+.whois-bulk-pat > small {
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+.whois-bulk-pat:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.whois-bulk-pat:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 820px) {
+  .whois-bulk-pat > span {
+    font-size: 10px;
+  }
+
+  .whois-bulk-pat > small {
+    font-size: 9px;
+  }
+}
