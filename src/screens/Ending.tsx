@@ -1,5 +1,4 @@
 import { BACKGROUND_BY_ID, TALENT_BY_ID } from '../data'
-import { archetypeFor } from '../game'
 import type { GameState } from '../types'
 import { Eyebrow, HeartLineArt, Stamp, TopBar } from '../ui'
 
@@ -74,7 +73,7 @@ export function EndingScreen({
               </div>
               <div>
                 <span>入学档案</span>
-                <strong>{archetypeFor(player.attrs)}</strong>
+                <strong>{player.archiveTitle}</strong>
               </div>
               <div>
                 <span>家庭背景</span>

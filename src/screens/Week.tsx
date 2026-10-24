@@ -6,7 +6,6 @@ import {
   TALENT_BY_ID,
 } from '../data'
 import {
-  archetypeFor,
   effectiveEnergyCost,
   energyEffectText,
   englishGainForMemory,
@@ -58,7 +57,7 @@ export function WeekScreen({
   const background = BACKGROUND_BY_ID[player.background]
   const latestLog = state.logs[state.logs.length - 1]
   const remainingActions = Math.max(0, 2 - state.selected.length)
-  const archetype = archetypeFor(player.attrs)
+  const archetype = player.archiveTitle
   const courses = state.season.courses
   const focusCourse = courses.find((course) => course.id === state.weekFocus)
   const focusLabel =

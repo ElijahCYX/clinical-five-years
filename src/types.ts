@@ -231,6 +231,8 @@ export interface Player {
   background: BackgroundId
   talent: TalentId
   attrs: Record<AttrKey, number>
+  /** 入学时固定的档案称号，不随之后属性成长变化。 */
+  archiveTitle: string
 }
 
 export interface WeekLog {

@@ -1,5 +1,5 @@
 import { FIRST_SEASON } from './data'
-import { newGameState } from './game'
+import { archetypeFor, newGameState } from './game'
 import type { AttrKey, DemoName, GameState, Player } from './types'
 
 const demoAttrs: Record<AttrKey, number> = {
@@ -19,6 +19,7 @@ export const demoPlayer: Player = {
   background: 'ordinary',
   talent: 'bright',
   attrs: demoAttrs,
+  archiveTitle: archetypeFor(demoAttrs),
 }
 
 export const demoWeekLog = {

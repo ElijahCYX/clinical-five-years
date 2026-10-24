@@ -78,7 +78,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v16'
+const SAVE_KEY = 'clinical-five-years-save-v17'
 
 type View = ScreenName | 'crisis' | 'whoami'
 

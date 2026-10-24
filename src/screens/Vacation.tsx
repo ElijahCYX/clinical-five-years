@@ -1,6 +1,5 @@
 import { VACATION_ACTION_BY_ID, VACATION_ACTIONS, VACATIONS, HABIT_BY_ID, BACKGROUND_BY_ID, TALENT_BY_ID, SEASONS } from '../data'
 import {
-  archetypeFor,
   cetHint,
   effectiveEnergyCost,
   energyEffectText,
@@ -55,7 +54,7 @@ export function VacationScreen({
   const latestLog = state.logs[state.logs.length - 1]
   const vacationLog = latestLog?.title.startsWith(meta.name) ? latestLog : null
   const remainingActions = Math.max(0, 2 - state.selected.length)
-  const archetype = archetypeFor(player.attrs)
+  const archetype = player.archiveTitle
 
   const lockReason = (action: ActionDef): string | null => {
     if (action.requires === 'lab' && !(state.mentorSelected && state.labEntered)) {

@@ -48,6 +48,7 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
       background,
       talent: talentId,
       attrs,
+      archiveTitle: archetype,
     })
   }
 

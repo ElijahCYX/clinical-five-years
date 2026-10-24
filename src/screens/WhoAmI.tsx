@@ -6,7 +6,7 @@ import {
   PLAN_BY_ID,
   TALENT_BY_ID,
 } from '../data'
-import { AWARD_LABELS, archetypeFor, bestAward } from '../game'
+import { AWARD_LABELS, bestAward } from '../game'
 import type { GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 
@@ -102,7 +102,7 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                 <span className="result-kicker">CLINICAL MEDICINE / FIVE-YEAR PROGRAM</span>
                 <h2>{player.name}</h2>
                 <p>
-                  {background.name} · {talent.name} · {archetypeFor(player.attrs)}
+                  {background.name} · {talent.name} · {player.archiveTitle}
                 </p>
                 <div className="dossier-tags">
                   <Pill tone="green">{player.gender}</Pill>
