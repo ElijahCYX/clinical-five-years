@@ -1046,10 +1046,11 @@ function RealApp() {
       const isFull = prev.selected.length >= 2
       // 已选中的可重复行动：选满时优先取消一次，而不是尝试再增加
       if (count > 0 && (isFull || count >= 2)) {
-        const nextSelected = [...prev.selected]
-        const lastIndex = nextSelected.lastIndexOf(id)
-        if (lastIndex >= 0) nextSelected.splice(lastIndex, 1)
-        return { ...prev, selected: nextSelected }
+        // 已选两次时再次点击，两次都取消；已选一次但行动槽已满时，取消该次。
+        return {
+          ...prev,
+          selected: prev.selected.filter((item) => item !== id),
+        }
       }
       if (isFull) return prev
       return { ...prev, selected: [...prev.selected, id] }
