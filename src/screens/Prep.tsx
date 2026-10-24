@@ -8,6 +8,7 @@ import {
   estimateRange,
   examReviewTalentMultiplier,
   getReviewEffect,
+  isExamReviewCourse,
   prepGainMultiplier,
   reviewMultiplier,
 } from '../game'
@@ -42,10 +43,25 @@ export function PrepScreen({
     .map((id) => HABIT_BY_ID[id])
     .filter(Boolean)
   const courses = state.season.courses
-  const isBig = courses.length > 1
+  const reviewCourses = courses.filter(isExamReviewCourse)
+  const isBig = reviewCourses.length > 1
   const planId = state.plan ?? 'B'
   const multiplier = reviewMultiplier(planId)
   const caffeineImmune = state.openingTalents.includes('caffeineImmune')
+
+  const focusOptions: Array<{
+    id: ReviewChoice
+    label: string
+    en: string
+    desc: string
+    meta: string
+  }> = reviewCourses.map((course, index) => ({
+    id: `focus${index}` as ReviewChoice,
+    label: `主攻 ${course.name}`,
+    en: `FOCUS ${String.fromCharCode(65 + index)}`,
+    desc: '把这一周的复习时间单独投给这门必修/思政课。',
+    meta: '',
+  }))
 
   const options: Array<{
     id: ReviewChoice
@@ -55,32 +71,19 @@ export function PrepScreen({
     meta: string
   }> = isBig
     ? [
-        {
-          id: 'focus0',
-          label: `主攻 ${courses[0].name}`,
-          en: 'FOCUS A',
-          desc: '把两次复习行动都投给这一门。',
-          meta: '',
-        },
-        {
-          id: 'focus1',
-          label: `主攻 ${courses[1].name}`,
-          en: 'FOCUS B',
-          desc: '把两次复习行动都投给这一门。',
-          meta: '',
-        },
+        ...focusOptions,
         {
           id: 'balanced',
           label: '均衡复习',
           en: 'BALANCE',
-          desc: '两门各分一半时间，哪门都不放弃。',
+          desc: '在可复习的必修/思政课程之间平均分配时间，其他选修课不参与。',
           meta: '',
         },
         {
           id: 'mock',
           label: '历年卷 + zsy 笔记',
           en: 'PAST PAPERS + NOTES',
-          desc: '两门各做一套历年卷，再对着 zsy 笔记补漏洞。收益等同均衡复习，但成绩上限 -5%。',
+          desc: '必修/思政各做一套历年卷，再对着 zsy 笔记补漏洞。收益等同均衡复习，但成绩上限 -5%。',
           meta: '',
         },
         {
@@ -96,7 +99,7 @@ export function PrepScreen({
           id: 'full',
           label: '全力复习',
           en: 'FULL FOCUS',
-          desc: '把这一周完整地交给这门课。',
+          desc: '把这一周完整地交给这门必修/思政课。',
           meta: '',
         },
         {

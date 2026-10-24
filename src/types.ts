@@ -55,7 +55,12 @@ export type ScreenName =
   | 'graduation'
   | 'ending'
 
-export type ReviewChoice = 'full' | 'focus0' | 'focus1' | 'balanced' | 'mock' | 'rest'
+export type ReviewChoice =
+  | 'full'
+  | 'balanced'
+  | 'mock'
+  | 'rest'
+  | `focus${number}`
 
 export type VacationKind = 'winter' | 'summer'
 

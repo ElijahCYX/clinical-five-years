@@ -398,7 +398,7 @@ export const ACTIONS: ActionDef[] = [
     energy: -10,
     stress: 10,
     money: 0,
-    effectText: '所有课程：准备度 +8 × K · 精力 -10 · 压力 +10',
+    effectText: '所有课程：准备度 +6 × K · 精力 -10 · 压力 +10',
     study: true,
   },
   {

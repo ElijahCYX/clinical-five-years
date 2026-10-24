@@ -360,6 +360,11 @@ export interface ReviewEffect {
   scoreCap?: number
 }
 
+/** 考试周只有必修课和思政课可以单独复习；其他选修课不参与。 */
+export function isExamReviewCourse(course: Course): boolean {
+  return !course.electiveType || course.electiveType === 'politics'
+}
+
 /** 考前复习的选择效果：小考 3 选 1，大考 5 选 1。 */
 export function getReviewEffect(
   choice: ReviewChoice,
@@ -374,12 +379,14 @@ export function getReviewEffect(
   let variance = 3
   let scoreCap: number | undefined
 
+  const reviewCourses = courses.filter(isExamReviewCourse)
   const gain = (course: Course, base: number) => {
     gains[course.id] = (gains[course.id] ?? 0) + base * courseK(course, attrs) * multiplier
   }
 
-  if (courses.length <= 1) {
-    const course = courses[0]
+  if (reviewCourses.length <= 1) {
+    const course = reviewCourses[0]
+    if (!course) return { energy, stress, gains, variance, scoreCap }
     if (choice === 'mock') {
       gain(course, 20)
       energy = -10
@@ -398,26 +405,24 @@ export function getReviewEffect(
     return { energy, stress, gains, variance, scoreCap }
   }
 
-  if (choice === 'focus0' || choice === 'focus1') {
-    const target = choice === 'focus0' ? courses[0] : courses[1]
-    gain(target, 40)
-    for (const course of courses) {
-      if (!(course.id in gains)) gains[course.id] = 0
-    }
+  const focusIndex =
+    choice.startsWith('focus') ? Number(choice.slice(5)) : -1
+  if (focusIndex >= 0 && reviewCourses[focusIndex]) {
+    gain(reviewCourses[focusIndex], 40)
     energy = -20
     stress = 10
   } else if (choice === 'balanced') {
-    for (const course of courses) gain(course, 20)
+    for (const course of reviewCourses) gain(course, 20)
     energy = -20
     stress = 8
   } else if (choice === 'mock') {
-    for (const course of courses) gain(course, 20)
+    for (const course of reviewCourses) gain(course, 20)
     energy = -10
     stress = 5
     variance = 1
     scoreCap = 95
   } else {
-    for (const course of courses) gains[course.id] = 4
+    for (const course of reviewCourses) gains[course.id] = 4
     energy = 20
     stress = 5
   }
@@ -626,7 +631,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
       const nominal = Object.fromEntries(
         state.season.courses.map((course) => [
           course.id,
-          8 *
+          6 *
             courseK(course, attrs) *
             (1 + studyBonus) *
             prepMultiplier *

@@ -61,6 +61,7 @@ export function WeekScreen({
   const remainingActions = Math.max(0, 2 - state.selected.length)
   const archetype = player.archiveTitle
   const courses = state.season.courses
+  const focusableCourses = courses.filter((course) => !course.electiveType)
   const focusCourse = courses.find((course) => course.id === state.weekFocus)
   const focusLabel =
     state.weekFocus === 'balanced'
@@ -635,11 +636,11 @@ export function WeekScreen({
             <Eyebrow>WEEKLY FOCUS / 第 {state.week} 周</Eyebrow>
             <h2>这周主要温习哪门课？</h2>
             <p className="focus-lede">
-              主课程拿 75% 的准备度收益，其余课程平分剩下的 25%；
-              也可以选择全部课程均衡分配。
+              主课程只能选必修课程；主课程拿 75% 的准备度收益，
+              其余课程平分剩下的 25%；也可以选择全部课程均衡分配。
             </p>
             <div className="focus-options">
-              {courses.map((course) => (
+              {focusableCourses.map((course) => (
                 <button
                   type="button"
                   key={course.id}
