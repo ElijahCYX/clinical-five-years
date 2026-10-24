@@ -487,6 +487,7 @@ export interface ClubMembership {
   memberIds: string[]
   highestRole: OrganizationRole
   activitySeasonIndex: number
+  inactivityWarningIssued: boolean
 }
 
 export interface ClubHistoryEntry {

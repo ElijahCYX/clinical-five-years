@@ -112,6 +112,8 @@ import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { ClubRecruitment } from './screens/ClubRecruitment'
 import {
+  CLUB_INACTIVITY_REMOVAL_TEXT,
+  CLUB_INACTIVITY_WARNING_TEXT,
   CLUB_REJECTIONS,
   ORGANIZATIONS,
   ORG_BY_ID,
@@ -146,8 +148,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v36'
+const SAVE_KEY = 'clinical-five-years-save-v37'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v36',
   'clinical-five-years-save-v35',
   'clinical-five-years-save-v34',
   'clinical-five-years-save-v33',
@@ -229,7 +232,13 @@ function readSave(): GameState | null {
       vacationTravelInvites: game.vacationTravelInvites ?? null,
       pendingConsumption: game.pendingConsumption ?? null,
       consumptionEventWeek: game.consumptionEventWeek ?? 0,
-      clubMembership: game.clubMembership ?? null,
+      clubMembership: game.clubMembership
+        ? {
+            ...game.clubMembership,
+            inactivityWarningIssued:
+              game.clubMembership.inactivityWarningIssued ?? false,
+          }
+        : null,
       clubHistory: game.clubHistory ?? [],
       clubInitialRecruitmentDone: game.clubInitialRecruitmentDone ?? false,
       clubInvites: game.clubInvites ?? null,
@@ -599,11 +608,30 @@ function RealApp() {
     if (game.week === 1 && game.clubMembership) {
       const membership = game.clubMembership
       if (membership.activitySeasonIndex !== game.seasonIndex) {
-        if (
+        const wouldBeRemoved =
           membership.role !== 'honorary' &&
           membership.semesterActivities === 0 &&
           game.seasonIndex > membership.joinedSeasonIndex
-        ) {
+        if (wouldBeRemoved && !(membership.inactivityWarningIssued ?? false)) {
+          const next: GameState = {
+            ...game,
+            clubMembership: {
+              ...membership,
+              semesterActivities: 0,
+              activitySeasonIndex: game.seasonIndex,
+              inactivityWarningIssued: true,
+            },
+          }
+          setGame(next)
+          persist(next)
+          showResearchNotice({
+            kind: 'club',
+            title: '组织警告',
+            text: CLUB_INACTIVITY_WARNING_TEXT,
+          })
+          return
+        }
+        if (wouldBeRemoved) {
           const next: GameState = {
             ...game,
             clubMembership: null,
@@ -623,8 +651,8 @@ function RealApp() {
           persist(next)
           showResearchNotice({
             kind: 'club',
-            title: '组织通知',
-            text: `由于你上个学期一次活动都没有参加，${ORG_BY_ID[membership.orgId]?.name ?? '组织'}决定将你移出成员名单。组织里的朋友还在，但职务已经作废。`,
+            title: '移出组织通知',
+            text: CLUB_INACTIVITY_REMOVAL_TEXT,
           })
           return
         }
@@ -1428,6 +1456,7 @@ function RealApp() {
         memberIds: newRelations.map((relation) => relation.id),
         highestRole: 'member',
         activitySeasonIndex: base.seasonIndex,
+        inactivityWarningIssued: false,
       },
       clubInitialRecruitmentDone: true,
       clubInvites: null,

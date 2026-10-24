@@ -128,3 +128,8 @@ export const CLUB_REJECTIONS = [
 export function pickClubRejection(): string {
   return CLUB_REJECTIONS[Math.floor(Math.random() * CLUB_REJECTIONS.length)]
 }
+
+export const CLUB_INACTIVITY_WARNING_TEXT =
+  '负责人把你叫到活动室，桌上还摆着上次活动的签到表。TA没有发火，只是把那张纸推到你面前：“这学期你一次都没来。我们不是要求每个人都随叫随到，但一个组织要运转，总得有人出现。”你解释说最近课多、事情杂，TA点点头，说理解，却还是把话说完了。临走前，TA给你留了一个台阶：“这次先记一次警告，下个学期至少来一次。如果还是见不到你，我们只能按章程处理。”你走出活动室，走廊里很安静，手机里还有没回完的群消息。'
+export const CLUB_INACTIVITY_REMOVAL_TEXT =
+  '新学期的第一次例会上，负责人没有点名，只在群里发了一份简短的公告。你的名字出现在“退出成员”那一栏，理由写着“连续两个学期未参与组织活动”。群里的消息很快被下一项议程刷过去，没有人@你，也没有人追问。你退出群聊之前，看见他们正在安排这学期的招新和活动，时间地点都排得很满。你曾经也属于那里，只是后来每次都想着“下次再去”，直到没有下一次。组织照常运转，活动照常有人参加，只有你的工牌被收进了抽屉，像一件没人认领的旧物。'
