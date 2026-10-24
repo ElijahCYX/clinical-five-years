@@ -29,6 +29,7 @@ export const ORGANIZATIONS: Organization[] = [
   { id: 'org-travel', name: '旅行协会', category: 'interest', description: '做攻略、周末出逃，把校园留在身后。', benefit: { stress: -11, energy: 5, composite: 1 } },
   { id: 'org-film', name: '电影社', category: 'interest', description: '放映、拉片，在黑暗里看完别人的一生。', benefit: { stress: -8, energy: 6, composite: 1 } },
   { id: 'org-garden', name: '园艺社', category: 'interest', description: '种花、换盆，以及目送植物阵亡。', benefit: { stress: -9, energy: 4, composite: 1 } },
+  { id: 'org-art', name: '医学院艺术团', category: 'interest', description: '合唱、舞蹈、器乐和主持都在这里排练，演出前整栋楼都能听见。', benefit: { stress: -8, energy: 7, composite: 1, socialGrowth: 6 } },
 
   // 社会实践类 5
   { id: 'org-charity', name: '公益社', category: 'practice', description: '做公益、跑社区，把时间交给具体的人。', benefit: { composite: 5, stress: -2, socialGrowth: 10 } },
