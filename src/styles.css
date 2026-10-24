@@ -5474,9 +5474,8 @@ input:focus-visible {
 }
 
 .elective-pick {
-  position: absolute;
-  right: 13px;
-  top: 15px;
+  display: block;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 7px;
 }
