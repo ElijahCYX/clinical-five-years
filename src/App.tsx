@@ -1018,6 +1018,12 @@ function RealApp() {
         : STRESS_TALKS
     const text = pool[Math.floor(Math.random() * pool.length)]
     const nextStress = stage === 1 ? 60 : stage === 2 ? 70 : game.stress
+    const ruleText =
+      stage === 1
+        ? '压力达到 80 会碎掉一颗心。当前已碎 1 颗，辅导员介入后压力降至 60。三颗心全部碎掉后，下一个新的每周行动阶段若压力仍 ≥80，将直接触发自尽结局。'
+        : stage === 2
+          ? '当前只剩 1 颗心。下一次压力达到 80 会碎掉最后一颗；从再下一个新的每周行动阶段起，若压力仍 ≥80，将直接触发自尽结局。'
+          : '最后一颗心已经碎了。下一个新的每周行动阶段开始时，如果压力仍 ≥80，将直接触发自尽结局。'
     const next: GameState = {
       ...game,
       stressHearts: Math.max(0, game.stressHearts - 1),
@@ -1028,9 +1034,10 @@ function RealApp() {
     setGame(next)
     persist(next)
     showResearchNotice({
-      kind: 'warning',
+      kind: 'stress',
       title,
       text,
+      ruleText,
     })
   }, [game, view])
 
