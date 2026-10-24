@@ -91,6 +91,7 @@ import {
   nextRoommateAction,
   normalizeRelationships,
   patRelationship,
+  patRemainingThisWeek,
   revealMaybe,
 } from './social'
 
@@ -685,7 +686,7 @@ function RealApp() {
   }
 
   const patRelation = (id: string) => {
-    if (!game) return
+    if (!game || patRemainingThisWeek(game) <= 0) return
     const relation = game.relationships.find((item) => item.id === id)
     if (!relation) return
     const next: GameState = {

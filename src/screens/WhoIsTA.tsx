@@ -5,6 +5,7 @@ import {
   canPat,
   confessionChance,
   currentWeekKey,
+  patRemainingThisWeek,
   relationshipKindLabel,
 } from '../social'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
@@ -47,6 +48,7 @@ export function WhoIsTAScreen({
   if (!player) return null
   const weekKey = currentWeekKey(state)
   const relations = state.relationships
+  const patRemaining = patRemainingThisWeek(state)
 
   return (
     <div className="screen whois-screen">
@@ -77,7 +79,7 @@ export function WhoIsTAScreen({
           </div>
           <div className="whois-summary">
             <Pill tone="green">{relations.length} 段关系</Pill>
-            <Pill>本周拍一拍可用 {relations.filter((r) => canPat(state, r)).length} 次</Pill>
+            <Pill>本周拍一拍剩余 {patRemaining} / 3 次</Pill>
             {state.romanceUnlocked && <Pill tone="gold">恋爱模块已解锁</Pill>}
           </div>
         </header>
@@ -99,7 +101,7 @@ export function WhoIsTAScreen({
             <div className="whois-list">
               {relations.map((relation) => {
                 const stats = statsText(relation)
-                const patAvailable = canPat(state, relation)
+                const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
                 return (
@@ -139,7 +141,11 @@ export function WhoIsTAScreen({
                         disabled={!patAvailable}
                         onClick={() => onPat(relation.id)}
                       >
-                        {patAvailable ? '拍一拍' : '本周已拍'}
+                        {patAvailable
+                        ? '拍一拍'
+                        : relation.lastPatKey === weekKey
+                          ? '本周已拍'
+                          : '本周已拍满'}
                       </button>
                       <button
                         type="button"

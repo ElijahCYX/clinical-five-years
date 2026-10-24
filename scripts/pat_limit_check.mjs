@@ -1,0 +1,15 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{const g=await import('/src/game.ts'); const d=await import('/src/data.ts'); const demo=await import('/src/demo.ts'); const social=await import('/src/social.ts'); const s=g.newGameState(demo.demoPlayer); s.screen='week'; s.seasonIndex=0; s.season=d.SEASONS[0]; s.week=1; s.plan='B'; s.habits=['timeManagement']; s.weekFocus='balanced'; s.electiveSelectionDone=true; s.electiveOffers=[]; s.eventWeek=1; s.relationships=social.createInitialRelationships(demo.demoPlayer); localStorage.setItem('clinical-five-years-save-v21',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(400); await page.locator('.interface-btn',{hasText:'TA 是谁'}).click(); await page.waitForTimeout(300)
+console.log('summary:',await page.locator('.whois-summary').innerText())
+for(let i=0;i<3;i++){const b=page.locator('.whois-row').nth(i).locator('.whois-action').first(); console.log('click',i,await b.isDisabled()); await b.click(); await page.waitForTimeout(150)}
+console.log('summary after3:',await page.locator('.whois-summary').innerText())
+console.log('4th disabled:',await page.locator('.whois-row').nth(3).locator('.whois-action').first().isDisabled(), await page.locator('.whois-row').nth(3).locator('.whois-action').first().innerText())
+const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v21')).game)
+console.log('patted:',saved.relationships.filter(r=>r.lastPatKey.endsWith('-w1')).length)
+console.log('errors',errors.slice(0,5))
+await browser.close()

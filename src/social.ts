@@ -184,6 +184,17 @@ export function currentWeekKey(state: GameState): string {
   return `${state.season.id}-w${state.week}`
 }
 
+export const PAT_LIMIT = 3
+
+export function patUsedThisWeek(state: GameState): number {
+  const key = currentWeekKey(state)
+  return state.relationships.filter((relation) => relation.lastPatKey === key).length
+}
+
+export function patRemainingThisWeek(state: GameState): number {
+  return Math.max(0, PAT_LIMIT - patUsedThisWeek(state))
+}
+
 export function canPat(state: GameState, relation: Relationship): boolean {
   return relation.lastPatKey !== currentWeekKey(state)
 }
