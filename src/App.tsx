@@ -823,6 +823,10 @@ function RealApp() {
       game.week === 2 &&
       !game.cetEventDone
     const dinnerAccepted = game.dinnerPlan?.acceptedIds ?? []
+    const dinnerIntimacyGain =
+      dinnerAccepted.length > 0
+        ? Math.max(1, Math.floor(6 / dinnerAccepted.length))
+        : 0
     const relationships = game.relationships.map((relation) => {
       let updated = relation
       if (relation.kind === 'roommate') {
@@ -831,7 +835,7 @@ function RealApp() {
       if (dinnerAccepted.includes(relation.id)) {
         updated = revealMaybe({
           ...updated,
-          intimacy: Math.min(100, updated.intimacy + 3),
+          intimacy: Math.min(100, updated.intimacy + dinnerIntimacyGain),
         })
       }
       return updated

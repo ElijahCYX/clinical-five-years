@@ -638,9 +638,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
       action.id === 'english'
         ? englishGainForMemory(attrs.memory)
         : action.english ?? 0
-    composite +=
-      (action.composite ?? 0) +
-      (action.id === 'social' && state.openingTalents.includes('socialBeast') ? 1 : 0)
+    composite += action.composite ?? 0
     research += action.research ?? 0
     kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
     if (action.id === 'electiveHomework') {

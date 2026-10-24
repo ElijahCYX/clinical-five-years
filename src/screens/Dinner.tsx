@@ -127,7 +127,7 @@ export function DinnerModal({
           <div>
             <span>预计花费</span>
             <strong>{results ? `¥${cost}` : '¥50 起'}</strong>
-            <small>每多一位朋友赴约，总费用减少 ¥5。</small>
+            <small>每多一位朋友赴约，总费用减少 ¥5；亲密度按赴约人数分配 +6。</small>
           </div>
           {!results ? (
             <div className="dinner-actions">
@@ -147,7 +147,7 @@ export function DinnerModal({
           ) : accepted.length > 0 ? (
             <div className="dinner-actions">
               <span className="dinner-summary">
-                {accepted.length} 人赴约 · 共 ¥{cost}
+                {accepted.length} 人赴约 · 共 ¥{cost} · 每人亲密度 +{Math.max(1, Math.floor(6 / accepted.length))}
               </span>
               <button
                 type="button"
