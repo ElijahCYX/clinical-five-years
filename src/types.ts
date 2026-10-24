@@ -43,7 +43,12 @@ export type ScreenName =
   | 'vacation'
   | 'cetEvent'
   | 'cetResult'
+  | 'route'
+  | 'baoyanResult'
+  | 'kaoyanExam'
+  | 'kaoyanResult'
   | 'yearend'
+  | 'graduation'
   | 'ending'
 
 export type ReviewChoice = 'full' | 'focus0' | 'focus1' | 'balanced' | 'mock' | 'rest'
@@ -121,6 +126,7 @@ export interface ActionDef {
   english?: number
   composite?: number
   research?: number
+  kaoyanPrep?: number
   growth?: 'constitution'
   growthAmount?: number
   requires?: 'club' | 'mentor' | 'partner'
@@ -134,7 +140,20 @@ export interface Course {
   credits: number
   memory: SkillTier
   comprehension: SkillTier
+  /** 补考课程：继承原课程的学分与原始绩点，最终绩点取两次平均。 */
+  makeup?: boolean
+  originalGpa?: number
+  originalScore?: number
 }
+
+export interface PeResult {
+  year: number
+  score: number
+  gpa: number
+  passed: boolean
+}
+
+export type PostgradChoice = 'baoyan' | 'both' | 'employment' | null
 
 export interface Season {
   id: string
@@ -191,6 +210,17 @@ export interface GameState {
   cetEventDone: boolean
   examCoffee: boolean
   examAllNighter: boolean
+  peResults: PeResult[]
+  pendingMakeups: Course[]
+  postgradChoice: PostgradChoice
+  postgradChance: number | null
+  baoyanResult: 'success' | 'fail' | null
+  kaoyanRegistered: boolean
+  kaoyanPrep: number
+  kaoyanScore: number | null
+  kaoyanResult: 'success' | 'fail' | null
+  peMakeupPassed: boolean | null
+  peMakeupScore: number | null
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number

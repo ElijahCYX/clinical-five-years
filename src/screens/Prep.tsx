@@ -222,7 +222,10 @@ export function PrepScreen({
                     <div className="prep-course-block" key={course.id}>
                       <div className="prep-course-block-top">
                         <div>
-                          <strong>{course.name}</strong>
+                          <strong>
+                            {course.name}
+                            {course.makeup && <span className="makeup-tag">补考</span>}
+                          </strong>
                           <span>
                             {course.examType} · {course.credits} 学分 · 记忆力{' '}
                             {course.memory} · 悟性 {course.comprehension}

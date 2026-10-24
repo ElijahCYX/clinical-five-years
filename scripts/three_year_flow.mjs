@@ -21,10 +21,18 @@ while (steps++ < 200) {
   }
   if (await page.locator('.vacation-screen').count()) { await vacationWeek(); console.log('VACATION week'); continue }
   if (await page.locator('.event-screen').count()) {
-    console.log('EVENT');
-    const skip=page.locator('.event-actions button',{hasText:'不参加'});
-    if (await skip.count()) { await skip.first().click(); await wait(100); await page.locator('.event-actions button',{hasText:'确认'}).click(); await wait(350); continue }
-    await page.locator('.event-actions button',{hasText:'确认'}).click(); await wait(350); continue
+    const eventTitle = await page.locator('.event-title').innerText().catch(() => '')
+    console.log('EVENT', eventTitle.replace(/\n/g, ' '))
+    if (eventTitle.includes('英语四六级报名')) {
+      await page.locator('.event-actions button', { hasText: '不参加' }).first().click()
+      await wait(100)
+      await page.locator('.event-actions button', { hasText: '确认' }).click()
+      await wait(350)
+    } else {
+      await page.locator('.event-actions .btn-primary').first().click()
+      await wait(400)
+    }
+    continue
   }
   if (await page.locator('.game-screen').count()) {
     console.log('WEEK', (await page.locator('.game-head-left p').innerText()).replace(/\n/g,' '));

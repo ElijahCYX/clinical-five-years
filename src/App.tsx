@@ -15,7 +15,13 @@ import {
   cetScore,
   getReviewEffect,
   gpaFromScore,
+  KAOYAN_PASS,
+  kaoyanScoreFor,
+  makeupGpa,
   newGameState,
+  peGpaFor,
+  peScoreFor,
+  postgradChanceFor,
   planEnergyCost,
   planPassive,
   planStress,
@@ -29,6 +35,7 @@ import type {
   HabitId,
   PlanId,
   Player,
+  PostgradChoice,
   ReviewChoice,
   ScreenName,
   VacationKind,
@@ -39,13 +46,20 @@ import { CetResultScreen } from './screens/CetResult'
 import { CreateScreen } from './screens/Create'
 import { EndingScreen } from './screens/Ending'
 import { PlanScreen } from './screens/Plan'
+import {
+  BaoyanResultScreen,
+  GraduationScreen,
+  KaoyanExamScreen,
+  KaoyanResultScreen,
+  RouteScreen,
+} from './screens/Postgrad'
 import { PrepScreen } from './screens/Prep'
 import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v4'
+const SAVE_KEY = 'clinical-five-years-save-v5'
 
 type View = ScreenName
 
@@ -147,6 +161,11 @@ function buildVacationLog(
 }
 
 function resultNextLabel(index: number): string {
+  if (index === 15) return '学年结算'
+  if (index === 16) return '推免结果'
+  if (index === 17) return '考研初试'
+  if (index === 18) return '考研结果'
+  if (index === 19) return '毕业结算'
   if (index === 1 || index === 5 || index === 9) return '寒假'
   if (index === 3 || index === 7) return '暑假'
   if (index === 11) return '学年结算'
@@ -158,11 +177,34 @@ function yearNumber(index: number): number {
 }
 
 function yearName(index: number): string {
-  return ['大一', '大二', '大三'][yearNumber(index) - 1] ?? `第 ${yearNumber(index)} 学年`
+  return ['大一', '大二', '大三', '大四', '大五'][yearNumber(index) - 1] ?? `第 ${yearNumber(index)} 学年`
+}
+
+function isYearFinal(index: number): boolean {
+  return [3, 7, 11, 15, 19].includes(index)
+}
+
+function settlePe(base: GameState): GameState {
+  const year = yearNumber(base.seasonIndex)
+  if (base.peResults.some((item) => item.year === year)) return base
+  const constitution = base.player?.attrs.constitution ?? 2
+  const score = peScoreFor(constitution)
+  const gpa = peGpaFor(score)
+  const passed = score >= 60
+  return {
+    ...base,
+    peResults: [...base.peResults, { year, score, gpa, passed }],
+    cumulativeCredits: base.cumulativeCredits + (passed ? 2 : 0),
+    cumulativePoints: base.cumulativePoints + (passed ? 2 * gpa : 0),
+  }
 }
 
 function prepareSeason(base: GameState, index: number): GameState {
-  const season = SEASONS[index]
+  const baseSeason = SEASONS[index]
+  const pending = base.pendingMakeups ?? []
+  const season = pending.length > 0
+    ? { ...baseSeason, courses: [...baseSeason.courses, ...pending] }
+    : baseSeason
   return {
     ...base,
     screen: 'plan',
@@ -180,6 +222,7 @@ function prepareSeason(base: GameState, index: number): GameState {
     cetEventDone: false,
     examCoffee: false,
     examAllNighter: false,
+    pendingMakeups: [],
   }
 }
 
@@ -318,6 +361,7 @@ function RealApp() {
 
     const shouldPrepare = game.week >= 3
     const isCetEvent =
+      game.seasonIndex < 12 &&
       game.season.seasonLabel.endsWith('夏') &&
       game.week === 2 &&
       !game.cetEventDone
@@ -333,6 +377,7 @@ function RealApp() {
       composite: sim.composite,
       research: sim.research,
       prep: sim.prep,
+      kaoyanPrep: sim.kaoyanPrep,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       selected: [],
@@ -359,13 +404,33 @@ function RealApp() {
         (Math.random() * 2 * effect.variance - effect.variance)
       if (game.examAllNighter) rawScore *= 0.95
       const score = Math.max(0, Math.min(100, Math.trunc(rawScore)))
-      return { course, score, gpa: gpaFromScore(score) }
+      const rawGpa = gpaFromScore(score)
+      const gpa = course.makeup
+        ? score >= 60
+          ? makeupGpa(course.originalGpa ?? 0, rawGpa)
+          : rawGpa
+        : rawGpa
+      return { course, score, gpa }
     })
 
-    const creditGain = results.reduce((sum, result) => sum + result.course.credits, 0)
-    const pointGain = results.reduce(
+    const passed = results.filter((result) => result.score >= 60)
+    const failed = results.filter((result) => result.score < 60)
+    const creditGain = passed.reduce((sum, result) => sum + result.course.credits, 0)
+    const pointGain = passed.reduce(
       (sum, result) => sum + result.course.credits * result.gpa,
       0,
+    )
+    const pendingMakeups = failed.map((result) =>
+      result.course.makeup
+        ? result.course
+        : {
+            ...result.course,
+            id: `makeup-${result.course.id}-${game.seasonIndex}`,
+            name: result.course.name,
+            makeup: true,
+            originalGpa: result.gpa,
+            originalScore: result.score,
+          },
     )
     const next: GameState = {
       ...game,
@@ -376,13 +441,14 @@ function RealApp() {
       money,
       prep,
       results,
+      pendingMakeups,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
       selected: [],
       finalNote:
-        results.every((result) => result.gpa > 0)
+        failed.length === 0
           ? `${game.season.seasonLabel}结束。成绩单被收进档案，下一段日子已经在前面等你。`
-          : `${game.season.seasonLabel}结束。成绩单上有一个不太好看的数字，但故事还没写完。`,
+          : `${game.season.seasonLabel}结束。成绩单上有一个不太好看的数字，补考在下一个学期等你。`,
     }
 
     commit(next, 'result')
@@ -458,9 +524,21 @@ function RealApp() {
     commit({ ...game, screen: 'yearend', vacation: null }, 'yearend')
   }
 
+  const beginSeason = (base: GameState, index: number) => {
+    const prepared = prepareSeason(base, index)
+    if (index === 14 && !base.postgradChoice) {
+      commit(
+        { ...prepared, screen: 'route', postgradChance: postgradChanceFor(prepared) },
+        'route',
+      )
+      return
+    }
+    commit(prepared, 'plan')
+  }
+
   const startSeason = (index: number) => {
     if (!game) return
-    commit(prepareSeason(game, index), 'plan')
+    beginSeason(game, index)
   }
 
   const startVacation = (kind: VacationKind) => {
@@ -468,22 +546,148 @@ function RealApp() {
     commit(prepareVacation(game, kind), 'vacation')
   }
 
+  const handleRouteChoice = (choice: PostgradChoice) => {
+    if (!game) return
+    commit(
+      {
+        ...game,
+        postgradChoice: choice,
+        postgradChance: game.postgradChance ?? postgradChanceFor(game),
+        screen: 'plan',
+      },
+      'plan',
+    )
+  }
+
+  const handleBaoyanContinue = () => {
+    if (!game) return
+    beginSeason(game, 17)
+  }
+
+  const handleKaoyanRegister = () => {
+    if (!game) return
+    beginSeason({ ...game, kaoyanRegistered: true, screen: 'plan' }, 17)
+  }
+
+  const handleBaoyanEmployment = () => {
+    if (!game) return
+    beginSeason({ ...game, postgradChoice: 'employment', screen: 'plan' }, 17)
+  }
+
+  const handleKaoyanExamContinue = () => {
+    if (!game) return
+    beginSeason(game, 18)
+  }
+
+  const handleKaoyanResultContinue = () => {
+    if (!game) return
+    beginSeason(game, 19)
+  }
+
   const handleResultContinue = () => {
     if (!game) return
-    const index = game.seasonIndex
-    if (index === 11) {
-      commit({ ...game, screen: 'yearend', vacation: null }, 'yearend')
+    let current = game
+    if (isYearFinal(current.seasonIndex)) current = settlePe(current)
+    const index = current.seasonIndex
+
+    // 大三临床前、大四夏：学年结算（大四无暑假）
+    if (index === 11 || index === 15) {
+      commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
+      return
+    }
+
+    // 大五夏：毕业结算 + 毕业生体育补考
+    if (index === 19) {
+      const failedPe = current.peResults.filter((item) => !item.passed)
+      let peMakeupPassed = current.peMakeupPassed
+      let peMakeupScore = current.peMakeupScore
+      if (failedPe.length > 0) {
+        peMakeupScore = peScoreFor(current.player!.attrs.constitution)
+        peMakeupPassed = peMakeupScore >= 60
+        if (peMakeupPassed) {
+          const gpa = peGpaFor(peMakeupScore)
+          current = {
+            ...current,
+            cumulativeCredits:
+              current.cumulativeCredits + failedPe.length * 2,
+            cumulativePoints:
+              current.cumulativePoints + failedPe.length * 2 * gpa,
+          }
+        }
+      }
+      commit(
+        { ...current, peMakeupPassed, peMakeupScore, screen: 'graduation' },
+        'graduation',
+      )
+      return
+    }
+
+    // 非临床学年：夏/寒假
+    if (index === 3 || index === 7) {
+      commit(prepareVacation(current, 'summer'), 'vacation')
       return
     }
     if (index === 1 || index === 5 || index === 9) {
-      startVacation('winter')
+      commit(prepareVacation(current, 'winter'), 'vacation')
       return
     }
-    if (index === 3 || index === 7) {
-      startVacation('summer')
+
+    // 大五秋：推免结果
+    if (index === 16) {
+      if (current.postgradChoice && current.postgradChoice !== 'employment') {
+        const success =
+          Math.random() < (current.postgradChance ?? postgradChanceFor(current))
+        commit(
+          {
+            ...current,
+            baoyanResult: success ? 'success' : 'fail',
+            screen: 'baoyanResult',
+          },
+          'baoyanResult',
+        )
+        return
+      }
+      beginSeason(current, 17)
       return
     }
-    startSeason(index + 1)
+
+    // 大五冬：考研初试
+    if (index === 17) {
+      if (current.kaoyanRegistered) {
+        commit(
+          {
+            ...current,
+            kaoyanScore: kaoyanScoreFor(current),
+            screen: 'kaoyanExam',
+          },
+          'kaoyanExam',
+        )
+        return
+      }
+      beginSeason(current, 18)
+      return
+    }
+
+    // 大五春：考研结果
+    if (index === 18) {
+      if (current.kaoyanRegistered) {
+        commit(
+          {
+            ...current,
+            kaoyanResult:
+              (current.kaoyanScore ?? 0) >= KAOYAN_PASS ? 'success' : 'fail',
+            screen: 'kaoyanResult',
+          },
+          'kaoyanResult',
+        )
+        return
+      }
+      beginSeason(current, 19)
+      return
+    }
+
+    // 临床年秋季/春季（无寒假、无暑假）
+    beginSeason(current, index + 1)
   }
 
   const handleYearEndContinue = () => {
@@ -662,6 +866,48 @@ function RealApp() {
     )
   }
 
+  if (view === 'route') {
+    return (
+      <RouteScreen
+        state={game}
+        onChoose={handleRouteChoice}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'baoyanResult') {
+    return (
+      <BaoyanResultScreen
+        state={game}
+        onContinue={handleBaoyanContinue}
+        onKaoyan={handleKaoyanRegister}
+        onEmployment={handleBaoyanEmployment}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'kaoyanExam') {
+    return (
+      <KaoyanExamScreen state={game} onContinue={handleKaoyanExamContinue} onTitle={goTitle} />
+    )
+  }
+
+  if (view === 'kaoyanResult') {
+    return (
+      <KaoyanResultScreen
+        state={game}
+        onContinue={handleKaoyanResultContinue}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'graduation') {
+    return <GraduationScreen state={game} onRestart={handleRestart} onTitle={goTitle} />
+  }
+
   if (view === 'plan') {
     return (
       <PlanScreen
@@ -731,11 +977,13 @@ function RealApp() {
       1: '大一结束。你从解剖楼、图书馆和无数个早八里走过来，开始知道白大褂的重量。大二见。',
       2: '大二结束。基础课的骨架搭起来了，病理、药理和诊断开始把你往临床推。大三见。',
       3: '大三结束。临床前的门槛已经跨过，接下来是大四、大五的临床年。',
+      4: '大四结束。见习的病房、第一次独立问诊、第一次被叫“医生”，都在这一年发生。大五见。',
     }
     const notes: Record<number, string> = {
       1: '下一站：大二。桥梁课程与四六级机会已经接入。',
       2: '下一站：大三。诊断学、临床基础课与临床前学期等你。',
       3: '大二、大三的课程与考试已经完成。大四、大五临床年、事件卡、人物关系、科研与奖学金会在后续版本接入。',
+      4: '下一站：大五。临床实习、推免/考研与毕业条件将在这一年收束。',
     }
     return (
       <EndingScreen

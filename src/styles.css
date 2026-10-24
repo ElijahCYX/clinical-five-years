@@ -3410,6 +3410,79 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+
+/* ---------- postgrad / graduation / waiting ---------- */
+
+.waiting-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.waiting-tag {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  background: #f3eee2;
+}
+
+.graduation-reasons {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 2px solid var(--red);
+  background: var(--red-soft);
+}
+
+.graduation-reasons p {
+  margin: 3px 0;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--red);
+}
+
+.makeup-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid #d8b7a7;
+  color: var(--red);
+  font-family: var(--sans);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.coming-soon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.coming-soon-item {
+  padding: 3px 7px;
+  border: 1px dashed var(--line);
+  background: #f5f0e5;
+  color: #9b9589;
+  cursor: not-allowed;
+}
+
 /* ---------- CET event / result ---------- */
 
 .event-screen .shell {

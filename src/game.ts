@@ -236,6 +236,17 @@ export function newGameState(player: Player): GameState {
     cetEventDone: false,
     examCoffee: false,
     examAllNighter: false,
+    peResults: [],
+    pendingMakeups: [],
+    postgradChoice: null,
+    postgradChance: null,
+    baoyanResult: null,
+    kaoyanRegistered: false,
+    kaoyanPrep: 0,
+    kaoyanScore: null,
+    kaoyanResult: null,
+    peMakeupPassed: null,
+    peMakeupScore: null,
     constitutionGrowth: 0,
     appearanceGrowth: 0,
     actionsUsed: 0,
@@ -362,6 +373,7 @@ export interface WeekSimulation {
   composite: number
   research: number
   prep: Record<string, number>
+  kaoyanPrep: number
   constitutionGrowth: number
   appearanceGrowth: number
   attrs: Record<AttrKey, number>
@@ -383,6 +395,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   let english = state.english
   let composite = state.composite
   let research = state.research
+  let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
   const attrs = { ...player.attrs }
@@ -398,6 +411,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     english += action.english ?? 0
     composite += action.composite ?? 0
     research += action.research ?? 0
+    kaoyanPrep += action.kaoyanPrep ?? 0
     if (action.study) {
       studyCount += 1
       for (const course of state.season.courses) {
@@ -449,6 +463,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     composite,
     research,
     prep,
+    kaoyanPrep,
     constitutionGrowth,
     appearanceGrowth,
     attrs,
@@ -456,6 +471,81 @@ export function simulateWeek(state: GameState): WeekSimulation {
     habitApplied,
   }
 }
+
+/** 体育课：体质 10 给满分；体质 2 为 50 分。 */
+export function peScoreFor(constitution: number): number {
+  return clamp(Math.round(50 + (constitution - 2) * 6.25), 0, 100)
+}
+
+export function peGpaFor(score: number): number {
+  if (score >= 90) return 5
+  if (score >= 80) return 4
+  if (score >= 70) return 3
+  if (score >= 60) return 2
+  return 0
+}
+
+/** 补考最终绩点：原绩点与补考绩点取平均，向下取整到 1 位小数。 */
+export function makeupGpa(originalGpa: number, newGpa: number): number {
+  return Math.floor(((originalGpa + newGpa) / 2) * 10) / 10
+}
+
+export function postgradChanceFor(state: GameState): number {
+  const gpa =
+    state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : 0
+  const cet6 = state.cet6Score ?? 0
+  const cetBonus = cet6 >= 550 ? 0.22 : cet6 >= 425 ? 0.08 : 0
+  const base =
+    0.1 +
+    Math.max(0, gpa - 2.5) * 0.22 +
+    cetBonus +
+    Math.min(state.composite, 60) / 400 +
+    Math.min(state.research, 100) / 800
+  return clamp(Number(base.toFixed(2)), 0.05, 0.95)
+}
+
+export function kaoyanScoreFor(state: GameState): number {
+  const player = state.player!
+  const gpa =
+    state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : 0
+  return clamp(
+    Math.round(
+      160 +
+        gpa * 34 +
+        Math.min(state.english, 150) * 1.2 +
+        player.attrs.memory * 12 +
+        player.attrs.resilience * 8 +
+        state.kaoyanPrep * 18,
+    ),
+    0,
+    500,
+  )
+}
+
+export const GRADUATION_CREDITS = 163
+
+export function graduationReasons(state: GameState): string[] {
+  const reasons: string[] = []
+  if (state.cumulativeCredits < GRADUATION_CREDITS) {
+    reasons.push(`总学分不足：${state.cumulativeCredits} / ${GRADUATION_CREDITS}`)
+  }
+  if ((state.cet6Score ?? 0) < 550) {
+    reasons.push(`CET-6 未达到 550：${state.cet6Score ?? '未参加'}`)
+  }
+  if (state.pendingMakeups.length > 0) {
+    reasons.push(`仍有 ${state.pendingMakeups.length} 门补考未通过`)
+  }
+  if (state.peMakeupPassed === false) {
+    reasons.push('毕业生体育素质补考未通过')
+  }
+  const failedPe = state.peResults.filter((item) => !item.passed)
+  if (failedPe.length > 0 && state.peMakeupPassed === null) {
+    reasons.push('仍有体育课未通过')
+  }
+  return reasons
+}
+
+export const KAOYAN_PASS = 300
 
 export const DEFAULT_DEMO_TALENT: TalentId = 'bright'
 export const DEFAULT_DEMO_ATTRS = evenAllocation(DEFAULT_DEMO_TALENT)

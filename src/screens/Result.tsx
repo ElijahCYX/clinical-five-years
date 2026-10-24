@@ -79,7 +79,10 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
                 {state.results.map((result) => (
                   <tr key={result.course.id}>
                     <td>
-                      <span className="course-name">{result.course.name}</span>
+                      <span className="course-name">
+                        {result.course.name}
+                        {result.course.makeup && <span className="makeup-tag">补考</span>}
+                      </span>
                       <span className="course-sub">
                         记忆力 {result.course.memory} · 悟性 {result.course.comprehension}
                       </span>
@@ -146,8 +149,8 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
           </div>
 
           <p className="result-footnote">
-            当前为 UI 初稿：可完整走完大一至大三的「计划 → 周循环 → 考前复习 → 成绩单」流程。
-            大四、大五临床年与后续事件会按同一套接口继续接入。
+            当前为可玩初稿：可完整走完大一至大五的「计划 → 周循环 → 考前复习 → 成绩单」流程。
+            事件、人物、科研与完整毕业结局仍在后续开发中。
           </p>
         </main>
       </div>

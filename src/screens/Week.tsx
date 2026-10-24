@@ -55,6 +55,13 @@ export function WeekScreen({
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
   const preview = state.selected.length > 0 ? simulateWeek(state) : null
+  const kaoyanWindow =
+    (state.postgradChoice === 'both' &&
+      ['大四 · 夏', '大五 · 秋', '大五 · 冬'].includes(state.season.seasonLabel)) ||
+    (state.kaoyanRegistered && state.season.seasonLabel === '大五 · 冬')
+  const visibleActions = kaoyanWindow
+    ? [...VISIBLE_ACTIONS, 'kaoyan']
+    : VISIBLE_ACTIONS
 
   const lockReason = (action: ActionDef): string | null => {
     if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
@@ -254,7 +261,10 @@ export function WeekScreen({
                   return (
                     <div className="exam-course" key={item.id}>
                       <div className="exam-course-line">
-                        <span>{item.name}</span>
+                        <span>
+                          {item.name}
+                          {item.makeup && <span className="makeup-tag">补考</span>}
+                        </span>
                         <span>
                           {previewPrep !== prep ? (
                             <>
@@ -316,7 +326,7 @@ export function WeekScreen({
                 </div>
 
                 <div className="actions-grid">
-                  {VISIBLE_ACTIONS.map((id) => {
+                  {visibleActions.map((id) => {
                     const action = ACTIONS.find((item) => item.id === id)
                     if (!action) return null
                     const locked = lockReason(action)
@@ -381,6 +391,14 @@ export function WeekScreen({
                     <span className="btn-arrow">→</span>
                   </button>
                 </div>
+
+                <div className="coming-soon" aria-label="等待开发的功能">
+                  <span>后续模块</span>
+                  <span className="coming-soon-item">科研导师 · 等待开发</span>
+                  <span className="coming-soon-item">奖学金 · 等待开发</span>
+                  <span className="coming-soon-item">校园事件 · 等待开发</span>
+                  <span className="coming-soon-item">人物关系 · 等待开发</span>
+                </div>
               </>
             )}
 
@@ -424,7 +442,10 @@ export function WeekScreen({
                 return (
                   <div className="course-line" key={item.id}>
                     <div className="course-line-top">
-                      <span>{item.name}</span>
+                      <span>
+                        {item.name}
+                        {item.makeup && <span className="makeup-tag">补考</span>}
+                      </span>
                       <span className="course-credit">{item.credits} 学分</span>
                     </div>
                     <div className="course-tags">

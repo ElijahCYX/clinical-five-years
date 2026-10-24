@@ -88,6 +88,14 @@ export function EndingScreen({
                 <span>已修学分</span>
                 <strong>{state.cumulativeCredits}</strong>
               </div>
+              <div>
+                <span>体育</span>
+                <strong>
+                  {state.peResults.length === 0
+                    ? '—'
+                    : `${state.peResults.filter((item) => item.passed).length} / ${state.peResults.length} 通过`}
+                </strong>
+              </div>
             </div>
 
             <div className="ending-illustration">
