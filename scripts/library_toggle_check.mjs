@@ -1,0 +1,23 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+const summary=async()=> (await page.locator('.selected-summary').innerText()).replace(/\n/g,' | ')
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{
+  const {newGameState}=await import('/src/game.ts'); const {SEASONS}=await import('/src/data.ts'); const {demoPlayer}=await import('/src/demo.ts')
+  const s=newGameState(demoPlayer); s.seasonIndex=0; s.season=SEASONS[0]; s.screen='week'; s.week=1; s.plan='B'; s.habits=['timeManagement','earlySleep']; s.energy=80; s.stress=30; s.selected=['rest','library']
+  localStorage.setItem('clinical-five-years-save-v12',JSON.stringify({game:s,savedAt:Date.now()}))
+})
+await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(400)
+const lib=page.locator('.action-card',{hasText:'泡图书馆'}).first()
+console.log('summary before:', await summary())
+console.log('badge:', await lib.locator('.action-repeat').innerText().catch(()=> 'none'))
+await lib.click(); await page.waitForTimeout(250)
+console.log('after one:', await summary())
+await lib.click(); await page.waitForTimeout(250)
+console.log('after two:', await summary())
+await lib.click(); await page.waitForTimeout(250)
+console.log('after three:', await summary())
+console.log('errors:', errors.slice(0,5))
+await browser.close()

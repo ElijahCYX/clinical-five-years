@@ -443,10 +443,12 @@ function RealApp() {
   const toggleSelected = (prev: GameState, id: string, repeatable: boolean): GameState => {
     const count = getCount(prev.selected, id)
     if (repeatable) {
-      if (count >= 2) {
+      const isFull = prev.selected.length >= 2
+      // 已选中的可重复行动：选满时优先取消一次，而不是尝试再增加
+      if (count > 0 && (isFull || count >= 2)) {
         return { ...prev, selected: prev.selected.filter((item) => item !== id) }
       }
-      if (prev.selected.length >= 2) return prev
+      if (isFull) return prev
       return { ...prev, selected: [...prev.selected, id] }
     }
     if (count > 0) {

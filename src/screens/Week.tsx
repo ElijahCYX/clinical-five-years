@@ -365,7 +365,10 @@ export function WeekScreen({
                         </p>
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
-                          {action.id === 'library' && selectedCount < 2 && (
+                          {action.id === 'library' && selectedCount > 0 && state.selected.length >= 2 && (
+                            <span className="action-repeat">再点取消</span>
+                          )}
+                          {action.id === 'library' && selectedCount < 2 && state.selected.length < 2 && (
                             <span className="action-repeat">可重复选择</span>
                           )}
                           {selected && (
