@@ -6061,3 +6061,650 @@ input:focus-visible {
     margin: 0 14px 12px;
   }
 }
+
+/* ---------- v1.14.0 readability / motion / mood ---------- */
+
+/* Desktop: lift the tiny label system without destroying the editorial hierarchy. */
+@media (min-width: 821px) {
+  body {
+    font-size: 16px;
+  }
+
+  .screen {
+    font-size: 15px;
+  }
+
+  .brand-en,
+  .topbar-tag,
+  .topbar-note,
+  .topbar-divider {
+    font-size: 9.5px;
+  }
+
+  .eyebrow {
+    font-size: 10.5px;
+  }
+
+  .section-label {
+    font-size: 11px;
+  }
+
+  .section-label-right {
+    font-size: 9.5px;
+  }
+
+  .card-head {
+    font-size: 10px;
+  }
+
+  .text-btn {
+    font-size: 10.5px;
+  }
+
+  .btn {
+    font-size: 11px;
+  }
+
+  .pill {
+    font-size: 9.5px;
+  }
+
+  .game-head-left p,
+  .page-lede {
+    font-size: 11.5px;
+  }
+
+  .week-small,
+  .week-big {
+    font-size: 10px;
+  }
+
+  .tabs button {
+    font-size: 11px;
+  }
+
+  .week-title-row h2 {
+    font-size: 24px;
+  }
+
+  .week-title-row p {
+    font-size: 10.5px;
+  }
+
+  .action-meta,
+  .action-en {
+    font-size: 8.5px;
+  }
+
+  .action-flavor {
+    font-size: 10.5px;
+    line-height: 1.65;
+  }
+
+  .action-effect {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  .action-locked,
+  .action-repeat,
+  .action-selected {
+    font-size: 8.5px;
+  }
+
+  .action-card h3 {
+    font-size: 19px;
+  }
+
+  .course-line-top,
+  .course-tags,
+  .course-credit,
+  .course-note {
+    font-size: 9.5px;
+  }
+
+  .memo-text {
+    font-size: 11.5px;
+    line-height: 1.8;
+  }
+
+  .memo-quote {
+    font-size: 10px;
+  }
+
+  .delta-row,
+  .selected-summary,
+  .preview-note,
+  .status-rail-note {
+    font-size: 9.5px;
+  }
+
+  .mini-stats span,
+  .stat-hint,
+  .money-row small,
+  .plan-mini-row span,
+  .left-progress span {
+    font-size: 9px;
+  }
+
+  .condition-note,
+  .constitution-decay-note,
+  .withdraw-elective-panel > span,
+  .withdraw-elective-btn {
+    font-size: 9.5px;
+  }
+
+  .plan-card p,
+  .plan-desc,
+  .plan-effects,
+  .habit-desc,
+  .habit-effect,
+  .plan-course-note,
+  .habit-decay-note {
+    font-size: 10px;
+  }
+
+  .review-card .review-label {
+    font-size: 13px;
+  }
+
+  .review-card .review-desc,
+  .review-card .review-meta {
+    font-size: 9.5px;
+  }
+
+  .prep-summary,
+  .prep-k-row,
+  .boost-row p,
+  .boost-row small,
+  .boost-deltas span {
+    font-size: 9.5px;
+  }
+
+  .event-lede,
+  .event-card p,
+  .result-note p,
+  .result-quote,
+  .dossier-block p,
+  .dossier-list small {
+    font-size: 10.5px;
+  }
+
+  .dossier-list strong,
+  .dossier-stats strong,
+  .plan-course-card p,
+  .elective-hint,
+  .elective-card-meta,
+  .elective-pick {
+    font-size: 9.5px;
+  }
+
+  .elective-card h3 {
+    font-size: 20px;
+  }
+
+  .opening-talent-card p,
+  .opening-talent-card strong {
+    font-size: 9.5px;
+  }
+
+  .game-footer {
+    font-size: 9.5px;
+  }
+}
+
+/* Mobile: compact the weekly loop enough to reduce repeated scrolling. */
+@media (max-width: 820px) {
+  .game-head {
+    padding-top: 5px;
+  }
+
+  .game-head h1 {
+    font-size: 28px;
+    margin: 3px 0 2px;
+  }
+
+  .game-head-left p {
+    font-size: 9.5px;
+    line-height: 1.55;
+  }
+
+  .mobile-hud {
+    margin: 7px 0 3px;
+  }
+
+  .mobile-hud div {
+    padding: 5px 7px;
+  }
+
+  .mobile-hud strong {
+    font-size: 14px;
+  }
+
+  .mobile-course-strip {
+    margin-bottom: 7px;
+  }
+
+  .mobile-course-strip span {
+    padding: 3px 6px;
+    font-size: 7px;
+  }
+
+  .tabs {
+    gap: 13px;
+    margin-top: 3px;
+  }
+
+  .tabs button {
+    padding-bottom: 6px;
+    font-size: 10px;
+  }
+
+  .week-title-row {
+    margin: 8px 0 7px;
+  }
+
+  .week-title-row h2 {
+    font-size: 21px;
+    margin: 0;
+  }
+
+  .week-title-row p {
+    display: none;
+  }
+
+  .week-title-row .pill {
+    margin-top: 5px;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .action-card {
+    min-height: 0;
+    padding: 8px 9px 7px;
+    border-radius: 0;
+  }
+
+  .action-card h3 {
+    margin: 4px 0 2px;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .action-card .action-flavor {
+    display: none;
+  }
+
+  .action-meta {
+    font-size: 6.5px;
+  }
+
+  .action-effect {
+    margin: 2px 0 3px;
+    font-size: 8px;
+    line-height: 1.45;
+  }
+
+  .action-bottom {
+    margin-top: auto;
+  }
+
+  .action-en {
+    font-size: 6px;
+  }
+
+  .action-repeat,
+  .action-selected,
+  .action-locked {
+    font-size: 6.5px;
+  }
+
+  .week-focus-bar {
+    margin: 0 0 7px;
+    padding: 5px 7px;
+  }
+
+  .week-focus-bar strong {
+    font-size: 11px;
+  }
+
+  .withdraw-elective-panel,
+  .constitution-decay-note {
+    margin-bottom: 6px;
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+
+  .selected-summary {
+    font-size: 8px;
+  }
+
+  .action-footer {
+    position: static;
+    margin: 8px 0 0;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+    background: transparent;
+  }
+
+  .action-footer .btn-primary {
+    margin-top: 6px;
+    padding: 8px 12px;
+  }
+
+  .coming-soon {
+    display: none;
+  }
+
+  .game-footer {
+    padding: 4px 0 8px;
+    font-size: 7.5px;
+  }
+
+  .game-head-right {
+    margin-top: 0;
+  }
+
+  .page-title {
+    font-size: 30px;
+  }
+
+  .pl-card,
+  .paper-card {
+    scroll-margin-top: 10px;
+  }
+
+  .focus-modal {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  .event-card,
+  .crisis-card {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+/* Window / card entrances and tactile feedback. */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes soft-rise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focus-modal,
+.event-card,
+.crisis-card,
+.elective-result {
+  animation: panel-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.action-card,
+.elective-card,
+.plan-course-card,
+.opening-talent-card,
+.review-card {
+  animation: soft-rise 0.35s ease both;
+}
+
+.action-card:active:not(:disabled),
+.elective-card:active:not(:disabled),
+.plan-course-card:active,
+.opening-talent-card:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.btn,
+.text-btn,
+.interface-btn,
+.tab button {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.tabs button.is-active {
+  position: relative;
+}
+
+.tabs button.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--green);
+  animation: soft-rise 0.25s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- mood themes ---------- */
+
+body {
+  transition: background-color 0.8s ease, color 0.5s ease;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+body.stress-high .screen {
+  --paper: #f0dfda;
+  --paper-deep: #e7d0c8;
+  --card: #f9ece7;
+  --ink: #2d1715;
+  --ink-2: #53302b;
+  --ink-3: #74453d;
+  --muted: #926b60;
+  --line: #d9b8ac;
+  --line-soft: #e8d0c6;
+  --line-strong: #c29080;
+  --green: #8e3931;
+  --green-deep: #6d241e;
+  --green-soft: #f2dcd4;
+  --red: #a62a21;
+  --red-soft: #f1d4cc;
+  --gold: #b46a46;
+  --gold-soft: #f2ded1;
+  --shadow: 0 28px 70px -46px rgba(117, 31, 24, 0.38);
+}
+
+body.stress-high {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 218, 207, 0.62), transparent 38%),
+    radial-gradient(circle at 94% 96%, rgba(173, 49, 35, 0.14), transparent 48%),
+    #efe0db;
+}
+
+body.energy-low .screen {
+  --paper: #e3e9ee;
+  --paper-deep: #d7e1e8;
+  --card: #eef2f5;
+  --ink: #17242e;
+  --ink-2: #334956;
+  --ink-3: #4d6370;
+  --muted: #748793;
+  --line: #b9c7d0;
+  --line-soft: #d3dde3;
+  --line-strong: #93a6b2;
+  --green: #3e5d73;
+  --green-deep: #2a4356;
+  --green-soft: #e0e9ef;
+  --red: #6c8495;
+  --red-soft: #e2eaf0;
+  --gold: #7f93a2;
+  --gold-soft: #e6edf2;
+  --shadow: 0 28px 70px -46px rgba(31, 57, 74, 0.42);
+}
+
+body.energy-low {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(221, 236, 245, 0.62), transparent 38%),
+    radial-gradient(circle at 94% 96%, rgba(28, 63, 87, 0.16), transparent 48%),
+    #e3e9ee;
+}
+
+body.stress-high.energy-low {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(230, 218, 228, 0.58), transparent 38%),
+    radial-gradient(circle at 94% 96%, rgba(69, 43, 66, 0.16), transparent 48%),
+    #e7e0e5;
+}
+
+body.stress-high.energy-low .screen {
+  --paper: #e8e0e4;
+  --paper-deep: #ddd0d7;
+  --card: #f2eaee;
+  --ink: #241b26;
+  --ink-2: #473340;
+  --ink-3: #674d5a;
+  --muted: #8a737d;
+  --line: #cbb8c1;
+  --line-soft: #ded0d6;
+  --line-strong: #ad929f;
+  --green: #6f4b5b;
+  --green-deep: #50323f;
+  --green-soft: #eadde3;
+  --red: #8a3340;
+  --gold: #997080;
+}
+
+body.stress-high::after {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(138, 28, 20, 0.18) 100%);
+  animation: stress-vignette 3.2s ease-in-out infinite;
+}
+
+body.energy-low::after {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at center, transparent 58%, rgba(31, 65, 91, 0.2) 100%);
+  animation: energy-vignette 7s ease-in-out infinite;
+}
+
+body.stress-high.energy-low::after {
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(67, 39, 71, 0.22) 100%);
+}
+
+body.stress-critical .topbar {
+  border-bottom-color: rgba(141, 43, 31, 0.48);
+  animation: warning-line 1.8s ease-in-out infinite;
+}
+
+body.stress-high .interface-nav {
+  box-shadow: 0 5px 20px rgba(124, 37, 28, 0.15);
+}
+
+body.energy-low .paper-card {
+  box-shadow: 0 22px 50px -42px rgba(31, 57, 74, 0.5);
+}
+
+@keyframes stress-vignette {
+  0%,
+  100% {
+    opacity: 0.64;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes energy-vignette {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes warning-line {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(142, 57, 49, 0);
+  }
+  50% {
+    box-shadow: 0 3px 14px rgba(142, 57, 49, 0.2);
+  }
+}
+
+
+/* mood theme: themed chrome and crisis surfaces */
+body.stress-high .save-chip {
+  border-color: #6d241e;
+  background: #7e2e28;
+}
+
+body.energy-low .save-chip {
+  border-color: #2e4b60;
+  background: #35566c;
+}
+
+body.stress-high .crisis-debuff {
+  border-color: #c89282;
+  border-left-color: #8e3931;
+  background: #f6e5df;
+}
+
+body.energy-low .crisis-debuff {
+  border-color: #9db2c0;
+  border-left-color: #3e5d73;
+  background: #e4edf3;
+}
+
+body.stress-high .crisis-card.is-stress {
+  border-top-color: #6d241e;
+}
+
+body.energy-low .crisis-card.is-energy {
+  border-top-color: #2e4b60;
+}
+
+body.stress-critical .interface-nav {
+  animation: warning-line 1.8s ease-in-out infinite;
+}

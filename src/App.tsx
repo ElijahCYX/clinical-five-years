@@ -404,6 +404,20 @@ function RealApp() {
   }, [game, view])
 
   useEffect(() => {
+    const body = document.body
+    const active =
+      Boolean(game) && view !== 'title' && view !== 'create'
+    const stress = active ? game!.stress : 0
+    const energy = active ? game!.energy : 100
+    body.classList.toggle('stress-high', stress > 79)
+    body.classList.toggle('stress-critical', stress > 80)
+    body.classList.toggle('energy-low', energy < 20)
+    return () => {
+      body.classList.remove('stress-high', 'stress-critical', 'energy-low')
+    }
+  }, [game, view])
+
+  useEffect(() => {
     if (
       !game ||
       crisisKind ||
