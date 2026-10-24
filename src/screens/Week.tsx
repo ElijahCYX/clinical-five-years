@@ -20,7 +20,9 @@ import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
 import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
+import { ClubActivityModal } from './ClubActivity'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
+import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
   currentWeekKey,
   isDinnerFriend,
@@ -44,7 +46,7 @@ const VISIBLE_ACTIONS = [
   'english',
 ]
 
-type GameTab = 'week' | 'people' | 'grades' | 'research' | 'roommates' | 'diary'
+type GameTab = 'week' | 'people' | 'grades' | 'research' | 'club' | 'roommates' | 'diary'
 
 interface WeekScreenProps {
   state: GameState
@@ -56,6 +58,10 @@ interface WeekScreenProps {
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSaveDinnerResults?: (results: DinnerInviteResult[]) => void
+  onApplyClub?: () => void
+  onArrangeClubActivity?: (acceptedIds: string[], declinedIds: string[]) => void
+  onSaveClubInvites?: (results: DinnerInviteResult[]) => void
+  onQuitClub?: () => void
   onNpcConfession?: (accept: boolean) => void
   onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
@@ -72,6 +78,10 @@ export function WeekScreen({
   onOpenTA,
   onArrangeDinner,
   onSaveDinnerResults,
+  onApplyClub,
+  onArrangeClubActivity,
+  onSaveClubInvites,
+  onQuitClub,
   onNpcConfession,
   onResolveConsumption,
   onSave,
@@ -80,6 +90,7 @@ export function WeekScreen({
   const [tab, setTab] = useState<GameTab>('week')
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const [dinnerOpen, setDinnerOpen] = useState(false)
+  const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const player = state.player
   if (!player) return null
 
@@ -142,8 +153,31 @@ export function WeekScreen({
     count: state.selected.filter((item) => item === id).length,
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
+  const clubYear = Math.floor(state.seasonIndex / 4) + 1
+  const canApplyClub =
+    !state.clubMembership &&
+    state.clubInitialRecruitmentDone &&
+    clubYear <= 2 &&
+    state.week === 1
+  const clubCommitted = Boolean(state.clubActivityPlan?.committed)
+  const clubMembers = state.clubMembership
+    ? state.clubMembership.memberIds
+        .map((id) => state.relationships.find((relation) => relation.id === id))
+        .filter(Boolean) as typeof state.relationships
+    : []
   const dinnerCommitted = Boolean(state.dinnerPlan?.committed)
   const handleActionClick = (id: string) => {
+    if (id === 'club') {
+      if (clubCommitted) return
+      if (state.clubMembership) {
+        setClubActivityOpen(true)
+        return
+      }
+      if (canApplyClub) {
+        onApplyClub?.()
+      }
+      return
+    }
     if (id === 'social' && dinnerCommitted) return
     if (
       id === 'library' &&
@@ -173,8 +207,16 @@ export function WeekScreen({
       : !state.researchStarted
         ? '实验室打杂'
         : researchStage(state.researchProgress).name
-  const displayActionName = (action: ActionDef) =>
-    action.id === 'research' ? researchActionName : action.name
+  const clubActionName = state.clubMembership
+    ? '社团活动'
+    : canApplyClub
+      ? '申请加入社团学生会'
+      : '社团活动'
+  const displayActionName = (action: ActionDef) => {
+    if (action.id === 'research') return researchActionName
+    if (action.id === 'club') return clubActionName
+    return action.name
+  }
 
   const actionEffectText = (action: ActionDef) => {
     if (action.id === 'english') {
@@ -186,6 +228,13 @@ export function WeekScreen({
     if (action.id === 'library') {
       const costs = libraryCosts(state)
       return `所有课程：准备度 +6 × K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
+    }
+    if (action.id === 'club') {
+      if (state.clubMembership) {
+        return `人际成长 +${Math.round(5 * (state.clubMembership.role === 'officer' ? 1.15 : state.clubMembership.role === 'president' || state.clubMembership.role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
+      }
+      if (canApplyClub) return '消耗一次本周行动，浏览社团与学生会招新'
+      return '目前无法加入新的组织'
     }
     if (action.id === 'research') {
       if (!state.labEntered) return '等待导师允许进入实验室'
@@ -225,6 +274,14 @@ export function WeekScreen({
     }
     if (action.requires === 'mentor' && action.id !== 'research') {
       return action.lockedNote ?? '尚未解锁'
+    }
+    if (action.id === 'club') {
+      if (state.clubMembership) return clubCommitted ? '本周已参加组织活动' : null
+      if (canApplyClub) return null
+      if (!state.clubInitialRecruitmentDone) return '尚未完成入学招新'
+      if (clubYear > 2) return '已错过加入时间'
+      if (state.week !== 1) return '本学期申请时间已过'
+      return '尚未加入社团学生会'
     }
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'partner') return action.lockedNote ?? '尚未解锁'
@@ -500,6 +557,70 @@ export function WeekScreen({
   }
 
 
+  const renderClub = () => {
+    const membership = state.clubMembership
+    if (!membership) {
+      return (
+        <div className="tab-panel">
+          <SectionLabel right="NOT JOINED">社团</SectionLabel>
+          <div className="locked-panel">
+            <span className="lock-glyph">○</span>
+            <h3>还没有加入组织</h3>
+            <p>大一大二的每周行动第一周，可以选择「申请加入社团学生会」。</p>
+          </div>
+        </div>
+      )
+    }
+    const org = ORG_BY_ID[membership.orgId]
+    const members = membership.memberIds
+      .map((id) => state.relationships.find((relation) => relation.id === id))
+      .filter(Boolean) as typeof state.relationships
+    const nextNeed =
+      membership.role === 'member'
+        ? 6
+        : membership.role === 'officer'
+          ? 12
+          : null
+    return (
+      <div className="tab-panel">
+        <SectionLabel right={roleLabel(membership.category, membership.role)}>
+          {org?.name ?? '组织'}
+        </SectionLabel>
+        <div className="club-panel">
+          <div className="club-panel-head">
+            <div>
+              <h3>{roleLabel(membership.category, membership.role)}</h3>
+              <p>{org?.description}</p>
+            </div>
+            <Pill tone="green">
+              {membership.semesterActivities} 次本学期活动
+            </Pill>
+          </div>
+          <div className="club-panel-stats">
+            <div>
+              <span>累计活动</span>
+              <strong>{membership.totalActivities}</strong>
+            </div>
+            <div>
+              <span>晋升进度</span>
+              <strong>{nextNeed ? `${membership.totalActivities} / ${nextNeed}` : '已到最高职务'}</strong>
+            </div>
+            <div>
+              <span>组织朋友</span>
+              <strong>{members.length} 人</strong>
+            </div>
+          </div>
+          <div className="club-panel-actions">
+            <p>每周选择「社团活动」参与；每学期第 3 周后可领取一次组织福利。</p>
+            <button type="button" className="text-btn" onClick={onQuitClub}>
+              退出组织
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderRoommates = () => (
     <div className="tab-panel">
       <SectionLabel right={`${state.relationships.length} 人`}>
@@ -735,6 +856,7 @@ export function WeekScreen({
                   ['people', '人物'],
                   ['grades', '成绩'],
                   ['research', '科研'],
+                  ['club', '社团'],
                   ['roommates', '舍友'],
                   ['diary', '日记'],
                 ] as Array<[GameTab, string]>
@@ -811,7 +933,8 @@ export function WeekScreen({
                     const selected = selectedCount > 0
                     const disabled = Boolean(locked)
                     const committed =
-                      action.id === 'social' && dinnerCommitted
+                      (action.id === 'social' && dinnerCommitted) ||
+                      (action.id === 'club' && clubCommitted)
                     return (
                       <button
                         key={action.id}
@@ -851,7 +974,9 @@ export function WeekScreen({
                             </span>
                           )}
                           {committed && (
-                            <span className="action-repeat">已约好 · 不可取消</span>
+                            <span className="action-repeat">
+                              {action.id === 'club' ? '本周已参与 · 不可取消' : '已约好 · 不可取消'}
+                            </span>
                           )}
                           {locked && <span className="action-locked">{locked}</span>}
                         </div>
@@ -898,6 +1023,7 @@ export function WeekScreen({
             {tab === 'people' && renderAttributePanel()}
             {tab === 'grades' && renderGrades()}
             {tab === 'research' && renderResearch()}
+            {tab === 'club' && renderClub()}
             {tab === 'roommates' && renderRoommates()}
             {tab === 'diary' && renderDiary()}
           </section>
@@ -1057,6 +1183,24 @@ export function WeekScreen({
           event={state.pendingConsumption}
           money={state.money}
           onResolve={(accept) => onResolveConsumption?.(accept)}
+        />
+      )}
+
+      {clubActivityOpen && state.clubMembership && (
+        <ClubActivityModal
+          organizationName={ORG_BY_ID[state.clubMembership.orgId]?.name ?? state.clubMembership.orgId}
+          members={clubMembers}
+          initialResults={
+            state.clubInvites?.weekKey === currentWeekKey(state)
+              ? state.clubInvites.results
+              : null
+          }
+          onSaveResults={onSaveClubInvites}
+          onCancel={() => setClubActivityOpen(false)}
+          onConfirm={(acceptedIds, declinedIds) => {
+            setClubActivityOpen(false)
+            onArrangeClubActivity?.(acceptedIds, declinedIds)
+          }}
         />
       )}
 

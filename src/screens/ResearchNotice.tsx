@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
 export interface ResearchNotice {
-  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress'
+  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club'
   title: string
   text: string
   journal?: string
   ruleText?: string
+  ruleLabel?: string
   onAcknowledge?: () => void
   choices?: Array<{
     label: string
@@ -53,7 +54,9 @@ function ResearchNoticeModal({
                     ? 'NEW HYPOTHESIS'
                     : notice.kind === 'stress'
                       ? 'HEART WARNING'
-                      : 'LAB WARNING'}
+                      : notice.kind === 'club'
+                        ? 'CLUB NOTICE'
+                        : 'LAB WARNING'}
             </span>
           </div>
           <h2 className="random-event-title">{notice.title}</h2>
@@ -67,7 +70,7 @@ function ResearchNoticeModal({
         )}
         {notice.ruleText && (
           <div className="research-notice-rule">
-            <span>高压规则</span>
+            <span>{notice.ruleLabel ?? '高压规则'}</span>
             <p>{notice.ruleText}</p>
           </div>
         )}

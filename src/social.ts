@@ -174,6 +174,18 @@ export function orientationLabel(
   return '异性恋'
 }
 
+export function createClubRelationship(
+  player: Player,
+  orgId: string,
+  orgName: string,
+  roleLabel: string,
+): Relationship {
+  return {
+    ...makeRelationship(player, 'club', `${orgName} · ${roleLabel}`, Math.random() < 0.5 ? '女' : '男', randInt(32, 46)),
+    clubOrgId: orgId,
+  }
+}
+
 export function relationshipKindLabel(kind: Relationship['kind']): string {
   switch (kind) {
     case 'roommate':
@@ -184,6 +196,8 @@ export function relationshipKindLabel(kind: Relationship['kind']): string {
       return '同学'
     case 'mentor':
       return '导师'
+    case 'club':
+      return '社团成员'
     case 'counselor':
       return '辅导员'
     default:
@@ -487,7 +501,8 @@ export function isDinnerFriend(relation: Relationship): boolean {
   return (
     relation.kind === 'roommate' ||
     relation.kind === 'friend' ||
-    relation.kind === 'classmate'
+    relation.kind === 'classmate' ||
+    relation.kind === 'club'
   )
 }
 

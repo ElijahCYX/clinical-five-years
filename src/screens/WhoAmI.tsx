@@ -9,6 +9,7 @@ import {
 import { AWARD_LABELS, bestAward } from '../game'
 import type { GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
+import { ORG_BY_ID, roleLabel } from '../organizations'
 import { patRemainingThisWeek, unseenRelationCount } from '../social'
 
 interface WhoAmIScreenProps {
@@ -382,6 +383,47 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
               </p>
             ) : (
               <p className="dossier-muted">科研导师与实验室：等待开发。</p>
+            )}
+          </section>
+
+          <section className="paper-card dossier-block dossier-wide">
+            <SectionLabel right="组织履历">06 / 社团与学生会</SectionLabel>
+            {state.clubMembership ? (
+              <div className="dossier-list">
+                <div>
+                  <span>当前组织</span>
+                  <strong>{ORG_BY_ID[state.clubMembership.orgId]?.name ?? '组织'}</strong>
+                </div>
+                <div>
+                  <span>当前职务</span>
+                  <strong>
+                    {roleLabel(
+                      state.clubMembership.category,
+                      state.clubMembership.role,
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  <span>累计活动</span>
+                  <strong>{state.clubMembership.totalActivities} 次</strong>
+                </div>
+              </div>
+            ) : (
+              <p className="dossier-empty">还没有加入社团或学生会。</p>
+            )}
+            {state.clubHistory.length > 0 && (
+              <p className="dossier-muted">
+                历史：
+                {state.clubHistory
+                  .map(
+                    (entry) =>
+                      `${entry.orgName} · ${roleLabel(
+                        ORG_BY_ID[entry.orgId]?.category ?? 'academic',
+                        entry.highestRole,
+                      )} · ${entry.reason === 'quit' ? '主动退出' : '未活跃被移出'}`,
+                  )
+                  .join(' / ')}
+              </p>
             )}
           </section>
         </main>

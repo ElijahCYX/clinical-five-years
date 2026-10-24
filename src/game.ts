@@ -381,6 +381,14 @@ export function newGameState(player: Player): GameState {
     seenRelationIds: [],
     vacationTravel: null,
     vacationTravelInvites: null,
+    clubMembership: null,
+    clubHistory: [],
+    clubInitialRecruitmentDone: false,
+    clubInvites: null,
+    clubActivityPlan: null,
+    clubLastBenefitSeason: null,
+    clubLastPromotionSeason: null,
+    clubAnnualBonusSeason: null,
     pendingConsumption: null,
     consumptionEventWeek: 0,
   }
@@ -685,6 +693,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
   for (const id of state.selected) {
     const action = ACTION_BY_ID[id]
     if (!action) continue
+    if (action.id === 'club' && state.clubActivityPlan?.committed) {
+      // 社团活动/申请在确认时已立即结算。
+      continue
+    }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
       energy += costs.energy
@@ -1022,7 +1034,7 @@ export function energyEffectText(
 }
 
 
-export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 40
+export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 50
 
 export const SCHOLARSHIP_REWARDS: Record<Award, number> = {
   national: 5000,

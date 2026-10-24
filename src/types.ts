@@ -42,6 +42,7 @@ export type ScreenName =
   | 'talentEvent'
   | 'electiveSelect'
   | 'plan'
+  | 'clubRecruitment'
   | 'week'
   | 'prep'
   | 'result'
@@ -300,6 +301,9 @@ export interface PendingEvent {
 }
 
 
+export type OrganizationCategory = 'academic' | 'interest' | 'practice' | 'union'
+export type OrganizationRole = 'member' | 'officer' | 'president' | 'honorary'
+
 export type RelationshipKind =
   | 'roommate'
   | 'friend'
@@ -307,6 +311,7 @@ export type RelationshipKind =
   | 'mentor'
   | 'counselor'
   | 'romance'
+  | 'club'
 
 export interface RelationshipStats {
   talent: TalentId
@@ -334,6 +339,7 @@ export interface Relationship {
   birthdayContactType: 'gift' | 'blessing' | null
   birthdayNextYear: number
   patBlockedUntilWeek: number
+  clubOrgId?: string
   partner: boolean
   confessionRisk: number
   breakupRisk: number
@@ -453,6 +459,57 @@ export interface ConsumptionEvent {
   benefitLines: string[]
 }
 
+export interface OrganizationBenefit {
+  prep?: number
+  stress?: number
+  energy?: number
+  composite?: number
+  socialGrowth?: number
+}
+
+export interface Organization {
+  id: string
+  name: string
+  category: OrganizationCategory
+  description: string
+  benefit: OrganizationBenefit
+}
+
+export interface ClubMembership {
+  orgId: string
+  category: OrganizationCategory
+  role: OrganizationRole
+  joinedSeasonIndex: number
+  totalActivities: number
+  semesterActivities: number
+  roleSinceSeasonIndex: number
+  presidentStartSeasonIndex: number | null
+  memberIds: string[]
+  highestRole: OrganizationRole
+  activitySeasonIndex: number
+}
+
+export interface ClubHistoryEntry {
+  orgId: string
+  orgName: string
+  highestRole: OrganizationRole
+  joinedSeasonIndex: number
+  leftSeasonIndex: number
+  reason: 'quit' | 'expelled'
+}
+
+export interface ClubInvites {
+  weekKey: string
+  results: DinnerInviteResult[]
+}
+
+export interface ClubActivityPlan {
+  mode: 'application' | 'activity'
+  acceptedIds: string[]
+  declinedIds: string[]
+  committed: boolean
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -552,6 +609,14 @@ export interface GameState {
   seenRelationIds: string[]
   vacationTravel: VacationTravelPlan | null
   vacationTravelInvites: DinnerInvites | null
+  clubMembership: ClubMembership | null
+  clubHistory: ClubHistoryEntry[]
+  clubInitialRecruitmentDone: boolean
+  clubInvites: ClubInvites | null
+  clubActivityPlan: ClubActivityPlan | null
+  clubLastBenefitSeason: string | null
+  clubLastPromotionSeason: string | null
+  clubAnnualBonusSeason: string | null
   pendingConsumption: ConsumptionEvent | null
   consumptionEventWeek: number
 }
@@ -563,6 +628,7 @@ export type DemoName =
   | 'talentEvent'
   | 'electiveSelect'
   | 'plan'
+  | 'clubRecruitment'
   | 'week'
   | 'prep'
   | 'result'
