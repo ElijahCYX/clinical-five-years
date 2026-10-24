@@ -81,7 +81,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 import { applyEvent, rollWeeklyEvent } from './events'
-import { RandomEventScreen } from './screens/RandomEvent'
+import { RandomEventModal } from './screens/RandomEvent'
 
 const SAVE_KEY = 'clinical-five-years-save-v20'
 const LEGACY_SAVE_KEYS = ['clinical-five-years-save-v19']
@@ -107,6 +107,7 @@ function readSave(): GameState | null {
     const game = parsed.game
     return {
       ...game,
+      screen: game.screen === 'randomEvent' ? 'week' : game.screen,
       player: game.player
         ? { ...game.player, orientation: game.player.orientation ?? 'heterosexual' }
         : null,
@@ -449,11 +450,10 @@ function RealApp() {
       ...game,
       eventWeek: game.week,
       pendingEvent: pending,
-      screen: pending ? 'randomEvent' : 'week',
+      screen: 'week',
     }
     setGame(next)
     persist(next)
-    if (pending) setView('randomEvent')
   }, [game, view])
 
   useEffect(() => {
@@ -1342,7 +1342,11 @@ function RealApp() {
     if (!saved) return
     setCrisisKind(null)
     setGame(saved)
-    setView(saved.screen === 'title' ? 'week' : saved.screen)
+    setView(
+      saved.screen === 'title' || saved.screen === 'randomEvent'
+        ? 'week'
+        : saved.screen,
+    )
   }
 
   const saveNow = () => {
@@ -1374,17 +1378,6 @@ function RealApp() {
 
   if (!game || !game.player) {
     return <TitleScreen hasSave={hasSave} onStart={startCreate} onContinue={handleContinueSave} />
-  }
-
-  if (view === 'randomEvent' && game.pendingEvent) {
-    return (
-      <RandomEventScreen
-        state={game}
-        event={game.pendingEvent}
-        onContinue={handleRandomEventContinue}
-        onTitle={goTitle}
-      />
-    )
   }
 
   if (view === 'crisis' && crisisKind) {
@@ -1525,16 +1518,25 @@ function RealApp() {
 
   if (view === 'week') {
     return (
-      <WeekScreen
-        state={game}
-        onToggleAction={toggleAction}
-        onEndWeek={endWeek}
-        onChooseFocus={chooseWeekFocus}
-        onWithdrawElective={withdrawElective}
-        onOpenWhoAmI={openWhoAmI}
-        onSave={saveNow}
-        onTitle={goTitle}
-      />
+      <>
+        <WeekScreen
+          state={game}
+          onToggleAction={toggleAction}
+          onEndWeek={endWeek}
+          onChooseFocus={chooseWeekFocus}
+          onWithdrawElective={withdrawElective}
+          onOpenWhoAmI={openWhoAmI}
+          onSave={saveNow}
+          onTitle={goTitle}
+        />
+        {game.pendingEvent && (
+          <RandomEventModal
+            state={game}
+            event={game.pendingEvent}
+            onContinue={handleRandomEventContinue}
+          />
+        )}
+      </>
     )
   }
 

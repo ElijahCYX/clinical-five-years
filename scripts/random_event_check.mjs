@@ -22,7 +22,7 @@ await page.evaluate(async()=>{
 await page.reload({waitUntil:'networkidle'})
 await page.evaluate(()=>{Math.random=()=>0.01})
 await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(700)
-console.log('event screen:',await page.locator('.random-event-screen').count(), 'title:',await page.locator('.random-event-screen .page-title').innerText().catch(()=> 'none'))
+console.log('event screen:',await page.locator('.random-event-overlay').count(), 'title:',await page.locator('.random-event-overlay .random-event-title').innerText().catch(()=> 'none'))
 console.log('event text:',(await page.locator('.random-event-text').innerText().catch(()=> 'none')).slice(0,100))
 console.log('effects:',await page.locator('.random-event-effect').allInnerTexts())
 await page.locator('.random-event-footer .btn-primary').click(); await page.waitForTimeout(400)

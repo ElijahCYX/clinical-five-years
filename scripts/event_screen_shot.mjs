@@ -10,6 +10,6 @@ await page.evaluate(async()=>{
   localStorage.setItem('clinical-five-years-save-v20',JSON.stringify({game:s,savedAt:Date.now()}))
 })
 await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(500)
-console.log('title:',await page.locator('.random-event-screen .page-title').innerText(), 'kind:',await page.locator('.random-event-kind-row .pill').innerText())
+console.log('title:',await page.locator('.random-event-overlay .random-event-title').innerText(), 'kind:',await page.locator('.random-event-kind-row .pill').innerText())
 await page.screenshot({path:'/tmp/shots/event-screen.png',fullPage:true})
 await browser.close()
