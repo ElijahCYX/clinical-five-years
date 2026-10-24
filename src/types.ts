@@ -329,6 +329,17 @@ export interface DinnerPlan {
   summary: string[]
 }
 
+export type CourseCategory = 'professional' | 'politics' | 'elective'
+
+export interface CourseRecord {
+  id: string
+  name: string
+  credits: number
+  gpa: number
+  score: number
+  category: CourseCategory
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -402,6 +413,7 @@ export interface GameState {
   relationships: Relationship[]
   dinnerPlan: DinnerPlan | null
   romanceUnlocked: boolean
+  courseRecords: CourseRecord[]
 }
 
 export type DemoName =

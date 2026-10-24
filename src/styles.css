@@ -2422,7 +2422,7 @@ input:focus-visible {
 
 .grade-summary span {
   display: block;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted);
 }
 
@@ -7484,5 +7484,138 @@ body.dinner-open {
   .dinner-reason,
   .dinner-summary {
     font-size: 11px;
+  }
+}
+
+
+/* ---------- graduation progress / passed courses ---------- */
+
+.grade-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.grade-progress-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grade-progress-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.grade-progress-head > span {
+  flex: 0 0 58px;
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.grade-progress-head strong {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.grade-progress-head em {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.grade-record-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.grade-record-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(140px, 1fr) 42px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.grade-record-main {
+  min-width: 0;
+}
+
+.grade-record-title {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.grade-record-title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.grade-record-title small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.grade-record-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.grade-record-bar {
+  min-width: 0;
+}
+
+.grade-record-gpa {
+  text-align: right;
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+@media (max-width: 820px) {
+  .grade-progress-head > span {
+    flex-basis: 48px;
+    font-size: 9px;
+  }
+
+  .grade-progress-head strong {
+    font-size: 14px;
+  }
+
+  .grade-progress-head em {
+    font-size: 8px;
+  }
+
+  .grade-record-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 8px;
+  }
+
+  .grade-record-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .grade-record-title > span {
+    font-size: 16px;
   }
 }

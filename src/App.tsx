@@ -95,8 +95,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v21'
+const SAVE_KEY = 'clinical-five-years-save-v22'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v21',
   'clinical-five-years-save-v20',
   'clinical-five-years-save-v19',
 ]
@@ -1016,6 +1017,28 @@ function RealApp() {
         ]),
       ],
       politicsCredits: game.politicsCredits + politicsCreditsGain,
+      courseRecords: [
+        ...game.courseRecords,
+        ...passed
+          .filter(
+            (result) =>
+              !game.courseRecords.some(
+                (record) => record.id === result.course.id,
+              ),
+          )
+          .map((result) => ({
+            id: result.course.id,
+            name: result.course.name,
+            credits: result.course.credits,
+            gpa: result.gpa,
+            score: result.score,
+            category: result.course.electiveType
+              ? result.course.electiveType === 'politics'
+                ? ('politics' as const)
+                : ('elective' as const)
+              : ('professional' as const),
+          })),
+      ],
       stressRewardedCourses: rewardedCourses,
       selected: [],
       finalNote:

@@ -114,8 +114,10 @@ export function ElectiveSelectionScreen({
             思政课 100%。
           </p>
           <div className="elective-meta">
-            <Pill tone="green">已选 {selected.length} / 3</Pill>
-            <Pill>选修已计入 {selectedCredits} 学分 · 毕业最多计 10</Pill>
+            <Pill tone="green">
+              选修已通过 {state.electiveCredits} / 10 学分
+            </Pill>
+            <Pill>本次已选 {selected.length} / 3 门 · {selectedCredits} 学分</Pill>
             <Pill>思政进度 {politicsDone} / 5</Pill>
           </div>
         </header>

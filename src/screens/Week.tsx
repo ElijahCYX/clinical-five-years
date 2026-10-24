@@ -83,6 +83,45 @@ export function WeekScreen({
   const showFocusModal = focusPrompt !== null
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : null
+
+  const passedPe = state.peResults.filter((item) => item.passed)
+  const failedPe = state.peResults.filter((item) => !item.passed)
+  const peCredits =
+    passedPe.length * 2 +
+    (state.peMakeupPassed ? failedPe.length * 2 : 0)
+  const academicProfessionalCredits = state.courseRecords
+    .filter((record) => record.category === 'professional')
+    .reduce((sum, record) => sum + record.credits, 0)
+  const hasCourseRecords = state.courseRecords.length > 0
+  const professionalEarned = hasCourseRecords
+    ? academicProfessionalCredits + peCredits
+    : Math.max(
+        0,
+        state.cumulativeCredits - state.politicsCredits - state.electiveCredits,
+      )
+  const politicsEarned = state.politicsCredits
+  const electiveEarned = state.electiveCredits
+  const graduationTargets = [
+    { key: 'professional', label: '专业课', earned: professionalEarned, target: 163 },
+    { key: 'politics', label: '思政课', earned: politicsEarned, target: 11 },
+    { key: 'elective', label: '选修课', earned: electiveEarned, target: 10 },
+  ]
+  const passedRecords = [
+    ...state.courseRecords,
+    ...passedPe.map((item) => ({
+      id: `pe-${item.year}`,
+      name: `体育（第 ${item.year} 年）`,
+      credits: 2,
+      gpa: item.gpa,
+      score: item.score,
+      category: 'professional' as const,
+    })),
+  ].sort((a, b) => {
+    const order = { professional: 0, politics: 1, elective: 2 }
+    return order[a.category] - order[b.category] || a.name.localeCompare(b.name)
+  })
+  const categoryLabel = (category: string) =>
+    category === 'professional' ? '专业课' : category === 'politics' ? '思政课' : '选修课'
   const selectedGroups = Array.from(new Set(state.selected)).map((id) => ({
     id,
     count: state.selected.filter((item) => item === id).length,
@@ -218,25 +257,61 @@ export function WeekScreen({
           <strong>{state.cumulativeCredits}</strong>
         </div>
         <div>
-          <span>本季考核</span>
-          <strong>{state.season.courses.reduce((sum, item) => sum + item.credits, 0)}</strong>
+          <span>毕业总要求</span>
+          <strong>184</strong>
         </div>
       </div>
-      {state.results.length === 0 ? (
-        <p className="placeholder-note">还没有考试成绩。等这一季的考试结束，成绩会被归档到这里。</p>
+
+      <SectionLabel right="毕业资格审查">毕业进度</SectionLabel>
+      <div className="grade-progress">
+        {graduationTargets.map((item) => {
+          const percent = Math.min(100, (item.earned / item.target) * 100)
+          const remaining = Math.max(0, item.target - item.earned)
+          return (
+            <div className="grade-progress-row" key={item.key}>
+              <div className="grade-progress-head">
+                <span>{item.label}</span>
+                <strong>
+                  {item.earned} / {item.target} 学分
+                </strong>
+                <em>{remaining === 0 ? '已完成' : `还差 ${remaining} 学分`}</em>
+              </div>
+              <Bar value={percent} max={100} thin />
+            </div>
+          )
+        })}
+      </div>
+
+      <SectionLabel right={`${passedRecords.length} 门已通过`}>已通过课程</SectionLabel>
+      {passedRecords.length === 0 ? (
+        <p className="placeholder-note">
+          还没有已归档的通过课程。考试结算后，这里会按课程记录绩点与学分。
+        </p>
       ) : (
-        <div className="mini-table">
-          {state.results.map((result) => (
-            <div className="mini-table-row" key={result.course.id}>
-              <span>{result.course.name}</span>
-              <span>{result.score} 分</span>
-              <strong>{result.gpa.toFixed(1)}</strong>
+        <div className="grade-record-list">
+          {passedRecords.map((record) => (
+            <div className="grade-record-row" key={record.id}>
+              <div className="grade-record-main">
+                <div className="grade-record-title">
+                  <span>{record.name}</span>
+                  <small>{categoryLabel(record.category)}</small>
+                </div>
+                <div className="grade-record-meta">
+                  <span>{record.credits} 学分</span>
+                  <span>{record.score} 分</span>
+                </div>
+              </div>
+              <div className="grade-record-bar">
+                <Bar value={record.gpa} max={5} thin />
+              </div>
+              <strong className="grade-record-gpa">{record.gpa.toFixed(1)}</strong>
             </div>
           ))}
         </div>
       )}
     </div>
   )
+
 
   const renderResearch = () => (
     <div className="tab-panel">
