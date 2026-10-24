@@ -566,12 +566,19 @@ function RealApp() {
       mentor.intimacy >= 60 &&
       isAutumn &&
       game.lastHypothesisOfferSeason !== game.season.id
+    // 实验室打杂期间额外 +10% 概率收到导师分配课题的通知；
+    // 接取课题后 researchStarted 为 true，该加成自然撤除。
+    const ideaChoreBoostDue =
+      mentor !== undefined &&
+      game.labEntered &&
+      !game.researchStarted &&
+      Math.random() < 0.1
     if (
       mentor &&
       game.labEntered &&
       !game.researchStarted &&
       !game.researchPublished &&
-      (ideaThresholdDue || ideaAutumnDue)
+      (ideaThresholdDue || ideaAutumnDue || ideaChoreBoostDue)
     ) {
       const hypothesis = game.mentorProfileId
         ? pickHypothesis(game.mentorProfileId)

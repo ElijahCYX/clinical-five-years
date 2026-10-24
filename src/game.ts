@@ -615,6 +615,12 @@ export interface WeekSimulation {
 }
 
 /** 与 App.endWeek 共用同一套周结算公式，用于选择行动时预览。 */
+/** 实验室打杂的精力消耗：-13 到 -7，悟性越高消耗越低。 */
+export function labChoreEnergyCost(comprehension: number): number {
+  const comp = Math.max(2, Math.min(10, comprehension))
+  return -Math.round(13 - ((comp - 2) / 8) * 6)
+}
+
 /** 科研进度收益：1-5 点，悟性越高越容易抽到高值。 */
 export function researchGainForComprehension(comprehension: number): number {
   const comp = Math.max(2, Math.min(10, comprehension))
@@ -671,6 +677,13 @@ export function simulateWeek(state: GameState): WeekSimulation {
       const costs = libraryCosts(state)
       energy += costs.energy
       stress += costs.stress
+    } else if (
+      action.id === 'research' &&
+      state.labEntered &&
+      !state.researchStarted
+    ) {
+      energy += labChoreEnergyCost(attrs.comprehension)
+      stress += action.stress
     } else {
       energy += effectiveEnergyCost(action.energy, state.energy)
       stress += action.stress
@@ -694,7 +707,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
       if (state.researchStarted) {
         researchProgressGain += researchGainForComprehension(attrs.comprehension)
       } else {
-        mentorIntimacyGain += 1
+        mentorIntimacyGain += 5
       }
     }
     if (action.id === 'electiveHomework') {

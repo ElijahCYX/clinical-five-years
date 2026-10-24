@@ -8,6 +8,7 @@ import {
 import {
   effectiveEnergyCost,
   energyEffectText,
+  labChoreEnergyCost,
   libraryCosts,
   englishGainForMemory,
   estimateRange,
@@ -179,7 +180,7 @@ export function WeekScreen({
     if (action.id === 'research') {
       if (!state.labEntered) return '等待导师允许进入实验室'
       if (!state.researchStarted) {
-        return '导师亲密度 +1 · 精力 -20 · 压力 +3'
+        return `导师亲密度 +5 · 精力 ${labChoreEnergyCost(state.player?.attrs.comprehension ?? 5)} · 压力 +3`
       }
       return '科研进度随机 +1~5（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3'
     }
@@ -220,7 +221,9 @@ export function WeekScreen({
     const energyCost =
       action.id === 'library'
         ? libraryCosts(state).energy
-        : effectiveEnergyCost(action.energy, state.energy)
+        : action.id === 'research' && state.labEntered && !state.researchStarted
+          ? labChoreEnergyCost(state.player?.attrs.comprehension ?? 5)
+          : effectiveEnergyCost(action.energy, state.energy)
     if (energyCost < 0 && state.energy + energyCost < 0) return '精力不足'
     if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null
@@ -414,7 +417,7 @@ export function WeekScreen({
             )}
             <p className="research-mentor-meta">
               亲密度达到 60 后，导师会给你一个可以开始的课题。
-              本周选择「实验室打杂」可以增加导师亲密度。
+              本周选择「实验室打杂」可以增加导师亲密度，并有概率收到导师分配课题的通知。
             </p>
           </div>
         </div>
@@ -472,7 +475,7 @@ export function WeekScreen({
             <div className="research-action-note">
               <span>本周科研行动</span>
               <strong>
-                {state.researchStarted ? '科研进度随机 +1–5' : '实验室打杂 · 导师亲密度 +1'}
+                {state.researchStarted ? '科研进度随机 +1–5' : '实验室打杂 · 导师亲密度 +5'}
               </strong>
               <p>
                 {state.researchStarted
