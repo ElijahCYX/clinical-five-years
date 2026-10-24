@@ -3,6 +3,7 @@ import type {
   AttrDef,
   BackgroundDef,
   HabitDef,
+  OpeningTalentDef,
   PlanDef,
   Season,
   TalentDef,
@@ -110,6 +111,105 @@ export const TALENTS: TalentDef[] = [
     points: 65,
     label: '体验',
     blurb: '所有人都觉得，你天生该穿白大褂。',
+  },
+]
+
+export const OPENING_TALENTS: OpeningTalentDef[] = [
+  {
+    id: 'accent',
+    name: '洋腔洋调',
+    en: 'ACCENT',
+    desc: '别人还在背 abandon，你已经能用三种口音说“这个病怎么治”。',
+    effectText: '开局英语进度 +25',
+    implemented: true,
+  },
+  {
+    id: 'medicalFamily',
+    name: '医学世家',
+    en: 'MEDICAL FAMILY',
+    desc: '家族群里一半是主任，一半是护士长。电话一打，导师先问你爸妈好。',
+    effectText: '直接成功联系导师（导师系统待开发）',
+    implemented: true,
+  },
+  {
+    id: 'pressureCooker',
+    name: '高压锅体质',
+    en: 'PRESSURE COOKER',
+    desc: '别人被压力压垮，你被压力炖得刚刚好。每周自动泄一点压。',
+    effectText: '每周开始压力值 -10%',
+    implemented: true,
+  },
+  {
+    id: 'energyMule',
+    name: '高精力牛马',
+    en: 'ENERGY MULE',
+    desc: '你的电池是反着装的：越忙越有电，越闲越心慌。',
+    effectText: '每周开始精力 +10',
+    implemented: true,
+  },
+  {
+    id: 'modelMonster',
+    name: '建模怪',
+    en: 'MODEL MONSTER',
+    desc: '你往教室门口一站，连解剖图谱都想给你让个位置。',
+    effectText: '建模面板 +10%；按建模概率触发舍友社交事件',
+    implemented: true,
+  },
+  {
+    id: 'caffeineImmune',
+    name: '咖啡因免疫',
+    en: 'CAFFEINE IMMUNE',
+    desc: '咖啡对你是饮料，不是续命药。刷夜之后还能顺手洗个衣服。',
+    effectText: '咖啡与刷夜的压力副作用减半（候选）',
+    implemented: false,
+  },
+  {
+    id: 'cramKing',
+    name: '考前突击王',
+    en: 'CRAM KING',
+    desc: '平时不响，考前一周突然像被知识点夺舍。',
+    effectText: '考试周复习收益 +10%（候选）',
+    implemented: false,
+  },
+  {
+    id: 'socialBeast',
+    name: '社交悍匪',
+    en: 'SOCIAL BEAST',
+    desc: '你认识的人比课本上的名词还多，走到哪都能蹭到饭。',
+    effectText: '社交行动的综测收益 +1（候选）',
+    implemented: false,
+  },
+  {
+    id: 'steadyHands',
+    name: '手稳心细',
+    en: 'STEADY HANDS',
+    desc: '第一次拿手术器械，老师问你以前是不是干过裁缝。',
+    effectText: '操作面板 +1（候选）',
+    implemented: false,
+  },
+  {
+    id: 'morningProof',
+    name: '早八绝缘体',
+    en: 'MORNING PROOF',
+    desc: '闹钟响三遍，你还能多睡十分钟，并且赶上食堂最后一个包子。',
+    effectText: '每周额外精力 +5（候选）',
+    implemented: false,
+  },
+  {
+    id: 'memoryBread',
+    name: '记忆面包',
+    en: 'MEMORY BREAD',
+    desc: '别人背三遍，你闻一下书页就记住了。副作用是看见书就想吃。',
+    effectText: '记忆力面板 +1（候选）',
+    implemented: false,
+  },
+  {
+    id: 'kaoyanChosen',
+    name: '天选考研人',
+    en: 'CHOSEN ONE',
+    desc: '你还没报名，图书馆的座位已经替你留好了。',
+    effectText: '考研分数 +20（候选）',
+    implemented: false,
   },
 ]
 
@@ -918,5 +1018,8 @@ export const VACATION_ACTION_BY_ID = Object.fromEntries(
 export const TALENT_BY_ID = Object.fromEntries(TALENTS.map((t) => [t.id, t]))
 export const BACKGROUND_BY_ID = Object.fromEntries(BACKGROUNDS.map((b) => [b.id, b]))
 export const PLAN_BY_ID = Object.fromEntries(PLANS.map((p) => [p.id, p]))
+export const OPENING_TALENT_BY_ID = Object.fromEntries(
+  OPENING_TALENTS.map((t) => [t.id, t]),
+)
 export const HABIT_BY_ID = Object.fromEntries(HABITS.map((h) => [h.id, h]))
 export const ACTION_BY_ID = Object.fromEntries(ACTIONS.map((a) => [a.id, a]))

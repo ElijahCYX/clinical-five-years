@@ -14,7 +14,7 @@ import {
   simulateWeek,
 } from '../game'
 import type { ActionDef, GameState } from '../types'
-import { Bar, BottomNav, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
+import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 
 const VISIBLE_ACTIONS = [
@@ -240,7 +240,7 @@ export function WeekScreen({
   )
 
   return (
-    <div className="screen game-screen has-bottom-nav">
+    <div className="screen game-screen">
       <div className="shell">
         <TopBar
           onTitle={onTitle}
@@ -249,6 +249,12 @@ export function WeekScreen({
               返回标题
             </button>
           }
+        />
+
+        <InterfaceNav
+          active="main"
+          onMain={() => undefined}
+          onWho={onOpenWhoAmI ?? (() => undefined)}
         />
 
         <header className="game-head">
@@ -562,12 +568,6 @@ export function WeekScreen({
           <span>每周结算后自动保存</span>
         </footer>
       </div>
-
-      <BottomNav
-        active="main"
-        onMain={() => undefined}
-        onWho={onOpenWhoAmI ?? (() => undefined)}
-      />
 
       {showFocusModal && (
         <div className="focus-backdrop" role="presentation">

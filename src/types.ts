@@ -36,6 +36,8 @@ export type Gender = '女' | '男'
 export type ScreenName =
   | 'title'
   | 'create'
+  | 'talentSelect'
+  | 'talentEvent'
   | 'plan'
   | 'week'
   | 'prep'
@@ -196,6 +198,29 @@ export interface Season {
   courses: Course[]
 }
 
+export type OpeningTalentId =
+  | 'accent'
+  | 'medicalFamily'
+  | 'pressureCooker'
+  | 'energyMule'
+  | 'modelMonster'
+  | 'caffeineImmune'
+  | 'cramKing'
+  | 'socialBeast'
+  | 'steadyHands'
+  | 'morningProof'
+  | 'memoryBread'
+  | 'kaoyanChosen'
+
+export interface OpeningTalentDef {
+  id: OpeningTalentId
+  name: string
+  en: string
+  desc: string
+  effectText: string
+  implemented: boolean
+}
+
 export interface Player {
   name: string
   gender: Gender
@@ -266,6 +291,9 @@ export interface GameState {
   highPressureDebuff: boolean
   lowEnergyAlert: boolean
   stressRewardedCourses: string[]
+  openingTalent: OpeningTalentId | null
+  mentorContactUnlocked: boolean
+  roommateBond: boolean
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number
@@ -281,6 +309,8 @@ export interface GameState {
 export type DemoName =
   | 'title'
   | 'create'
+  | 'talentSelect'
+  | 'talentEvent'
   | 'plan'
   | 'week'
   | 'prep'

@@ -1,7 +1,14 @@
-import { ATTRS, BACKGROUND_BY_ID, HABIT_BY_ID, PLAN_BY_ID, TALENT_BY_ID } from '../data'
+import {
+  ATTRS,
+  BACKGROUND_BY_ID,
+  HABIT_BY_ID,
+  OPENING_TALENT_BY_ID,
+  PLAN_BY_ID,
+  TALENT_BY_ID,
+} from '../data'
 import { AWARD_LABELS, archetypeFor, bestAward } from '../game'
 import type { GameState } from '../types'
-import { BottomNav, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
+import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 
 interface WhoAmIScreenProps {
   state: GameState
@@ -28,6 +35,9 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
   const awards = state.yearRecords.filter((record) => record.award)
   const previousAward = bestAward(state.yearRecords)
   const paperCount = Math.floor(state.research / 100)
+  const openingTalent = state.openingTalent
+    ? OPENING_TALENT_BY_ID[state.openingTalent]
+    : null
   const postgradLabel =
     state.postgradChoice === 'baoyan'
       ? '保研'
@@ -48,7 +58,7 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
             : ''
 
   return (
-    <div className="screen whoami-screen has-bottom-nav">
+    <div className="screen whoami-screen">
       <div className="shell">
         <TopBar
           onTitle={onTitle}
@@ -57,6 +67,12 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
               返回标题
             </button>
           }
+        />
+
+        <InterfaceNav
+          active="who"
+          onMain={onMain}
+          onWho={() => undefined}
         />
 
         <header className="whoami-head">
@@ -219,6 +235,14 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
                   <strong>{paperCount} 篇</strong>
                 </div>
                 <div>
+                  <span>导师联系</span>
+                  <strong>{state.mentorContactUnlocked ? '已解锁（待开发）' : '未解锁'}</strong>
+                </div>
+                <div>
+                  <span>舍友关系</span>
+                  <strong>{state.roommateBond ? '已加深' : '普通'}</strong>
+                </div>
+                <div>
                   <span>体育成绩</span>
                   <strong>
                     {state.peResults.length > 0
@@ -314,7 +338,6 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
         </main>
       </div>
 
-      <BottomNav active="who" onMain={onMain} onWho={() => undefined} />
     </div>
   )
 }

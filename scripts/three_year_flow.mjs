@@ -11,6 +11,7 @@ async function vacationWeek(){ await page.locator('.action-card',{hasText:'纯�
 await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'}); await page.evaluate(()=>localStorage.clear()); await page.reload({waitUntil:'networkidle'})
 await page.locator('.title-actions .btn-primary').click(); await wait(250)
 await page.locator('.field input').first().fill('三年测试'); await page.locator('.confirm-box .btn-primary').click(); await wait(300)
+if (await page.locator('.talent-select-screen').count()) { await page.locator('.opening-talent-card').first().click(); await page.locator('.talent-select-footer .btn-primary').click(); await wait(400) }
 let steps=0
 while (steps++ < 200) {
   if (await page.locator('.plan-screen').count()) { const planTitle=(await page.locator('.plan-head h1').innerText()).replace(/\n/g,' '); await choosePlan(); console.log('PLAN', planTitle); continue }

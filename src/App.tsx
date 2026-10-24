@@ -34,12 +34,15 @@ import {
   simulateWeek,
   signed,
   WEEKLY_FIXED_COST,
+  applyOpeningTalent,
+  applyWeeklyOpeningTalent,
 } from './game'
 import type {
   AttrKey,
   DemoName,
   GameState,
   HabitId,
+  OpeningTalentId,
   PlanId,
   Player,
   PostgradChoice,
@@ -68,9 +71,11 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 import { WhoAmIScreen } from './screens/WhoAmI'
+import { TalentSelectScreen } from './screens/TalentSelect'
+import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v13'
+const SAVE_KEY = 'clinical-five-years-save-v14'
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -440,7 +445,32 @@ function RealApp() {
 
   const handleCreate = (player: Player) => {
     setCrisisKind(null)
-    commit(newGameState(player), 'plan')
+    const next = { ...newGameState(player), screen: 'talentSelect' as const }
+    commit(next, 'talentSelect')
+  }
+
+  const handleOpeningTalent = (talent: OpeningTalentId | null) => {
+    if (!game) return
+    let next = applyOpeningTalent({ ...game, screen: 'plan' }, talent)
+    if (talent === 'modelMonster' && next.player) {
+      const chance = Math.min(0.75, next.player.attrs.appearance * 0.08)
+      if (Math.random() < chance) {
+        next = {
+          ...next,
+          screen: 'talentEvent',
+          roommateBond: true,
+          socialGrowth: next.socialGrowth + 20,
+        }
+        commit(next, 'talentEvent')
+        return
+      }
+    }
+    commit(next, 'plan')
+  }
+
+  const handleTalentEventContinue = () => {
+    if (!game) return
+    commit({ ...game, screen: 'plan' }, 'plan')
   }
 
   const handlePlan = (plan: PlanId, habits: HabitId[]) => {
@@ -455,7 +485,7 @@ function RealApp() {
       selected: [],
       actionsUsed: 0,
     }
-    commit(next, 'week')
+    commit(applyWeeklyOpeningTalent(next), 'week')
   }
 
   const toggleSelected = (prev: GameState, id: string, repeatable: boolean): GameState => {
@@ -555,7 +585,10 @@ function RealApp() {
       logs: [...game.logs, log],
     }
 
-    commit(next, isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week')
+    commit(
+      applyWeeklyOpeningTalent(next),
+      isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
+    )
   }
 
   const chooseReview = (choice: ReviewChoice) => {
@@ -1127,6 +1160,26 @@ function RealApp() {
           setCrisisKind(null)
           setView(crisisReturn)
         }}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'talentSelect') {
+    return (
+      <TalentSelectScreen
+        state={game}
+        onConfirm={handleOpeningTalent}
+        onBack={goTitle}
+      />
+    )
+  }
+
+  if (view === 'talentEvent') {
+    return (
+      <OpeningTalentEventScreen
+        state={game}
+        onContinue={handleTalentEventContinue}
         onTitle={goTitle}
       />
     )

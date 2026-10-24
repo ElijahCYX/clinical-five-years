@@ -71,7 +71,7 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
 }
 
 
-export function BottomNav({
+export function InterfaceNav({
   active,
   onMain,
   onWho,
@@ -81,10 +81,10 @@ export function BottomNav({
   onWho: () => void
 }) {
   return (
-    <nav className="bottom-interface-nav" aria-label="界面切换">
+    <nav className="interface-nav" aria-label="界面切换">
       <button
         type="button"
-        className={`bottom-interface-btn ${active === 'main' ? 'is-active' : ''}`}
+        className={`interface-btn ${active === 'main' ? 'is-active' : ''}`}
         onClick={onMain}
         aria-current={active === 'main' ? 'page' : undefined}
       >
@@ -92,7 +92,7 @@ export function BottomNav({
       </button>
       <button
         type="button"
-        className={`bottom-interface-btn ${active === 'who' ? 'is-active' : ''}`}
+        className={`interface-btn ${active === 'who' ? 'is-active' : ''}`}
         onClick={onWho}
         aria-current={active === 'who' ? 'page' : undefined}
       >

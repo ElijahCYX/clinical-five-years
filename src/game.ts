@@ -15,6 +15,7 @@ import type {
   Course,
   GameState,
   HabitId,
+  OpeningTalentId,
   Player,
   PlanId,
   ReviewChoice,
@@ -282,6 +283,9 @@ export function newGameState(player: Player): GameState {
     highPressureDebuff: false,
     lowEnergyAlert: false,
     stressRewardedCourses: [],
+    openingTalent: null,
+    mentorContactUnlocked: false,
+    roommateBond: false,
     constitutionGrowth: 0,
     appearanceGrowth: 0,
     actionsUsed: 0,
@@ -399,6 +403,47 @@ export function cetScore(
   if (kind === 'cet6' && english >= 100) score = Math.max(score, CET.graduate6)
   const floor = kind === 'cet4' ? 200 : 150
   return clamp(Math.round(score), floor, CET.total)
+}
+
+export function applyOpeningTalent(
+  base: GameState,
+  talent: OpeningTalentId | null,
+): GameState {
+  if (!talent) return { ...base, openingTalent: null }
+  const player = base.player
+  if (!player) return { ...base, openingTalent: talent }
+  let next: GameState = { ...base, openingTalent: talent }
+  if (talent === 'accent') {
+    next = { ...next, english: next.english + 25 }
+  }
+  if (talent === 'medicalFamily') {
+    next = { ...next, mentorContactUnlocked: true }
+  }
+  if (talent === 'modelMonster') {
+    next = {
+      ...next,
+      player: {
+        ...player,
+        attrs: {
+          ...player.attrs,
+          appearance: Math.min(10, player.attrs.appearance + 1),
+        },
+      },
+    }
+  }
+  return next
+}
+
+/** 每周开场自动生效的开局天赋。 */
+export function applyWeeklyOpeningTalent(base: GameState): GameState {
+  let next = base
+  if (base.openingTalent === 'pressureCooker') {
+    next = { ...next, stress: clamp(Math.round(next.stress * 0.9), 0, 100) }
+  }
+  if (base.openingTalent === 'energyMule') {
+    next = { ...next, energy: clamp(next.energy + 10, 0, 100) }
+  }
+  return next
 }
 
 export function focusAdjustedGains(
