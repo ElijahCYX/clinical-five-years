@@ -49,6 +49,7 @@ export function WhoIsTAScreen({
   const weekKey = currentWeekKey(state)
   const relations = state.relationships
   const patRemaining = patRemainingThisWeek(state)
+  const partnerCount = relations.filter((relation) => relation.partner).length
 
   return (
     <div className="screen whois-screen">
@@ -81,6 +82,9 @@ export function WhoIsTAScreen({
             <Pill tone="green">{relations.length} 段关系</Pill>
             <Pill>本周拍一拍剩余 {patRemaining} / 3 次</Pill>
             {state.romanceUnlocked && <Pill tone="gold">恋爱模块已解锁</Pill>}
+            {partnerCount > 1 && (
+              <Pill tone="red">多线恋爱 · 下周风险 {state.romanceRisk}%</Pill>
+            )}
           </div>
         </header>
 

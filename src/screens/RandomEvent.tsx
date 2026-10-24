@@ -26,7 +26,7 @@ export function RandomEventModal({
           <div className="random-event-kind-row">
             <Pill
               tone={
-                event.kind === 'random'
+                event.kind === 'random' || event.kind === 'romance'
                   ? 'red'
                   : event.kind === 'attribute'
                     ? 'green'

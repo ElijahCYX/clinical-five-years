@@ -356,6 +356,7 @@ export function newGameState(player: Player): GameState {
     dinnerPlan: null,
     romanceUnlocked: false,
     courseRecords: [],
+    romanceRisk: 0,
   }
 }
 

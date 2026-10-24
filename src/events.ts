@@ -8,7 +8,7 @@ import { createEventFriend } from './social'
 
 interface EventSeed {
   id: string
-  kind: 'scene' | 'attribute' | 'random'
+  kind: 'scene' | 'attribute' | 'random' | 'romance'
   title: string
   text: string
   effects: EventEffect | ((state: GameState) => EventEffect)
@@ -216,6 +216,7 @@ const KIND_LABEL = {
   scene: '场景触发',
   attribute: '属性触发',
   random: '完全随机',
+  romance: '恋爱危机',
 } as const
 
 function clamp(value: number, min: number, max: number): number {
@@ -259,7 +260,9 @@ function effectLines(effect: EventEffect): string[] {
   push('英语', effect.english)
   push('综测', effect.composite)
   push('考研准备', effect.kaoyanPrep)
+  push('交际', effect.socialAttr)
   if (effect.socialUnlock) lines.push('社交模块解锁（后续开发）')
+  if (effect.romanceBreak) lines.push('所有恋爱关系破裂')
   return lines
 }
 
@@ -324,6 +327,28 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
       state.socialModuleUnlocked || Boolean(effect.socialUnlock),
     prep: { ...state.prep },
   }
+  if (effect.socialAttr && next.player) {
+    next.player = {
+      ...next.player,
+      attrs: {
+        ...next.player.attrs,
+        social: clamp(next.player.attrs.social + effect.socialAttr, 2, 10),
+      },
+    }
+  }
+  if (effect.romanceBreak) {
+    next.relationships = next.relationships.map((relation) =>
+      relation.partner
+        ? {
+            ...relation,
+            partner: false,
+            intimacy: Math.max(0, relation.intimacy - 10),
+          }
+        : relation,
+    )
+    next.romanceRisk = 0
+    next.stress = clamp(next.stress + 10, 0, 100)
+  }
   if (effect.prep) {
     for (const course of state.season.courses) {
       next.prep[course.id] = clamp(
@@ -344,6 +369,27 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     ]
   }
   return next
+}
+
+export function romanceRiskAfterWeek(state: GameState): number {
+  const partners = state.relationships.filter((relation) => relation.partner).length
+  if (partners < 2) return 0
+  return Math.min(95, (state.romanceRisk ?? 0) + 8 + (partners - 2) * 4)
+}
+
+export function createRomanceDiscoveryEvent(state: GameState): PendingEvent {
+  const names = state.relationships
+    .filter((relation) => relation.partner)
+    .map((relation) => relation.name)
+  const nameText = names.length > 0 ? names.join('、') : '那几位'
+  return {
+    id: 'ev-romance-discovery',
+    kind: 'romance',
+    title: '修罗场',
+    text: `你的手机在同一时间弹出了几条消息。${nameText}分别问你现在在哪，随后她们/他们发现彼此认识的是同一个你。宿舍楼下、食堂门口和图书馆门口同时上演了不同版本的质问，你站在中间，第一次觉得“同时处理多份病史”是一件如此困难的事。所有恋爱关系当场破裂，你的交际名声也一落千丈。`,
+    effects: { socialAttr: -3, romanceBreak: true },
+    effectLines: ['交际 -3', '压力 +10', '所有恋爱关系破裂'],
+  }
 }
 
 export function eventKindLabel(kind: PendingEvent['kind']): string {

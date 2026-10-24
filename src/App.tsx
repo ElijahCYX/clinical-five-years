@@ -80,7 +80,12 @@ import { WhoAmIScreen } from './screens/WhoAmI'
 import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
-import { applyEvent, rollWeeklyEvent } from './events'
+import {
+  applyEvent,
+  createRomanceDiscoveryEvent,
+  romanceRiskAfterWeek,
+  rollWeeklyEvent,
+} from './events'
 import { RandomEventModal } from './screens/RandomEvent'
 import { WhoIsTAScreen } from './screens/WhoIsTA'
 import {
@@ -95,8 +100,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v22'
+const SAVE_KEY = 'clinical-five-years-save-v23'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v22',
   'clinical-five-years-save-v21',
   'clinical-five-years-save-v20',
   'clinical-five-years-save-v19',
@@ -470,9 +476,23 @@ function RealApp() {
     ) {
       return
     }
-    const pending = rollWeeklyEvent(game)
+    const risk = romanceRiskAfterWeek(game)
+    const riskBase: GameState = { ...game, romanceRisk: risk }
+    if (risk > 0 && Math.random() < risk / 100) {
+      const discovery = createRomanceDiscoveryEvent(game)
+      const next: GameState = {
+        ...riskBase,
+        eventWeek: game.week,
+        pendingEvent: discovery,
+        screen: 'week',
+      }
+      setGame(next)
+      persist(next)
+      return
+    }
+    const pending = rollWeeklyEvent(riskBase)
     const next: GameState = {
-      ...game,
+      ...riskBase,
       eventWeek: game.week,
       pendingEvent: pending,
       screen: 'week',

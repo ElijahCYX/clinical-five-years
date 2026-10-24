@@ -265,7 +265,7 @@ export interface ExamResult {
   stressRelief: number
 }
 
-export type EventKind = 'scene' | 'attribute' | 'random'
+export type EventKind = 'scene' | 'attribute' | 'random' | 'romance'
 
 export interface EventEffect {
   stress?: number
@@ -280,6 +280,8 @@ export interface EventEffect {
   composite?: number
   kaoyanPrep?: number
   socialUnlock?: boolean
+  socialAttr?: number
+  romanceBreak?: boolean
 }
 
 export interface PendingEvent {
@@ -414,6 +416,7 @@ export interface GameState {
   dinnerPlan: DinnerPlan | null
   romanceUnlocked: boolean
   courseRecords: CourseRecord[]
+  romanceRisk: number
 }
 
 export type DemoName =
