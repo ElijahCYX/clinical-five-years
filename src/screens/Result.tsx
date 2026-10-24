@@ -22,6 +22,31 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : 0
   const passed = state.results.every((item) => item.gpa > 0)
+  const totalStressRelief = state.results.reduce(
+    (sum, item) => sum + item.stressRelief,
+    0,
+  )
+  const stressBefore = Math.min(100, state.stress + totalStressRelief)
+  const reliefQuip =
+    totalStressRelief === 0
+      ? '这次成绩没给你发降压红包。别急，至少卷子没再补一刀。'
+      : totalStressRelief <= 3
+        ? '成绩单递过来，肩膀微微一松。降压虽小，也是身体在给你鼓掌。'
+        : totalStressRelief <= 7
+          ? '你长出一口气，连白大褂的领口都松了半寸。'
+          : totalStressRelief <= 14
+            ? '这波属于知识型降压：脑子赚了绩点，身体也领到了休假券。'
+            : totalStressRelief <= 24
+              ? '压力条肉眼可见地往回缩。导员怀疑你偷偷去做了个 SPA。'
+              : '本次降压已达临床显著水平。建议把成绩单裱起来，当非处方降压药。'
+
+  const courseReliefQuip = (relief: number) => {
+    if (relief <= 0) return '没降，但也没升。稳住。'
+    if (relief <= 3) return '有被安慰到一点点。'
+    if (relief <= 6) return '值一杯奶茶。'
+    if (relief <= 9) return '肩膀卸下一块砖。'
+    return '满分降压，原地回血。'
+  }
 
   return (
     <div className="screen result-screen">
@@ -65,6 +90,20 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
               </div>
             </div>
 
+            <div className="result-stress-card">
+              <div className="result-stress-number">
+                <span>本次降压</span>
+                <strong>{totalStressRelief > 0 ? `-${totalStressRelief}` : '0'}</strong>
+                <small>
+                  压力 {stressBefore} → {state.stress}
+                </small>
+              </div>
+              <div className="result-stress-copy">
+                <p>{reliefQuip}</p>
+                <small>按预计区间折算：下沿 0，上沿 -10；每门课程只结算一次。</small>
+              </div>
+            </div>
+
             <table className="report-table">
               <thead>
                 <tr>
@@ -73,6 +112,7 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
                   <th>学分</th>
                   <th>卷面</th>
                   <th>绩点</th>
+                  <th>降压</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,12 +125,25 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
                       </span>
                       <span className="course-sub">
                         记忆力 {result.course.memory} · 悟性 {result.course.comprehension}
+                        <span className="course-estimate">
+                          · 预计 {result.expectedMin}–{result.expectedMax}
+                        </span>
                       </span>
                     </td>
                     <td>{result.course.examType}</td>
                     <td>{result.course.credits}</td>
                     <td className={result.score < 60 ? 'score-fail' : ''}>{result.score}</td>
                     <td className="gpa-cell">{result.gpa.toFixed(1)}</td>
+                    <td className="stress-cell">
+                      {result.stressRelief > 0 ? (
+                        <>
+                          <b>-{result.stressRelief}</b>
+                          <small>{courseReliefQuip(result.stressRelief)}</small>
+                        </>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -114,6 +167,13 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
                 <strong>{state.english}</strong>
                 <small className="stat-hint">
                   {cetHint(state.cet4Score, state.cet6Score)}
+                </small>
+              </div>
+              <div>
+                <span>当前压力</span>
+                <strong>{state.stress}</strong>
+                <small className="stat-hint">
+                  {totalStressRelief > 0 ? `本次降压 -${totalStressRelief}` : '本次没有降压奖励'}
                 </small>
               </div>
             </div>

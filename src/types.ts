@@ -215,6 +215,9 @@ export interface ExamResult {
   course: Course
   score: number
   gpa: number
+  expectedMin: number
+  expectedMax: number
+  stressRelief: number
 }
 
 export interface GameState {
@@ -261,6 +264,7 @@ export interface GameState {
   labEntered: boolean
   highPressureDebuff: boolean
   lowEnergyAlert: boolean
+  stressRewardedCourses: string[]
   prep: Record<string, number>
   constitutionGrowth: number
   appearanceGrowth: number

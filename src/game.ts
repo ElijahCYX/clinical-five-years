@@ -75,7 +75,19 @@ export function estimateScore(prep: number): number {
 }
 
 export function estimateRange(prep: number): [number, number] {
-  return [estimateScore(prep) - 3, estimateScore(prep) + 3]
+  return [estimateScore(prep) - 5, estimateScore(prep) + 5]
+}
+
+/**
+ * 出成绩后的降压奖励：在预计区间下沿为 0，上沿为 10，挂科为 0。
+ * 例如预计 80–90，考 80 → 0，考 90 → 10。
+ */
+export function stressReliefForScore(score: number, center: number): number {
+  if (score < 60) return 0
+  const min = clamp(center - 5, 0, 95)
+  const max = clamp(center + 5, 5, 100)
+  if (max <= min) return score >= max ? 10 : 0
+  return clamp(Math.round(((score - min) / (max - min)) * 10), 0, 10)
 }
 
 export function gpaFromScore(rawScore: number): number {
@@ -261,6 +273,7 @@ export function newGameState(player: Player): GameState {
     labEntered: false,
     highPressureDebuff: false,
     lowEnergyAlert: false,
+    stressRewardedCourses: [],
     constitutionGrowth: 0,
     appearanceGrowth: 0,
     actionsUsed: 0,

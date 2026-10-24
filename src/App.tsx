@@ -24,7 +24,10 @@ import {
   postgradChanceFor,
   scholarshipFor,
   effectiveEnergyCost,
+  estimateRange,
+  estimateScore,
   prepGainMultiplier,
+  stressReliefForScore,
   planEnergyCost,
   planPassive,
   planStress,
@@ -64,7 +67,7 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v10'
+const SAVE_KEY = 'clinical-five-years-save-v11'
 
 type View = ScreenName | 'crisis'
 
@@ -529,12 +532,15 @@ function RealApp() {
       0,
       100,
     )
-    const stress = clamp(game.stress + effect.stress, 0, 100)
+    let stress = clamp(game.stress + effect.stress, 0, 100)
     const money = Math.max(0, game.money - 250)
     const prep = { ...game.prep }
+    const rewardedCourses = [...game.stressRewardedCourses]
 
     const results = game.season.courses.map((course) => {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
+      const [expectedMin, expectedMax] = estimateRange(prep[course.id])
+      const expectedCenter = estimateScore(prep[course.id])
       let rawScore =
         38 +
         prep[course.id] * 0.55 +
@@ -547,8 +553,21 @@ function RealApp() {
           ? makeupGpa(course.originalGpa ?? 0, rawGpa)
           : rawGpa
         : rawGpa
-      return { course, score, gpa }
+      const rewardKey = course.makeup
+        ? course.id.replace(/^makeup-/, '').replace(/-\d+$/, '')
+        : course.id
+      const eligible = score >= 60 && !rewardedCourses.includes(rewardKey)
+      const stressRelief = eligible
+        ? stressReliefForScore(score, expectedCenter)
+        : 0
+      if (eligible) rewardedCourses.push(rewardKey)
+      return { course, score, gpa, expectedMin, expectedMax, stressRelief }
     })
+    const totalStressRelief = results.reduce(
+      (sum, result) => sum + result.stressRelief,
+      0,
+    )
+    stress = clamp(stress - totalStressRelief, 0, 100)
 
     const passed = results.filter((result) => result.score >= 60)
     const failed = results.filter((result) => result.score < 60)
@@ -583,6 +602,7 @@ function RealApp() {
       yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
+      stressRewardedCourses: rewardedCourses,
       selected: [],
       finalNote:
         failed.length === 0
