@@ -69,7 +69,7 @@ export function VacationScreen({
   const archetype = player.archiveTitle
 
   const lockReason = (action: ActionDef): string | null => {
-    if (action.requires === 'lab' && !(state.mentorSelected && state.labEntered)) {
+    if (action.requires === 'lab' && !state.labEntered) {
       return action.lockedNote ?? '需要先选导师并进入实验室'
     }
     if (action.id === 'vacTravel') {

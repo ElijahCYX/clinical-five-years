@@ -8849,3 +8849,13 @@ body.dinner-open {
     border-color: var(--gold);
   }
 }
+
+.elective-exclusion-note {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--gold);
+  background: var(--gold-soft);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  line-height: 1.6;
+}

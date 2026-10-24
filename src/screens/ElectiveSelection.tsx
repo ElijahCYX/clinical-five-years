@@ -130,6 +130,9 @@ export function ElectiveSelectionScreen({
             可以翻看对应类型的完整备选库。水课 50%、兴趣课 25%、小组作业课 75%、
             思政课 100%。
           </p>
+          <p className="elective-exclusion-note">
+            兴趣类课程不计入泡图书馆的计费课程数，不会增加图书馆的精力与压力消耗。
+          </p>
           <div className="elective-meta">
             <Pill tone="green">
               选修已通过 {state.electiveCredits} / 10 学分

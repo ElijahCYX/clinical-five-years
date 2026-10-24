@@ -951,7 +951,10 @@ export function libraryCosts(state: GameState): {
   energy: number
   stress: number
 } {
-  const count = Math.max(1, state.season.courses.length)
+  const count = state.season.courses.filter(
+    (course) => course.electiveType !== 'interest',
+  ).length
+  // 兴趣类课程不计入泡图书馆的计费课程数。
   // 消耗最多按 3 门课计算，超过 3 门不再继续增加。
   const costCount = Math.min(3, count)
   const baseEnergy = -(5 + costCount * 5)

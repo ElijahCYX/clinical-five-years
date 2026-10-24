@@ -1050,11 +1050,10 @@ export const VACATION_ACTIONS: ActionDef[] = [
     flavor: '给师兄跑胶、养细胞、洗瓶子，顺便看一眼真正的课题。',
     energy: -10,
     stress: 10,
-    money: 0,
-    research: 10,
+    money: -50,
     requires: 'lab',
-    lockedNote: '需要先选导师并进入实验室',
-    effectText: '科研进度 +10 · 精力 -10 · 压力 +10',
+    lockedNote: '需要先进入实验室',
+    effectText: '科研进度 +5 · 精力 -10 · 压力 +10 · 生活费 -50',
   },
 ]
 

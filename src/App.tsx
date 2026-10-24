@@ -2062,6 +2062,7 @@ function RealApp() {
     let english = game.english
     let composite = game.composite
     let research = game.research
+    let researchProgress = game.researchProgress
     let constitutionGrowth = game.constitutionGrowth
     let appearanceGrowth = game.appearanceGrowth
     let socialGrowth = game.socialGrowth
@@ -2080,6 +2081,13 @@ function RealApp() {
       english += action.english ?? 0
       composite += action.composite ?? 0
       research += action.research ?? 0
+      if (
+        action.id === 'vacLab' &&
+        game.researchStarted &&
+        !game.researchPublished
+      ) {
+        researchProgress = clamp(researchProgress + 5, 0, 100)
+      }
       if (action.growth === 'constitution') {
         constitutionGrowth += action.growthAmount ?? 0
       }
@@ -2111,6 +2119,27 @@ function RealApp() {
     const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })
     const isLastWeek = game.vacation.week >= game.vacation.totalWeeks
+    const vacationPublished =
+      game.researchStarted &&
+      !game.researchPublished &&
+      researchProgress >= 100
+    const vacationJournal = vacationPublished
+      ? game.mentorProfileId && MENTOR_BY_ID[game.mentorProfileId]
+        ? MENTOR_BY_ID[game.mentorProfileId].journals[
+            Math.floor(
+              Math.random() * MENTOR_BY_ID[game.mentorProfileId].journals.length,
+            )
+          ] ?? '待定期刊'
+        : '待定期刊'
+      : game.researchJournal
+    if (vacationPublished) {
+      showResearchNotice({
+        kind: 'published',
+        title: '论文发表',
+        text: '假期里的实验室没有组会，但论文还是悄悄见刊了。导师在群里发了一个很克制的“恭喜”，你看着屏幕，觉得这个假期突然有了重量。',
+        journal: vacationJournal ?? '待定期刊',
+      })
+    }
     const base: GameState = {
       ...game,
       player: { ...player, attrs: grown.attrs },
@@ -2121,6 +2150,9 @@ function RealApp() {
       english,
       composite,
       research,
+      researchProgress,
+      researchPublished: game.researchPublished || vacationPublished,
+      researchJournal: vacationJournal,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,
