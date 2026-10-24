@@ -402,6 +402,18 @@ export const ACTIONS: ActionDef[] = [
     study: true,
   },
   {
+    id: 'electiveHomework',
+    no: '01B',
+    name: '小组作业 / 选修课程',
+    en: 'ELECTIVE WORK',
+    category: '学习',
+    flavor: '把选修课的小组作业和展示材料补一补。',
+    energy: -8,
+    stress: 3,
+    money: 0,
+    effectText: '非思政选修准备度 +20 · 思政选修准备度 +15 · 精力 -8 · 压力 +3',
+  },
+  {
     id: 'research',
     no: '02',
     name: '科研相关',

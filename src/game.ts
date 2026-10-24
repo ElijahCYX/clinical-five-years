@@ -626,6 +626,13 @@ export function simulateWeek(state: GameState): WeekSimulation {
       (action.id === 'social' && state.openingTalents.includes('socialBeast') ? 1 : 0)
     research += action.research ?? 0
     kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
+    if (action.id === 'electiveHomework') {
+      for (const course of state.season.courses) {
+        if (!course.electiveType) continue
+        const gain = course.electiveType === 'politics' ? 15 : 20
+        prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
+      }
+    }
     if (action.study) {
       studyCount += 1
       const nominal = Object.fromEntries(

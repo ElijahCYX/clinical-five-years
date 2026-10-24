@@ -18,6 +18,7 @@ import { PlayerRail } from './PlayerRail'
 
 const VISIBLE_ACTIONS = [
   'library',
+  'electiveHomework',
   'research',
   'club',
   'rest',
@@ -118,6 +119,12 @@ export function WeekScreen({
     : VISIBLE_ACTIONS
 
   const lockReason = (action: ActionDef): string | null => {
+    if (
+      action.id === 'electiveHomework' &&
+      !state.season.courses.some((course) => course.electiveType)
+    ) {
+      return '本学期没有选修课程'
+    }
     if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'partner') return action.lockedNote ?? '尚未解锁'
