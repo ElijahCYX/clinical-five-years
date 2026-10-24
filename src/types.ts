@@ -510,6 +510,8 @@ export interface GameState {
   researchProgress: number
   researchPublished: boolean
   researchJournal: string | null
+  publishedPapers: number
+  awaitingNextProject: boolean
   researchStarted: boolean
   activeHypothesisId: string | null
   activeHypothesisTitle: string | null

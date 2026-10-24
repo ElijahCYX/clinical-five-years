@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ACTION_BY_ID,
   CET,
@@ -123,8 +123,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v30'
+const SAVE_KEY = 'clinical-five-years-save-v31'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v30',
   'clinical-five-years-save-v29',
   'clinical-five-years-save-v28',
   'clinical-five-years-save-v27',
@@ -184,6 +185,8 @@ function readSave(): GameState | null {
       researchProgress: game.researchProgress ?? 0,
       researchPublished: game.researchPublished ?? false,
       researchJournal: game.researchJournal ?? null,
+      publishedPapers: game.publishedPapers ?? 0,
+      awaitingNextProject: game.awaitingNextProject ?? false,
       researchStarted: game.researchStarted ?? false,
       activeHypothesisId: game.activeHypothesisId ?? null,
       activeHypothesisTitle: game.activeHypothesisTitle ?? null,
@@ -495,6 +498,26 @@ function RealApp() {
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
   const [whoamiReturn, setWhoamiReturn] = useState<View>('week')
   const [whoisReturn, setWhoisReturn] = useState<View>('week')
+  const nextProjectPromptRef = useRef('')
+  const publicationNoticeOpenRef = useRef(false)
+  const [noticeTick, setNoticeTick] = useState(0)
+
+  const openPublicationNotice = (
+    journal: string,
+    text: string,
+  ) => {
+    publicationNoticeOpenRef.current = true
+    showResearchNotice({
+      kind: 'published',
+      title: '论文发表',
+      text,
+      journal,
+      onAcknowledge: () => {
+        publicationNoticeOpenRef.current = false
+        setNoticeTick((value) => value + 1)
+      },
+    })
+  }
 
   useEffect(() => {
     setHasSave(Boolean(readSave()))
@@ -528,6 +551,66 @@ function RealApp() {
 
   useEffect(() => {
     if (!game || view !== 'week') return
+
+    if (game.awaitingNextProject) {
+      if (publicationNoticeOpenRef.current) return
+      const promptKey = `${game.season.id}-w${game.week}`
+      if (nextProjectPromptRef.current !== promptKey) {
+        nextProjectPromptRef.current = promptKey
+        const hypothesis = game.mentorProfileId
+          ? pickHypothesis(game.mentorProfileId)
+          : null
+        if (hypothesis) {
+          const currentAbsoluteWeek = absoluteWeek(game)
+          showResearchNotice({
+            kind: 'idea',
+            title: '导师的新课题',
+            text: `${game.relationships.find((relation) => relation.kind === 'mentor')?.name ?? '导师'}把一篇新的开题提纲发给你：“上一篇已经见刊了，这个方向我想让你接着做。第二篇，敢不敢接？”`,
+            choices: [
+              {
+                label: '接取新课题',
+                primary: true,
+                onClick: () => {
+                  setGame((previous) => {
+                    if (!previous) return previous
+                    const updated: GameState = {
+                      ...previous,
+                      awaitingNextProject: false,
+                      researchStarted: true,
+                      researchPublished: false,
+                      researchProgress: 0,
+                      researchJournal: null,
+                      activeHypothesisId: hypothesis.id,
+                      activeHypothesisTitle: hypothesis.title,
+                      lastResearchWeek: currentAbsoluteWeek,
+                      lastResearchWarningWeek: currentAbsoluteWeek,
+                    }
+                    persist(updated)
+                    return updated
+                  })
+                },
+              },
+              {
+                label: '暂时不接',
+                onClick: () => {
+                  setGame((previous) => {
+                    if (!previous) return previous
+                    const updated: GameState = {
+                      ...previous,
+                      awaitingNextProject: false,
+                    }
+                    persist(updated)
+                    return updated
+                  })
+                },
+              },
+            ],
+          })
+        }
+      }
+      return
+    }
+
     if (
       game.pendingEvent ||
       game.pendingConfession ||
@@ -859,7 +942,7 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
-  }, [game, view])
+  }, [game, view, noticeTick])
 
   useEffect(() => {
     if (
@@ -1297,6 +1380,8 @@ function RealApp() {
             ...next,
             researchPublished: true,
             researchJournal: journal,
+            publishedPapers: (current.publishedPapers ?? 0) + 1,
+            awaitingNextProject: true,
           }
           return {
             next,
@@ -1361,12 +1446,10 @@ function RealApp() {
     setGame(next)
     persist(next)
     if (publication) {
-      showResearchNotice({
-        kind: 'published',
-        title: '论文发表',
-        text: '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
-        journal: publication.journal,
-      })
+      openPublicationNotice(
+        publication.journal,
+        '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+      )
     }
     return `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`
   }
@@ -1379,12 +1462,10 @@ function RealApp() {
     setGame(outcome.next)
     persist(outcome.next)
     if (outcome.publication) {
-      showResearchNotice({
-        kind: 'published',
-        title: '论文发表',
-        text: '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
-        journal: outcome.publication.journal,
-      })
+      openPublicationNotice(
+        outcome.publication.journal,
+        '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+      )
     }
     return outcome.message
   }
@@ -1616,6 +1697,10 @@ function RealApp() {
       researchProgress,
       researchPublished: game.researchPublished || publishedNow,
       researchJournal: publishedJournal,
+      publishedPapers:
+        game.publishedPapers + (publishedNow ? 1 : 0),
+      awaitingNextProject:
+        game.awaitingNextProject || publishedNow,
       lastResearchWeek:
         game.researchStarted && game.selected.includes('research')
           ? absoluteWeek(game)
@@ -1632,14 +1717,10 @@ function RealApp() {
       isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
     )
     if (publishedNow) {
-      showResearchNotice({
-        kind: 'published',
-        title: '论文发表',
-        text: `你的论文被正式接收了。导师在群里发了一个很克制的“恭喜”，随后把组会 PPT 的最后一页换成了你的文章截图。你盯着屏幕看了很久，决定今晚奖励自己一顿食堂小炒。`,
-        journal:
-          publishedJournal ??
-          '待定期刊',
-      })
+      openPublicationNotice(
+        publishedJournal ?? '待定期刊',
+        '你的论文被正式接收了。导师在群里发了一个很克制的“恭喜”，随后把组会 PPT 的最后一页换成了你的文章截图。你盯着屏幕看了很久，决定今晚奖励自己一顿食堂小炒。',
+      )
     }
   }
 
@@ -2287,12 +2368,10 @@ function RealApp() {
         : '待定期刊'
       : game.researchJournal
     if (vacationPublished) {
-      showResearchNotice({
-        kind: 'published',
-        title: '论文发表',
-        text: '假期里的实验室没有组会，但论文还是悄悄见刊了。导师在群里发了一个很克制的“恭喜”，你看着屏幕，觉得这个假期突然有了重量。',
-        journal: vacationJournal ?? '待定期刊',
-      })
+      openPublicationNotice(
+        vacationJournal ?? '待定期刊',
+        '假期里的实验室没有组会，但论文还是悄悄见刊了。导师在群里发了一个很克制的“恭喜”，你看着屏幕，觉得这个假期突然有了重量。',
+      )
     }
     const base: GameState = {
       ...game,
@@ -2307,6 +2386,10 @@ function RealApp() {
       researchProgress,
       researchPublished: game.researchPublished || vacationPublished,
       researchJournal: vacationJournal,
+      publishedPapers:
+        game.publishedPapers + (vacationPublished ? 1 : 0),
+      awaitingNextProject:
+        game.awaitingNextProject || vacationPublished,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,

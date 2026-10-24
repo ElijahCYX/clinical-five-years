@@ -40,7 +40,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
   const previousAward = bestAward(state.yearRecords)
   const paperCount = Math.max(
     Math.floor(state.research / 100),
-    state.researchPublished ? 1 : 0,
+    state.publishedPapers,
   )
   const openingTalents = state.openingTalents
     .map((id) => OPENING_TALENT_BY_ID[id])

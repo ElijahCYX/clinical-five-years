@@ -364,6 +364,8 @@ export function newGameState(player: Player): GameState {
     researchProgress: 0,
     researchPublished: false,
     researchJournal: null,
+    publishedPapers: 0,
+    awaitingNextProject: false,
     researchStarted: false,
     activeHypothesisId: null,
     activeHypothesisTitle: null,
