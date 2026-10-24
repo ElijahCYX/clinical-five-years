@@ -14,6 +14,18 @@ await page.locator('.field input').first().fill('三年测试'); await page.loca
 if (await page.locator('.talent-select-screen').count()) { await page.locator('.opening-talent-card').first().click(); await page.locator('.talent-select-footer .btn-primary').click(); await wait(400) }
 let steps=0
 while (steps++ < 200) {
+  if (await page.locator('.elective-screen').count()) {
+    console.log('ELECTIVE');
+    if (await page.locator('.elective-card').count()) {
+      await page.locator('.elective-card').first().click();
+      await wait(100);
+    }
+    await page.locator('.elective-footer .btn-primary').click();
+    await wait(250);
+    await page.locator('.elective-result .btn-primary').click();
+    await wait(350);
+    continue;
+  }
   if (await page.locator('.plan-screen').count()) { const planTitle=(await page.locator('.plan-head h1').innerText()).replace(/\n/g,' '); await choosePlan(); console.log('PLAN', planTitle); continue }
   if (await page.locator('.prep-screen').count()) { const prepTitle=await page.locator('.prep-head .page-title').innerText(); await prep(); console.log('PREP', prepTitle); continue }
   if (await page.locator('.result-screen').count()) {

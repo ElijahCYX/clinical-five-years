@@ -38,6 +38,7 @@ export type ScreenName =
   | 'create'
   | 'talentSelect'
   | 'talentEvent'
+  | 'electiveSelect'
   | 'plan'
   | 'week'
   | 'prep'
@@ -136,6 +137,8 @@ export interface ActionDef {
   lockedNote?: string
 }
 
+export type ElectiveType = 'water' | 'interest' | 'group'
+
 export interface Course {
   id: string
   name: string
@@ -143,6 +146,8 @@ export interface Course {
   credits: number
   memory: SkillTier
   comprehension: SkillTier
+  electiveType?: ElectiveType
+  selectionChance?: number
   /** 补考课程：继承原课程的学分与原始绩点，最终绩点取两次平均。 */
   makeup?: boolean
   originalGpa?: number
@@ -297,6 +302,11 @@ export interface GameState {
   highPressureDebuff: boolean
   lowEnergyAlert: boolean
   stressRewardedCourses: string[]
+  electiveHistory: string[]
+  electiveCredits: number
+  electiveOffers: string[]
+  electiveSelectionDone: boolean
+  pendingElectiveRetakes: string[]
   openingTalents: OpeningTalentId[]
   mentorContactUnlocked: boolean
   roommateBond: boolean
@@ -317,6 +327,7 @@ export type DemoName =
   | 'create'
   | 'talentSelect'
   | 'talentEvent'
+  | 'electiveSelect'
   | 'plan'
   | 'week'
   | 'prep'

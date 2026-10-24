@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ACTION_BY_ID,
   CET,
+  ELECTIVE_COURSE_BY_ID,
   HABIT_BY_ID,
   SEASONS,
   VACATION_ACTION_BY_ID,
@@ -25,6 +26,7 @@ import {
   scholarshipFor,
   effectiveEnergyCost,
   estimateRange,
+  generateElectiveOffers,
   estimateScore,
   prepGainMultiplier,
   stressReliefForScore,
@@ -78,7 +80,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v17'
+const SAVE_KEY = 'clinical-five-years-save-v18'
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -285,8 +287,12 @@ function settlePe(base: GameState): GameState {
 function prepareSeason(base: GameState, index: number): GameState {
   const baseSeason = SEASONS[index]
   const pending = base.pendingMakeups ?? []
-  const season = pending.length > 0
-    ? { ...baseSeason, courses: [...baseSeason.courses, ...pending] }
+  const retakeCourses = (base.pendingElectiveRetakes ?? [])
+    .map((id) => ELECTIVE_COURSE_BY_ID[id])
+    .filter(Boolean)
+  const extraCourses = [...pending, ...retakeCourses]
+  const season = extraCourses.length > 0
+    ? { ...baseSeason, courses: [...baseSeason.courses, ...extraCourses] }
     : baseSeason
   return {
     ...base,
@@ -296,6 +302,15 @@ function prepareSeason(base: GameState, index: number): GameState {
     plan: null,
     habits: [],
     weekFocus: null,
+    electiveOffers:
+      index < 12
+        ? generateElectiveOffers(
+            base.electiveHistory ?? [],
+            base.pendingElectiveRetakes ?? [],
+          )
+        : [],
+    electiveSelectionDone: index >= 12,
+    pendingElectiveRetakes: [],
     week: 1,
     money: base.money + (base.player ? backgroundAllowance(base.player) : 0),
     prep: Object.fromEntries(season.courses.map((course) => [course.id, 0])),
@@ -484,6 +499,25 @@ function RealApp() {
     commit({ ...game, screen: 'plan' }, 'plan')
   }
 
+  const confirmElectives = (acceptedIds: string[]) => {
+    if (!game) return
+    const electiveCourses = acceptedIds
+      .map((id) => ELECTIVE_COURSE_BY_ID[id])
+      .filter(Boolean)
+    const next: GameState = {
+      ...game,
+      screen: 'plan',
+      season: {
+        ...game.season,
+        courses: [...game.season.courses, ...electiveCourses],
+      },
+      electiveHistory: [...new Set([...game.electiveHistory, ...acceptedIds])],
+      electiveOffers: [],
+      electiveSelectionDone: true,
+    }
+    commit(next, 'plan')
+  }
+
   const handlePlan = (plan: PlanId, habits: HabitId[]) => {
     if (!game) return
     const next: GameState = {
@@ -523,6 +557,24 @@ function RealApp() {
     setView('whoami')
   }
 
+  const abandonElective = (courseId: string) => {
+    if (!game) return
+    const target = game.results.find((result) => result.course.id === courseId)
+    if (!target || !target.course.electiveType) return
+    if (target.course.electiveType === 'group' || target.score >= 60) return
+    const next: GameState = {
+      ...game,
+      results: game.results.filter((result) => result.course.id !== courseId),
+      season: {
+        ...game.season,
+        courses: game.season.courses.filter((course) => course.id !== courseId),
+      },
+      electiveHistory: game.electiveHistory.filter((id) => id !== courseId),
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const chooseWeekFocus = (focus: string, addLibrary = false) => {
     if (!game) return
     const selected =
@@ -556,7 +608,7 @@ function RealApp() {
       sim.attrs,
       sim.constitutionGrowth,
       sim.appearanceGrowth,
-      game.socialGrowth,
+      sim.socialGrowth,
     )
     const prepTotal = Object.values(sim.prep).reduce((sum, value) => sum + value, 0)
     const log = buildWeekLog(game, {
@@ -639,6 +691,7 @@ function RealApp() {
       if (game.examAllNighter) {
         rawScore *= game.openingTalents.includes('caffeineImmune') ? 0.975 : 0.95
       }
+      if (course.electiveType === 'interest') rawScore += 3
       const score = applyScoreRescue(
         game,
         Math.max(0, Math.min(cap, Math.min(100, Math.trunc(rawScore)))),
@@ -667,23 +720,45 @@ function RealApp() {
 
     const passed = results.filter((result) => result.score >= 60)
     const failed = results.filter((result) => result.score < 60)
-    const creditGain = passed.reduce((sum, result) => sum + result.course.credits, 0)
-    const pointGain = passed.reduce(
+    const regularPassed = passed.filter((result) => !result.course.electiveType)
+    const electivePassed = passed.filter((result) => result.course.electiveType)
+    const regularCredits = regularPassed.reduce(
+      (sum, result) => sum + result.course.credits,
+      0,
+    )
+    const regularPoints = regularPassed.reduce(
       (sum, result) => sum + result.course.credits * result.gpa,
       0,
     )
-    const pendingMakeups = failed.map((result) =>
-      result.course.makeup
-        ? result.course
-        : {
-            ...result.course,
-            id: `makeup-${result.course.id}-${game.seasonIndex}`,
-            name: result.course.name,
-            makeup: true,
-            originalGpa: result.gpa,
-            originalScore: result.score,
-          },
-    )
+    let electiveCreditRoom = Math.max(0, 10 - (game.electiveCredits ?? 0))
+    let electiveCreditsGain = 0
+    let electivePointsGain = 0
+    for (const result of electivePassed) {
+      const counted = Math.min(result.course.credits, electiveCreditRoom)
+      if (counted <= 0) continue
+      electiveCreditsGain += counted
+      electivePointsGain += counted * result.gpa
+      electiveCreditRoom -= counted
+    }
+    const creditGain = regularCredits + electiveCreditsGain
+    const pointGain = regularPoints + electivePointsGain
+    const pendingMakeups = failed
+      .filter((result) => !result.course.electiveType)
+      .map((result) =>
+        result.course.makeup
+          ? result.course
+          : {
+              ...result.course,
+              id: `makeup-${result.course.id}-${game.seasonIndex}`,
+              name: result.course.name,
+              makeup: true,
+              originalGpa: result.gpa,
+              originalScore: result.score,
+            },
+      )
+    const failedGroupElectives = failed
+      .filter((result) => result.course.electiveType === 'group')
+      .map((result) => result.course.id)
     const next: GameState = {
       ...game,
       screen: 'result',
@@ -698,6 +773,13 @@ function RealApp() {
       yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
+      electiveCredits: Math.min(
+        10,
+        (game.electiveCredits ?? 0) + electiveCreditsGain,
+      ),
+      pendingElectiveRetakes: [
+        ...new Set([...game.pendingElectiveRetakes, ...failedGroupElectives]),
+      ],
       stressRewardedCourses: rewardedCourses,
       selected: [],
       finalNote:
@@ -1306,6 +1388,8 @@ function RealApp() {
         initialPlan={game.plan}
         initialHabits={game.habits}
         courses={game.season.courses}
+        state={game}
+        onConfirmElectives={confirmElectives}
         onBack={() => setView('create')}
         onConfirm={handlePlan}
       />
@@ -1347,6 +1431,7 @@ function RealApp() {
         nextLabel={resultNextLabel(game.seasonIndex)}
         onContinue={handleResultContinue}
         onSave={saveNow}
+        onAbandonElective={abandonElective}
         onTitle={goTitle}
       />
     )

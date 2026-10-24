@@ -7,6 +7,7 @@ interface ResultScreenProps {
   nextLabel: string
   onContinue: () => void
   onSave?: () => void
+  onAbandonElective?: (courseId: string) => void
   onTitle?: () => void
 }
 
@@ -15,6 +16,7 @@ export function ResultScreen({
   nextLabel,
   onContinue,
   onSave,
+  onAbandonElective,
   onTitle,
 }: ResultScreenProps) {
   const player = state.player
@@ -136,6 +138,20 @@ export function ResultScreen({
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
                       </span>
+                      {result.course.electiveType &&
+                        result.course.electiveType !== 'group' &&
+                        result.score < 60 && (
+                          <button
+                            type="button"
+                            className="abandon-elective-btn"
+                            onClick={() => onAbandonElective?.(result.course.id)}
+                          >
+                            放弃选修
+                          </button>
+                        )}
+                      {result.course.electiveType === 'group' && result.score < 60 && (
+                        <span className="elective-retake-tag">小组课挂科 · 下学期自动重修</span>
+                      )}
                     </td>
                     <td>{result.course.examType}</td>
                     <td>{result.course.credits}</td>

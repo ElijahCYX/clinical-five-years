@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HABITS, PLANS, SCHOOL_NAME } from '../data'
-import type { Course, HabitId, PlanId, Player } from '../types'
+import type { Course, GameState, HabitId, PlanId, Player } from '../types'
+import { ElectiveSelectionScreen } from './ElectiveSelection'
 import { courseDifficulty } from '../game'
 import { Eyebrow, Footer, SectionLabel, TopBar } from '../ui'
 
@@ -10,6 +11,8 @@ interface PlanScreenProps {
   initialPlan?: PlanId | null
   initialHabits?: HabitId[]
   courses?: Course[]
+  state?: GameState
+  onConfirmElectives?: (acceptedIds: string[]) => void
   onBack?: () => void
   onConfirm: (plan: PlanId, habits: HabitId[]) => void
 }
@@ -20,11 +23,23 @@ export function PlanScreen({
   initialPlan = null,
   initialHabits = [],
   courses = [],
+  state,
+  onConfirmElectives,
   onBack,
   onConfirm,
 }: PlanScreenProps) {
   const [plan, setPlan] = useState<PlanId | null>(initialPlan)
   const [habits, setHabits] = useState<HabitId[]>(initialHabits)
+
+  if (state && !state.electiveSelectionDone && onConfirmElectives) {
+    return (
+      <ElectiveSelectionScreen
+        state={state}
+        onConfirm={onConfirmElectives}
+        onBack={onBack}
+      />
+    )
+  }
 
   const canStart = plan !== null && habits.length === 2
 

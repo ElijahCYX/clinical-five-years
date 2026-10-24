@@ -3,6 +3,7 @@ import {
   ATTRS,
   BACKGROUND_BY_ID,
   CET,
+  ELECTIVE_COURSES,
   FIRST_SEASON,
   HABIT_BY_ID,
   PLAN_BY_ID,
@@ -257,6 +258,20 @@ export function signed(value: number): string {
   return value > 0 ? `+${value}` : `${value}`
 }
 
+export function generateElectiveOffers(
+  history: string[],
+  retakes: string[],
+): string[] {
+  const excluded = new Set([...history, ...retakes])
+  const pool = ELECTIVE_COURSES.filter((course) => !excluded.has(course.id))
+  const picked: string[] = []
+  while (picked.length < 3 && pool.length > 0) {
+    const index = Math.floor(Math.random() * pool.length)
+    picked.push(pool.splice(index, 1)[0].id)
+  }
+  return picked
+}
+
 export function newGameState(player: Player): GameState {
   return {
     screen: 'plan',
@@ -305,6 +320,11 @@ export function newGameState(player: Player): GameState {
     highPressureDebuff: false,
     lowEnergyAlert: false,
     stressRewardedCourses: [],
+    electiveHistory: [],
+    electiveCredits: 0,
+    electiveOffers: generateElectiveOffers([], []),
+    electiveSelectionDone: false,
+    pendingElectiveRetakes: [],
     openingTalents: [],
     mentorContactUnlocked: false,
     roommateBond: false,
@@ -442,6 +462,7 @@ export function coursePrepTalentMultiplier(
   state: Pick<GameState, 'openingTalents'>,
   course: Course,
 ): number {
+  if (course.electiveType === 'water') return 1.25
   return state.openingTalents.includes('memoryBread') && course.memory === '高' ? 1.2 : 1
 }
 
@@ -539,6 +560,7 @@ export interface WeekSimulation {
   kaoyanPrep: number
   constitutionGrowth: number
   appearanceGrowth: number
+  socialGrowth: number
   attrs: Record<AttrKey, number>
   studyCount: number
   habitApplied: boolean
@@ -568,6 +590,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
+  let socialGrowth = state.socialGrowth
   const attrs = { ...player.attrs }
   const prep = { ...state.prep }
   let studyCount = 0
@@ -664,6 +687,17 @@ export function simulateWeek(state: GameState): WeekSimulation {
     constitutionGrowth = Math.max(0, constitutionGrowth - 5)
   }
 
+  for (const course of state.season.courses) {
+    if (course.electiveType === 'interest') {
+      stress -= 5
+      energy += 5
+    }
+    if (course.electiveType === 'group') {
+      energy -= 5
+      socialGrowth += 10
+    }
+  }
+
   energy = clamp(energy + 15 - planCost, 0, 100)
   stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
   money = Math.max(0, money - WEEKLY_FIXED_COST)
@@ -679,6 +713,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     kaoyanPrep,
     constitutionGrowth,
     appearanceGrowth,
+    socialGrowth,
     attrs,
     studyCount,
     habitApplied,
@@ -741,12 +776,18 @@ export function kaoyanScoreFor(state: GameState): number {
   )
 }
 
-export const GRADUATION_CREDITS = 163
+export const GRADUATION_CREDITS = 184
+export const ELECTIVE_CREDITS_REQUIRED = 10
 
 export function graduationReasons(state: GameState): string[] {
   const reasons: string[] = []
   if (state.cumulativeCredits < GRADUATION_CREDITS) {
     reasons.push(`总学分不足：${state.cumulativeCredits} / ${GRADUATION_CREDITS}`)
+  }
+  if (state.electiveCredits < ELECTIVE_CREDITS_REQUIRED) {
+    reasons.push(
+      `选修课学分不足：${state.electiveCredits} / ${ELECTIVE_CREDITS_REQUIRED}`,
+    )
   }
   if ((state.cet6Score ?? 0) < 550) {
     reasons.push(`CET-6 未达到 550：${state.cet6Score ?? '未参加'}`)
