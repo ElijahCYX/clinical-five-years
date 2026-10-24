@@ -351,6 +351,18 @@ export interface DinnerPlan {
   declinedIds: string[]
   cost: number
   summary: string[]
+  committed?: boolean
+}
+
+export interface DinnerInviteResult {
+  id: string
+  accepted: boolean
+  reason?: string
+}
+
+export interface DinnerInvites {
+  weekKey: string
+  results: DinnerInviteResult[]
 }
 
 export type CourseCategory = 'professional' | 'politics' | 'elective'
@@ -488,6 +500,7 @@ export interface GameState {
   socialModuleUnlocked: boolean
   relationships: Relationship[]
   dinnerPlan: DinnerPlan | null
+  dinnerInvites: DinnerInvites | null
   romanceUnlocked: boolean
   courseRecords: CourseRecord[]
   romanceRisk: number

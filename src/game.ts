@@ -354,6 +354,7 @@ export function newGameState(player: Player): GameState {
     socialModuleUnlocked: false,
     relationships: [],
     dinnerPlan: null,
+    dinnerInvites: null,
     romanceUnlocked: false,
     courseRecords: [],
     romanceRisk: 0,
@@ -681,6 +682,9 @@ export function simulateWeek(state: GameState): WeekSimulation {
       const costs = libraryCosts(state)
       energy += costs.energy
       stress += costs.stress
+    } else if (action.id === 'social' && state.dinnerPlan?.committed) {
+      // 吃饭收益在确认「就这顿」时已立即结算，周结算不重复计算。
+      stress += 0
     } else if (
       action.id === 'research' &&
       state.labEntered &&
@@ -693,7 +697,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
       stress += action.stress
     }
     money += action.money
-    if (action.id === 'social') {
+    if (action.id === 'social' && !state.dinnerPlan?.committed) {
       money -= state.dinnerPlan?.cost ?? 50
     }
     english +=

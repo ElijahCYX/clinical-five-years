@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Relationship } from '../types'
+import type { DinnerInviteResult, Relationship } from '../types'
 import {
   dinnerAttendanceChance,
   dinnerCost,
@@ -12,19 +12,19 @@ import { Pill } from '../ui'
 interface DinnerModalProps {
   relationships: Relationship[]
   money: number
+  initialResults?: DinnerInviteResult[] | null
+  onSaveResults?: (results: DinnerInviteResult[]) => void
   onConfirm: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onCancel: () => void
 }
 
-interface DinnerResult {
-  id: string
-  accepted: boolean
-  reason?: string
-}
+type DinnerResult = DinnerInviteResult
 
 export function DinnerModal({
   relationships,
   money,
+  initialResults = null,
+  onSaveResults,
   onConfirm,
   onCancel,
 }: DinnerModalProps) {
@@ -32,8 +32,12 @@ export function DinnerModal({
     () => relationships.filter(isDinnerFriend),
     [relationships],
   )
-  const [selected, setSelected] = useState<string[]>([])
-  const [results, setResults] = useState<DinnerResult[] | null>(null)
+  const [selected, setSelected] = useState<string[]>(
+    initialResults?.map((item) => item.id) ?? [],
+  )
+  const [results, setResults] = useState<DinnerResult[] | null>(
+    initialResults ?? null,
+  )
 
   useEffect(() => {
     document.body.classList.add('dinner-open')
@@ -65,6 +69,7 @@ export function DinnerModal({
       }
     })
     setResults(next)
+    onSaveResults?.(next)
   }
 
   return (
@@ -152,6 +157,7 @@ export function DinnerModal({
               <button
                 type="button"
                 className="btn btn-primary"
+                disabled={cost > money}
                 onClick={() =>
                   onConfirm(
                     accepted.map((item) => item.id),

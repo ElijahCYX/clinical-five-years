@@ -14,7 +14,7 @@ import {
   estimateRange,
   simulateWeek,
 } from '../game'
-import type { ActionDef, GameState } from '../types'
+import type { ActionDef, DinnerInviteResult, GameState } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
@@ -22,6 +22,7 @@ import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import {
+  currentWeekKey,
   isDinnerFriend,
   orientationLabel,
   patRemainingThisWeek,
@@ -54,6 +55,7 @@ interface WeekScreenProps {
   onOpenWhoAmI?: () => void
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
+  onSaveDinnerResults?: (results: DinnerInviteResult[]) => void
   onNpcConfession?: (accept: boolean) => void
   onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
@@ -69,6 +71,7 @@ export function WeekScreen({
   onOpenWhoAmI,
   onOpenTA,
   onArrangeDinner,
+  onSaveDinnerResults,
   onNpcConfession,
   onResolveConsumption,
   onSave,
@@ -139,7 +142,9 @@ export function WeekScreen({
     count: state.selected.filter((item) => item === id).length,
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
+  const dinnerCommitted = Boolean(state.dinnerPlan?.committed)
   const handleActionClick = (id: string) => {
+    if (id === 'social' && dinnerCommitted) return
     if (
       id === 'library' &&
       courses.length > 1 &&
@@ -805,15 +810,21 @@ export function WeekScreen({
                     const selectedCount = countOf(action.id)
                     const selected = selectedCount > 0
                     const disabled = Boolean(locked)
+                    const committed =
+                      action.id === 'social' && dinnerCommitted
                     return (
                       <button
                         key={action.id}
                         type="button"
                         className={`action-card ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
-                        }`}
-                        onClick={() => !disabled && handleActionClick(action.id)}
-                        disabled={disabled}
+                        } ${committed ? 'is-committed' : ''}`}
+                        onClick={() =>
+                          !disabled &&
+                          !committed &&
+                          handleActionClick(action.id)
+                        }
+                        disabled={disabled || committed}
                       >
                         <div className="action-meta">
                           <span>{action.category}</span>
@@ -838,6 +849,9 @@ export function WeekScreen({
                             <span className="action-selected">
                               已选{selectedCount > 1 ? ` ×${selectedCount}` : ''}
                             </span>
+                          )}
+                          {committed && (
+                            <span className="action-repeat">已约好 · 不可取消</span>
                           )}
                           {locked && <span className="action-locked">{locked}</span>}
                         </div>
@@ -1050,6 +1064,12 @@ export function WeekScreen({
         <DinnerModal
           relationships={state.relationships}
           money={state.money}
+          initialResults={
+            state.dinnerInvites?.weekKey === currentWeekKey(state)
+              ? state.dinnerInvites.results
+              : null
+          }
+          onSaveResults={onSaveDinnerResults}
           onCancel={() => setDinnerOpen(false)}
           onConfirm={(acceptedIds, declinedIds, cost) => {
             setDinnerOpen(false)

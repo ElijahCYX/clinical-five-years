@@ -51,6 +51,7 @@ import type {
   OpeningTalentId,
   PlanId,
   Player,
+  DinnerInviteResult,
   PostgradChoice,
   Relationship,
   ReviewChoice,
@@ -112,6 +113,7 @@ import {
   normalizeRelationships,
   adjustIntimacyDelta,
   applyFriendContactDecay,
+  currentWeekKey,
   gameDate,
   intimacyMultiplier,
   patRelationship,
@@ -121,8 +123,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v29'
+const SAVE_KEY = 'clinical-five-years-save-v30'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v29',
   'clinical-five-years-save-v28',
   'clinical-five-years-save-v27',
   'clinical-five-years-save-v26',
@@ -171,6 +174,7 @@ function readSave(): GameState | null {
             ? createInitialRelationships(game.player)
             : [],
       dinnerPlan: game.dinnerPlan ?? null,
+      dinnerInvites: game.dinnerInvites ?? null,
       romanceUnlocked: game.romanceUnlocked ?? false,
       courseRecords: game.courseRecords ?? [],
       romanceRisk: game.romanceRisk ?? 0,
@@ -1180,21 +1184,63 @@ function RealApp() {
     return `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`
   }
 
+  const saveDinnerResults = (results: DinnerInviteResult[]) => {
+    if (!game) return
+    const next: GameState = {
+      ...game,
+      dinnerInvites: { weekKey: currentWeekKey(game), results },
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const arrangeDinner = (
     acceptedIds: string[],
     declinedIds: string[],
     cost: number,
   ) => {
-    if (!game || game.selected.includes('social') || game.selected.length >= 2) {
+    if (
+      !game ||
+      game.selected.includes('social') ||
+      game.selected.length >= 2 ||
+      acceptedIds.length === 0 ||
+      cost > game.money
+    ) {
       return
     }
     const summary = acceptedIds
       .map((id) => game.relationships.find((relation) => relation.id === id)?.name)
       .filter(Boolean) as string[]
+    const dinnerIntimacyGain = Math.max(
+      1,
+      Math.floor(6 / acceptedIds.length),
+    )
     const next: GameState = {
       ...game,
       selected: [...game.selected, 'social'],
-      dinnerPlan: { acceptedIds, declinedIds, cost, summary },
+      energy: Math.min(100, game.energy + 8),
+      stress: Math.max(0, game.stress - 8),
+      money: game.money - cost,
+      dinnerPlan: {
+        acceptedIds,
+        declinedIds,
+        cost,
+        summary,
+        committed: true,
+      },
+      dinnerInvites: null,
+      relationships: game.relationships.map((relation) =>
+        acceptedIds.includes(relation.id)
+          ? revealMaybe({
+              ...relation,
+              intimacy: Math.min(
+                100,
+                relation.intimacy +
+                  adjustIntimacyDelta(game, relation, dinnerIntimacyGain),
+              ),
+            })
+          : relation,
+      ),
     }
     setGame(next)
     persist(next)
@@ -1438,6 +1484,7 @@ function RealApp() {
 
   const toggleAction = (id: string) => {
     if (!game) return
+    if (id === 'social' && game.dinnerPlan?.committed) return
     const next = toggleSelected(
       game,
       id,
@@ -1496,7 +1543,9 @@ function RealApp() {
       game.seasonIndex !== 19 &&
       game.week === 2 &&
       !game.cetEventDone
-    const dinnerAccepted = game.dinnerPlan?.acceptedIds ?? []
+    const dinnerAccepted = game.dinnerPlan?.committed
+      ? []
+      : game.dinnerPlan?.acceptedIds ?? []
     const dinnerIntimacyGain =
       dinnerAccepted.length > 0
         ? Math.max(1, Math.floor(6 / dinnerAccepted.length))
@@ -1546,6 +1595,7 @@ function RealApp() {
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
       relationships,
       dinnerPlan: null,
+      dinnerInvites: null,
       player: { ...player, attrs: grown.attrs },
       week: shouldPrepare ? 4 : game.week + 1,
       energy: sim.energy,
@@ -2563,6 +2613,7 @@ function RealApp() {
           onOpenWhoAmI={openWhoAmI}
           onOpenTA={openWhoIs}
           onArrangeDinner={arrangeDinner}
+          onSaveDinnerResults={saveDinnerResults}
           onNpcConfession={handleNpcConfession}
           onResolveConsumption={resolveConsumption}
           onSave={saveNow}

@@ -8977,3 +8977,16 @@ body.dinner-open {
     font-size: 8.5px;
   }
 }
+
+/* Dinner committed action cannot be removed or repeated. */
+.action-card.is-committed {
+  opacity: 1;
+  cursor: default;
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.action-card.is-committed:hover {
+  transform: none;
+  box-shadow: none;
+}

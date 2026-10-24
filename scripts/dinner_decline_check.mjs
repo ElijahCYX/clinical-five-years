@@ -1,0 +1,16 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1500,height:1200} })
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const s=g.newGameState(demo.demoPlayer);s.screen='week';s.seasonIndex=0;s.season=d.SEASONS[0];s.week=1;s.plan='B';s.habits=['timeManagement'];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.money=500;s.relationships=social.createInitialRelationships(demo.demoPlayer);s.seenRelationIds=s.relationships.map(r=>r.id);localStorage.setItem('clinical-five-years-save-v29',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400);await page.evaluate(()=>{Math.random=()=>0.99})
+await page.locator('.action-card',{hasText:'和朋友吃饭'}).click();await page.waitForTimeout(200)
+await page.locator('.dinner-person').nth(0).click();await page.locator('.dinner-person').nth(1).click();await page.locator('.dinner-footer .btn-primary',{hasText:'发出邀请'}).click();await page.waitForTimeout(300)
+console.log('declined text',(await page.locator('.dinner-modal').innerText()).slice(-250))
+// close via text button
+const close=page.locator('.dinner-footer .text-btn',{hasText:'关闭'});console.log('close button',await close.count());if(await close.count())await close.click();await page.waitForTimeout(200)
+let s=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v29')).game);console.log('saved declines',s.dinnerInvites?.results?.map(r=>r.accepted))
+await page.locator('.action-card',{hasText:'和朋友吃饭'}).click();await page.waitForTimeout(250)
+console.log('reopen results',await page.locator('.dinner-person').allInnerTexts(),'disabled',await page.locator('.dinner-person').first().isDisabled())
+console.log('selected?',await page.locator('.dinner-person.is-selected').count())
+await browser.close()
