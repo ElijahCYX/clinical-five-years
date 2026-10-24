@@ -413,10 +413,12 @@ export function romanceRiskAfterWeek(state: GameState): number {
     (sum, relation) => sum + Math.max(0, relation.intimacy) / 100,
     0,
   )
-  const increment = Math.max(
+  // 被发现概率整体精确翻倍：原增长值 × 2。
+  const baseIncrement = Math.max(
     3,
     Math.round(2 + (partners.length - 2) * 3 + heat * 4),
   )
+  const increment = baseIncrement * 2
   return Math.min(95, (state.romanceRisk ?? 0) + increment)
 }
 
