@@ -36,6 +36,9 @@ import {
   WEEKLY_FIXED_COST,
   applyOpeningTalent,
   applyWeeklyOpeningTalent,
+  applyScoreRescue,
+  coursePrepTalentMultiplier,
+  examReviewTalentMultiplier,
 } from './game'
 import type {
   AttrKey,
@@ -595,9 +598,13 @@ function RealApp() {
     if (!game || !game.plan || !game.player) return
     const effect = getReviewEffect(choice, game.season.courses, game.player.attrs, game.plan)
     const gains = Object.fromEntries(
-      Object.entries(effect.gains).map(([id, gain]) => [
-        id,
-        gain * prepGainMultiplier(game) * (game.examEnglishPrep ? 0.9 : 1),
+      game.season.courses.map((course) => [
+        course.id,
+        (effect.gains[course.id] ?? 0) *
+          prepGainMultiplier(game) *
+          examReviewTalentMultiplier(game) *
+          coursePrepTalentMultiplier(game, course) *
+          (game.examEnglishPrep ? 0.9 : 1),
       ]),
     )
     const energy = clamp(
@@ -621,8 +628,13 @@ function RealApp() {
         38 +
         prep[course.id] * 0.55 +
         (Math.random() * 2 * effect.variance - effect.variance)
-      if (game.examAllNighter) rawScore *= 0.95
-      const score = Math.max(0, Math.min(cap, Math.min(100, Math.trunc(rawScore))))
+      if (game.examAllNighter) {
+        rawScore *= game.openingTalent === 'caffeineImmune' ? 0.975 : 0.95
+      }
+      const score = applyScoreRescue(
+        game,
+        Math.max(0, Math.min(cap, Math.min(100, Math.trunc(rawScore)))),
+      )
       const rawGpa = gpaFromScore(score)
       const gpa = course.makeup
         ? score >= 60
@@ -695,7 +707,11 @@ function RealApp() {
       ...game,
       money: game.money - 10,
       energy: clamp(game.energy + 10, 0, 100),
-      stress: clamp(game.stress + 2, 0, 100),
+      stress: clamp(
+        game.stress + (game.openingTalent === 'caffeineImmune' ? 0 : 2),
+        0,
+        100,
+      ),
       examCoffee: true,
     }
     setGame(next)

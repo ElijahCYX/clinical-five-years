@@ -97,6 +97,13 @@ export function WeekScreen({
         `英语进度 +${englishGainForMemory(player.attrs.memory)}`,
       )
     }
+    if (action.id === 'social' && state.openingTalent === 'socialBeast') {
+      return energyEffectText(
+        action.effectText.replace('综测 +1', '综测 +2'),
+        action.energy,
+        state.energy,
+      )
+    }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
   const preview = state.selected.length > 0 ? simulateWeek(state) : null

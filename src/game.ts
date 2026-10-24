@@ -332,7 +332,7 @@ export function getReviewEffect(
       energy = -10
       stress = 5
       variance = 1
-      scoreCap = 90
+      scoreCap = 95
     } else if (choice === 'rest') {
       gains[course.id] = 4
       energy = 20
@@ -362,7 +362,7 @@ export function getReviewEffect(
     energy = -10
     stress = 5
     variance = 1
-    scoreCap = 90
+    scoreCap = 95
   } else {
     for (const course of courses) gains[course.id] = 4
     energy = 20
@@ -410,6 +410,39 @@ export function cetScore(
   return clamp(Math.round(score), floor, CET.total)
 }
 
+export function examReviewTalentMultiplier(
+  state: Pick<GameState, 'openingTalent'>,
+): number {
+  return state.openingTalent === 'cramKing' ? 1.1 : 1
+}
+
+export function coursePrepTalentMultiplier(
+  state: Pick<GameState, 'openingTalent'>,
+  course: Course,
+): number {
+  return state.openingTalent === 'memoryBread' && course.memory === '高' ? 1.2 : 1
+}
+
+export function kaoyanPrepMultiplier(
+  state: Pick<GameState, 'openingTalent'>,
+): number {
+  return state.openingTalent === 'kaoyanChosen' ? 1.2 : 1
+}
+
+export function applyScoreRescue(
+  state: Pick<GameState, 'openingTalent'>,
+  score: number,
+): number {
+  if (
+    state.openingTalent === 'caiCaiLaoLao' &&
+    score >= 55 &&
+    score <= 59
+  ) {
+    return 60
+  }
+  return score
+}
+
 export function applyOpeningTalent(
   base: GameState,
   talent: OpeningTalentId | null,
@@ -432,6 +465,30 @@ export function applyOpeningTalent(
         attrs: {
           ...player.attrs,
           appearance: Math.min(10, player.attrs.appearance + 1),
+        },
+      },
+    }
+  }
+  if (talent === 'steadyHands') {
+    next = {
+      ...next,
+      player: {
+        ...player,
+        attrs: {
+          ...player.attrs,
+          dexterity: Math.min(10, player.attrs.dexterity + 2),
+        },
+      },
+    }
+  }
+  if (talent === 'memoryBread') {
+    next = {
+      ...next,
+      player: {
+        ...player,
+        attrs: {
+          ...player.attrs,
+          memory: Math.min(10, player.attrs.memory + 2),
         },
       },
     }
@@ -522,15 +579,21 @@ export function simulateWeek(state: GameState): WeekSimulation {
       action.id === 'english'
         ? englishGainForMemory(attrs.memory)
         : action.english ?? 0
-    composite += action.composite ?? 0
+    composite +=
+      (action.composite ?? 0) +
+      (action.id === 'social' && state.openingTalent === 'socialBeast' ? 1 : 0)
     research += action.research ?? 0
-    kaoyanPrep += action.kaoyanPrep ?? 0
+    kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
     if (action.study) {
       studyCount += 1
       const nominal = Object.fromEntries(
         state.season.courses.map((course) => [
           course.id,
-          8 * courseK(course, attrs) * (1 + studyBonus) * prepMultiplier,
+          8 *
+            courseK(course, attrs) *
+            (1 + studyBonus) *
+            prepMultiplier *
+            coursePrepTalentMultiplier(state, course),
         ]),
       )
       const allocated = focusAdjustedGains(
@@ -555,7 +618,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
     const nominal = Object.fromEntries(
       state.season.courses.map((course) => [
         course.id,
-        planPassive(state.plan!) * courseK(course, attrs) * prepMultiplier,
+        planPassive(state.plan!) *
+          courseK(course, attrs) *
+          prepMultiplier *
+          coursePrepTalentMultiplier(state, course),
       ]),
     )
     const allocated = focusAdjustedGains(

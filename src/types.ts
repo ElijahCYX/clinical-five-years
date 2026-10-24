@@ -208,9 +208,9 @@ export type OpeningTalentId =
   | 'cramKing'
   | 'socialBeast'
   | 'steadyHands'
-  | 'morningProof'
   | 'memoryBread'
   | 'kaoyanChosen'
+  | 'caiCaiLaoLao'
 
 export interface OpeningTalentDef {
   id: OpeningTalentId

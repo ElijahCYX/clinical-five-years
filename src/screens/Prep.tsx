@@ -3,8 +3,10 @@ import { HABIT_BY_ID } from '../data'
 import {
   clamp,
   courseK,
+  coursePrepTalentMultiplier,
   effectiveEnergyCost,
   estimateRange,
+  examReviewTalentMultiplier,
   getReviewEffect,
   prepGainMultiplier,
   reviewMultiplier,
@@ -43,6 +45,7 @@ export function PrepScreen({
   const isBig = courses.length > 1
   const planId = state.plan ?? 'B'
   const multiplier = reviewMultiplier(planId)
+  const caffeineImmune = state.openingTalent === 'caffeineImmune'
 
   const options: Array<{
     id: ReviewChoice
@@ -77,7 +80,7 @@ export function PrepScreen({
           id: 'mock',
           label: '历年卷 + zsy 笔记',
           en: 'PAST PAPERS + NOTES',
-          desc: '两门各做一套历年卷，再对着 zsy 笔记补漏洞。收益等同均衡复习，但成绩上限 -10%。',
+          desc: '两门各做一套历年卷，再对着 zsy 笔记补漏洞。收益等同均衡复习，但成绩上限 -5%。',
           meta: '',
         },
         {
@@ -100,7 +103,7 @@ export function PrepScreen({
           id: 'mock',
           label: '历年卷 + zsy 笔记',
           en: 'PAST PAPERS + NOTES',
-          desc: '按考试时间做一套历年卷，再对着 zsy 笔记补漏洞。临场更稳，但成绩上限 -10%。',
+          desc: '按考试时间做一套历年卷，再对着 zsy 笔记补漏洞。临场更稳，但成绩上限 -5%。',
           meta: '',
         },
         {
@@ -121,7 +124,13 @@ export function PrepScreen({
         const effect = {
           ...rawEffect,
           gains: Object.fromEntries(
-            Object.entries(rawEffect.gains).map(([id, gain]) => [id, gain * gainFactor]),
+            courses.map((course) => [
+              course.id,
+              (rawEffect.gains[course.id] ?? 0) *
+                gainFactor *
+                examReviewTalentMultiplier(state) *
+                coursePrepTalentMultiplier(state, course),
+            ]),
           ),
         }
         const projected = courses.reduce<Record<string, number>>((acc, course) => {
@@ -363,7 +372,7 @@ export function PrepScreen({
                 <div>
                   <h4>喝咖啡</h4>
                   <p>一杯美式，续命不续成绩。</p>
-                  <small>生活费 -10 · 精力 +10 · 压力 +2</small>
+                  <small>生活费 -10 · 精力 +10 · 压力 {caffeineImmune ? 0 : 2}</small>
                   {state.examCoffee ? (
                     <small className="boost-now">已生效 · 本场不可撤销</small>
                   ) : (
@@ -401,8 +410,8 @@ export function PrepScreen({
               <div className="boost-row">
                 <div>
                   <h4>刷夜</h4>
-                  <p>把重点塞进一夜：准备度 +15，成绩上限 -5%。</p>
-                  <small>精力 -10 · 体质成长 -10 · 压力 +10</small>
+                  <p>把重点塞进一夜：准备度 +15，成绩上限 {caffeineImmune ? '2.5' : '5'}%。</p>
+                  <small>精力 {caffeineImmune ? -5 : -10} · 体质成长 {caffeineImmune ? -5 : -10} · 压力 +{caffeineImmune ? 5 : 10}</small>
                   {state.examAllNighter ? (
                     <small className="boost-now">已生效 · 本场不可撤销</small>
                   ) : (
@@ -410,13 +419,20 @@ export function PrepScreen({
                       <div>
                         <span>精力</span>
                         <b>
-                          {state.energy} → {clamp(state.energy + effectiveEnergyCost(-10, state.energy), 0, 100)}
+                          {state.energy} →{' '}
+                          {clamp(
+                            state.energy +
+                              effectiveEnergyCost(caffeineImmune ? -5 : -10, state.energy),
+                            0,
+                            100,
+                          )}
                         </b>
                       </div>
                       <div>
                         <span>压力</span>
                         <b>
-                          {state.stress} → {clamp(state.stress + 10, 0, 100)}
+                          {state.stress} →{' '}
+                          {clamp(state.stress + (caffeineImmune ? 5 : 10), 0, 100)}
                         </b>
                       </div>
                       <div>
@@ -451,7 +467,13 @@ export function PrepScreen({
                         <div>
                           <span>精力</span>
                           <b>
-                            {state.energy} → {clamp(state.energy + effectiveEnergyCost(-10, state.energy), 0, 100)}
+                            {state.energy} →{' '}
+                          {clamp(
+                            state.energy +
+                              effectiveEnergyCost(caffeineImmune ? -5 : -10, state.energy),
+                            0,
+                            100,
+                          )}
                           </b>
                         </div>
                         <div>
