@@ -2,6 +2,11 @@
 
 一个医学本科生五年生活文字模拟器的网页版可玩初稿。
 
+**在线访问：** https://elijahcyx.github.io/clinical-five-years/  
+**仓库：** https://github.com/ElijahCYX/clinical-five-years
+
+推送到 `main` 后，GitHub Actions 会自动构建并部署到 GitHub Pages。
+
 当前版本可以完整游玩 **大一整年**：
 
 > 新生报到 → 大一秋 → 大一冬 → 寒假 → 大一春 → 大一夏（四六级报名）→ 暑假 → 四六级成绩公布 → 大一学年结束
