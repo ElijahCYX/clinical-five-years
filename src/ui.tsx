@@ -70,6 +70,38 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
   )
 }
 
+
+export function BottomNav({
+  active,
+  onMain,
+  onWho,
+}: {
+  active: 'main' | 'who'
+  onMain: () => void
+  onWho: () => void
+}) {
+  return (
+    <nav className="bottom-interface-nav" aria-label="界面切换">
+      <button
+        type="button"
+        className={`bottom-interface-btn ${active === 'main' ? 'is-active' : ''}`}
+        onClick={onMain}
+        aria-current={active === 'main' ? 'page' : undefined}
+      >
+        主界面
+      </button>
+      <button
+        type="button"
+        className={`bottom-interface-btn ${active === 'who' ? 'is-active' : ''}`}
+        onClick={onWho}
+        aria-current={active === 'who' ? 'page' : undefined}
+      >
+        我是谁
+      </button>
+    </nav>
+  )
+}
+
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`eyebrow ${className}`}>{children}</div>
 }

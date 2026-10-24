@@ -13,7 +13,7 @@ import {
   simulateWeek,
 } from '../game'
 import type { ActionDef, GameState } from '../types'
-import { Bar, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
+import { Bar, BottomNav, Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 
 const VISIBLE_ACTIONS = [
@@ -34,6 +34,7 @@ interface WeekScreenProps {
   onToggleAction: (id: string) => void
   onEndWeek: () => void
   onChooseFocus: (focus: string) => void
+  onOpenWhoAmI?: () => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -43,6 +44,7 @@ export function WeekScreen({
   onToggleAction,
   onEndWeek,
   onChooseFocus,
+  onOpenWhoAmI,
   onSave,
   onTitle,
 }: WeekScreenProps) {
@@ -212,7 +214,7 @@ export function WeekScreen({
   )
 
   return (
-    <div className="screen game-screen">
+    <div className="screen game-screen has-bottom-nav">
       <div className="shell">
         <TopBar
           onTitle={onTitle}
@@ -536,6 +538,12 @@ export function WeekScreen({
           <span>每周结算后自动保存</span>
         </footer>
       </div>
+
+      <BottomNav
+        active="main"
+        onMain={() => undefined}
+        onWho={onOpenWhoAmI ?? (() => undefined)}
+      />
 
       {showFocusModal && (
         <div className="focus-backdrop" role="presentation">

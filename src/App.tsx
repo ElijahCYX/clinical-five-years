@@ -67,11 +67,12 @@ import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
+import { WhoAmIScreen } from './screens/WhoAmI'
 import { setSaveHandler } from './saveBridge'
 
 const SAVE_KEY = 'clinical-five-years-save-v13'
 
-type View = ScreenName | 'crisis'
+type View = ScreenName | 'crisis' | 'whoami'
 
 function persist(game: GameState) {
   try {
@@ -352,6 +353,7 @@ function RealApp() {
   const [hasSave, setHasSave] = useState(false)
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
+  const [whoamiReturn, setWhoamiReturn] = useState<View>('week')
 
   useEffect(() => {
     setHasSave(Boolean(readSave()))
@@ -472,6 +474,12 @@ function RealApp() {
     }
     if (prev.selected.length >= 2) return prev
     return { ...prev, selected: [...prev.selected, id] }
+  }
+
+  const openWhoAmI = () => {
+    if (!game) return
+    setWhoamiReturn(view)
+    setView('whoami')
   }
 
   const chooseWeekFocus = (focus: string) => {
@@ -1118,6 +1126,16 @@ function RealApp() {
     )
   }
 
+  if (view === 'whoami') {
+    return (
+      <WhoAmIScreen
+        state={game}
+        onMain={() => setView(whoamiReturn)}
+        onTitle={goTitle}
+      />
+    )
+  }
+
   if (view === 'cetEvent') {
     return (
       <CetEventScreen
@@ -1214,6 +1232,7 @@ function RealApp() {
         onToggleAction={toggleAction}
         onEndWeek={endWeek}
         onChooseFocus={chooseWeekFocus}
+        onOpenWhoAmI={openWhoAmI}
         onSave={saveNow}
         onTitle={goTitle}
       />
