@@ -625,7 +625,7 @@ export function labChoreEnergyCost(comprehension: number): number {
   return -Math.round(13 - ((comp - 2) / 8) * 6)
 }
 
-/** 科研进度收益：1-5 点，悟性越高越容易抽到高值。 */
+/** 科研进度收益：2-6 点，悟性越高越容易抽到高值。 */
 export function researchGainForComprehension(comprehension: number): number {
   const comp = Math.max(2, Math.min(10, comprehension))
   let weights: number[]
@@ -638,9 +638,9 @@ export function researchGainForComprehension(comprehension: number): number {
   let acc = 0
   for (let i = 0; i < weights.length; i += 1) {
     acc += weights[i]
-    if (roll < acc) return i + 1
+    if (roll < acc) return i + 2
   }
-  return 3
+  return 4
 }
 
 export function simulateWeek(state: GameState): WeekSimulation {

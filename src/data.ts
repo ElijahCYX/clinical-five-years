@@ -423,7 +423,7 @@ export const ACTIONS: ActionDef[] = [
     energy: -20,
     stress: 3,
     money: 0,
-    effectText: '科研进度随机 +1~5（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3',
+    effectText: '科研进度随机 +2~6（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3',
     requires: 'mentor',
     lockedNote: '需要先联系导师',
   },

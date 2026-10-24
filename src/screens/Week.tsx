@@ -187,7 +187,7 @@ export function WeekScreen({
       if (!state.researchStarted) {
         return `导师亲密度 +5 · 精力 ${labChoreEnergyCost(state.player?.attrs.comprehension ?? 5)} · 压力 +3`
       }
-      return '科研 +1~5 · 科研进度 +1~5（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3'
+      return '科研 +2~6 · 科研进度 +2~6（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3'
     }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
@@ -480,7 +480,7 @@ export function WeekScreen({
             <div className="research-action-note">
               <span>本周科研行动</span>
               <strong>
-                {state.researchStarted ? '科研进度随机 +1–5' : '实验室打杂 · 导师亲密度 +5'}
+                {state.researchStarted ? '科研进度随机 +2–6' : '实验室打杂 · 导师亲密度 +5'}
               </strong>
               <p>
                 {state.researchStarted
