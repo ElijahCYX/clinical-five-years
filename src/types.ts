@@ -265,7 +265,7 @@ export interface ExamResult {
   stressRelief: number
 }
 
-export type EventKind = 'scene' | 'attribute' | 'random' | 'romance'
+export type EventKind = 'scene' | 'attribute' | 'random' | 'romance' | 'consumption'
 
 export interface EventEffect {
   stress?: number
@@ -397,6 +397,22 @@ export interface VacationTravelPlan {
   summary: string[]
 }
 
+export interface ConsumptionEffects {
+  stress?: number
+  energy?: number
+  prep?: number
+}
+
+export interface ConsumptionEvent {
+  id: string
+  kind: 'consumption'
+  title: string
+  text: string
+  cost: number
+  effects: ConsumptionEffects
+  benefitLines: string[]
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -488,6 +504,8 @@ export interface GameState {
   familyReliefWeek: number
   seenRelationIds: string[]
   vacationTravel: VacationTravelPlan | null
+  pendingConsumption: ConsumptionEvent | null
+  consumptionEventWeek: number
 }
 
 export type DemoName =

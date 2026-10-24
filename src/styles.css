@@ -8859,3 +8859,15 @@ body.dinner-open {
   font-size: 10.5px;
   line-height: 1.6;
 }
+
+/* ---------- consumption event ---------- */
+
+.consumption-event-modal .random-event-title {
+  font-size: clamp(28px, 3.5vw, 40px);
+}
+
+.consumption-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

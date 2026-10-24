@@ -19,6 +19,7 @@ import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
 import { NpcConfessionModal } from './NpcConfession'
+import { ConsumptionEventModal } from './ConsumptionEvent'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import {
   isDinnerFriend,
@@ -53,6 +54,7 @@ interface WeekScreenProps {
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onNpcConfession?: (accept: boolean) => void
+  onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -67,6 +69,7 @@ export function WeekScreen({
   onOpenTA,
   onArrangeDinner,
   onNpcConfession,
+  onResolveConsumption,
   onSave,
   onTitle,
 }: WeekScreenProps) {
@@ -1023,6 +1026,14 @@ export function WeekScreen({
           confession={state.pendingConfession}
           onAccept={() => onNpcConfession?.(true)}
           onDecline={() => onNpcConfession?.(false)}
+        />
+      )}
+
+      {state.pendingConsumption && (
+        <ConsumptionEventModal
+          event={state.pendingConsumption}
+          money={state.money}
+          onResolve={(accept) => onResolveConsumption?.(accept)}
         />
       )}
 

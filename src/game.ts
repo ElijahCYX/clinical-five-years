@@ -373,6 +373,8 @@ export function newGameState(player: Player): GameState {
     familyReliefWeek: 0,
     seenRelationIds: [],
     vacationTravel: null,
+    pendingConsumption: null,
+    consumptionEventWeek: 0,
   }
 }
 

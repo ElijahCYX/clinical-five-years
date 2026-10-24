@@ -97,6 +97,7 @@ import {
 import { EncounterProvider, useEncounter } from './screens/Encounter'
 import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
 import { pickTravelEvent } from './travelEvents'
+import { pickConsumptionEvent } from './consumptionEvents'
 import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { pickHypothesis } from './hypotheses'
@@ -119,8 +120,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v28'
+const SAVE_KEY = 'clinical-five-years-save-v29'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v28',
   'clinical-five-years-save-v27',
   'clinical-five-years-save-v26',
   'clinical-five-years-save-v25',
@@ -188,6 +190,8 @@ function readSave(): GameState | null {
       seenRelationIds:
         game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
       vacationTravel: game.vacationTravel ?? null,
+      pendingConsumption: game.pendingConsumption ?? null,
+      consumptionEventWeek: game.consumptionEventWeek ?? 0,
     })
   } catch {
     return null
@@ -522,6 +526,7 @@ function RealApp() {
     if (
       game.pendingEvent ||
       game.pendingConfession ||
+      game.pendingConsumption ||
       game.eventWeek === game.week
     ) {
       return
@@ -532,6 +537,21 @@ function RealApp() {
       (!game.lowEnergyAlert && game.energy < 20)
     ) {
       return
+    }
+    if (game.consumptionEventWeek !== game.week) {
+      if (Math.random() < 0.25) {
+        const next: GameState = {
+          ...game,
+          pendingConsumption: pickConsumptionEvent(),
+          consumptionEventWeek: game.week,
+          pendingEvent: null,
+          pendingConfession: null,
+          screen: 'week',
+        }
+        setGame(next)
+        persist(next)
+        return
+      }
     }
     const mentorRelation = game.relationships.find(
       (relation) => relation.kind === 'mentor',
@@ -936,6 +956,49 @@ function RealApp() {
   const handleTalentEventContinue = () => {
     if (!game) return
     commit({ ...game, screen: 'plan' }, 'plan')
+  }
+
+  const resolveConsumption = (accept: boolean) => {
+    if (!game || !game.pendingConsumption) return
+    const consumption = game.pendingConsumption
+    let next: GameState = {
+      ...game,
+      pendingConsumption: null,
+      consumptionEventWeek: game.week,
+    }
+    if (accept && game.money >= consumption.cost) {
+      next = {
+        ...next,
+        money: game.money - consumption.cost,
+        stress: Math.max(
+          0,
+          Math.min(100, game.stress + (consumption.effects.stress ?? 0)),
+        ),
+        energy: Math.max(
+          0,
+          Math.min(100, game.energy + (consumption.effects.energy ?? 0)),
+        ),
+      }
+      const prepGain = consumption.effects.prep ?? 0
+      if (prepGain && game.season.courses.length > 0) {
+        const course =
+          game.season.courses[
+            Math.floor(Math.random() * game.season.courses.length)
+          ]
+        next = {
+          ...next,
+          prep: {
+            ...next.prep,
+            [course.id]: Math.min(
+              100,
+              (next.prep[course.id] ?? 0) + prepGain,
+            ),
+          },
+        }
+      }
+    }
+    setGame(next)
+    persist(next)
   }
 
   const handleRandomEventContinue = () => {
@@ -2467,6 +2530,7 @@ function RealApp() {
           onOpenTA={openWhoIs}
           onArrangeDinner={arrangeDinner}
           onNpcConfession={handleNpcConfession}
+          onResolveConsumption={resolveConsumption}
           onSave={saveNow}
           onTitle={goTitle}
         />

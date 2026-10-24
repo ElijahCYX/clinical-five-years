@@ -235,6 +235,7 @@ const KIND_LABEL = {
   attribute: '属性触发',
   random: '完全随机',
   romance: '恋爱危机',
+  consumption: '消费型事件',
 } as const
 
 function clamp(value: number, min: number, max: number): number {
