@@ -369,6 +369,8 @@ export function newGameState(player: Player): GameState {
     lastResearchWeek: 0,
     lastResearchWarningWeek: 0,
     lastHypothesisOfferSeason: null,
+    familyAffection: 0,
+    familyReliefWeek: 0,
   }
 }
 
@@ -601,6 +603,7 @@ export interface WeekSimulation {
   research: number
   researchProgressGain: number
   mentorIntimacyGain: number
+  familyAffectionGain: number
   prep: Record<string, number>
   kaoyanPrep: number
   constitutionGrowth: number
@@ -652,6 +655,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
   let research = state.research
   let researchProgressGain = 0
   let mentorIntimacyGain = 0
+  let familyAffectionGain = 0
   let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
@@ -760,7 +764,16 @@ export function simulateWeek(state: GameState): WeekSimulation {
       stress += habit.stress ?? 0
       money += habit.money ?? 0
       english += habit.english ?? 0
-      research += habit.research ?? 0
+      if (habit.id === 'reading' && !state.labEntered) {
+        if (state.relationships.some((relation) => relation.kind === 'mentor')) {
+          mentorIntimacyGain += 2
+        }
+      } else {
+        research += habit.research ?? 0
+      }
+      if (habit.id === 'familyCall') {
+        familyAffectionGain += 5
+      }
       if (habit.growth === 'constitution') {
         constitutionGrowth += habit.growthAmount ?? 0
       }
@@ -801,6 +814,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
     research,
     researchProgressGain,
     mentorIntimacyGain,
+    familyAffectionGain,
     prep,
     kaoyanPrep,
     constitutionGrowth,

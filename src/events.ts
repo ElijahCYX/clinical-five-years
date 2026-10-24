@@ -468,6 +468,17 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   return next
 }
 
+export function createFamilyReliefEvent(): PendingEvent {
+  return {
+    id: 'ev-family-relief',
+    kind: 'random',
+    title: '朝廷赈灾粮来了',
+    text: '你妈突然在家庭群里发了一个红包，备注写着“最近是不是又瘦了”。你还没来得及回复，银行卡到账提示先响了。家长表示：别省，先吃饭。',
+    effects: { money: 500 },
+    effectLines: ['生活费 +500'],
+  }
+}
+
 export function createMentorEncounterEvent(): PendingEvent {
   return {
     id: 'ev-mentor-encounter',

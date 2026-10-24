@@ -82,6 +82,7 @@ import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 import {
   applyEvent,
+  createFamilyReliefEvent,
   createMentorEncounterEvent,
   rollRelationshipWeekly,
   rollWeeklyEvent,
@@ -92,6 +93,8 @@ import {
   ResearchNoticeProvider,
   useResearchNotice,
 } from './screens/ResearchNotice'
+import { EncounterProvider, useEncounter } from './screens/Encounter'
+import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { pickHypothesis } from './hypotheses'
 import {
@@ -99,6 +102,7 @@ import {
   canPat,
   confessionChance,
   createCourseFriend,
+  createEventFriend,
   createInitialRelationships,
   nextRoommateAction,
   normalizeRelationships,
@@ -108,8 +112,9 @@ import {
   revealMaybe,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v26'
+const SAVE_KEY = 'clinical-five-years-save-v27'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v26',
   'clinical-five-years-save-v25',
   'clinical-five-years-save-v24',
   'clinical-five-years-save-v23',
@@ -170,6 +175,8 @@ function readSave(): GameState | null {
       lastResearchWeek: game.lastResearchWeek ?? 0,
       lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
+      familyAffection: game.familyAffection ?? 0,
+      familyReliefWeek: game.familyReliefWeek ?? 0,
     })
   } catch {
     return null
@@ -458,6 +465,7 @@ function absoluteWeek(state: GameState): number {
 
 function RealApp() {
   const { showResearchNotice } = useResearchNotice()
+  const { showEncounter } = useEncounter()
   const [view, setView] = useState<View>('title')
   const [game, setGame] = useState<GameState | null>(null)
   const [hasSave, setHasSave] = useState(false)
@@ -672,6 +680,85 @@ function RealApp() {
         kind: 'warning',
         title: '导师的电话',
         text: `导师在电话里沉默了几秒，然后说：“课题不是挂在墙上的画。你已经三周没有推进了，再这样下去，我只能当你还没准备好。”你握着手机，压力一下子涨了上来。`,
+      })
+      return
+    }
+
+    if (
+      game.familyAffection >= 20 &&
+      Math.random() < Math.min(0.35, 0.05 + game.familyAffection / 500)
+    ) {
+      const next: GameState = {
+        ...game,
+        eventWeek: game.week,
+        familyReliefWeek: absoluteWeek(game),
+        pendingEvent: createFamilyReliefEvent(),
+        pendingConfession: null,
+        screen: 'week',
+      }
+      setGame(next)
+      persist(next)
+      return
+    }
+    if (
+      game.habits.includes('meditation') &&
+      Math.random() < 0.25 &&
+      view === 'week'
+    ) {
+      const known = game.relationships.filter(
+        (relation) =>
+          relation.kind !== 'mentor' && relation.kind !== 'counselor',
+      )
+      let next = game
+      let relation = known.length > 0
+        ? known[Math.floor(Math.random() * known.length)]
+        : null
+      if (!relation || Math.random() < 0.32) {
+        relation = {
+          ...createEventFriend(game.player!),
+          identity: '校园偶遇认识的人',
+        }
+        next = {
+          ...game,
+          relationships: [...game.relationships, relation],
+        }
+      }
+      const chat =
+        ENCOUNTER_CHATS[Math.floor(Math.random() * ENCOUNTER_CHATS.length)]
+      const nextWithWeek: GameState = {
+        ...next,
+        eventWeek: game.week,
+        pendingEvent: null,
+        pendingConfession: null,
+        screen: 'week',
+      }
+      setGame(nextWithWeek)
+      persist(nextWithWeek)
+      showEncounter({
+        name: relation.name,
+        identity: relation.identity,
+        chat,
+        onResolve: (intimacy) => {
+          setGame((previous) => {
+            if (!previous) return previous
+            const updated: GameState = {
+              ...previous,
+              relationships: previous.relationships.map((item) =>
+                item.id === relation!.id
+                  ? {
+                      ...item,
+                      intimacy: Math.max(
+                        0,
+                        Math.min(100, item.intimacy + intimacy),
+                      ),
+                    }
+                  : item,
+              ),
+            }
+            persist(updated)
+            return updated
+          })
+        },
       })
       return
     }
@@ -1186,6 +1273,10 @@ function RealApp() {
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,
+      familyAffection: Math.min(
+        100,
+        game.familyAffection + sim.familyAffectionGain,
+      ),
       researchProgress,
       researchPublished: game.researchPublished || publishedNow,
       researchJournal: publishedJournal,
@@ -2275,7 +2366,9 @@ export default function App() {
   if (demo) return <DemoApp screen={demo} />
   return (
     <ResearchNoticeProvider>
-      <RealApp />
+      <EncounterProvider>
+        <RealApp />
+      </EncounterProvider>
     </ResearchNoticeProvider>
   )
 }

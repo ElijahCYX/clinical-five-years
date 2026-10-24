@@ -377,6 +377,18 @@ export interface Hypothesis {
   title: string
 }
 
+export interface EncounterChatOption {
+  text: string
+  response: string
+  intimacy: number
+}
+
+export interface EncounterChat {
+  id: string
+  intro: string
+  options: EncounterChatOption[]
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -464,6 +476,8 @@ export interface GameState {
   lastResearchWeek: number
   lastResearchWarningWeek: number
   lastHypothesisOfferSeason: string | null
+  familyAffection: number
+  familyReliefWeek: number
 }
 
 export type DemoName =

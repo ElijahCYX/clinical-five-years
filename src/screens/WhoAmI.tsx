@@ -258,6 +258,10 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   </strong>
                 </div>
                 <div>
+                  <span>家人好感</span>
+                  <strong>{state.familyAffection} / 100</strong>
+                </div>
+                <div>
                   <span>导师联系</span>
                   <strong>{state.mentorContactUnlocked ? '已解锁（待开发）' : '未解锁'}</strong>
                 </div>
