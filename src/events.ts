@@ -306,7 +306,7 @@ export const EVENT_LIBRARY = EVENTS
 export function rollWeeklyEvent(state: GameState): PendingEvent | null {
   if (!state.player || state.week < 1 || state.week > 3) return null
   let seed: EventSeed | null = null
-  if (Math.random() < 0.05) seed = pickSeed('random', state)
+  if (Math.random() < 0.08) seed = pickSeed('random', state)
   if (!seed && Math.random() < 0.2) seed = pickSeed('scene', state)
   else if (!seed && Math.random() < 0.15) seed = pickSeed('attribute', state)
   if (!seed) return null
