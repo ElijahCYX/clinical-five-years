@@ -389,8 +389,8 @@ export function cetScore(
       ? 280 + 3.6 * cappedEnglish + (memory - 5) * 8
       : 300 + 2.4 * cappedEnglish + (memory - 5) * 6
   let score = base + (Math.random() * 20 - 10)
-  if (kind === 'cet4' && english >= 40) score = Math.max(score, CET.pass4)
-  if (kind === 'cet6' && english >= 75) score = Math.max(score, CET.pass6)
+  if (kind === 'cet4' && english >= 25) score = Math.max(score, CET.pass4)
+  if (kind === 'cet6' && english >= 60) score = Math.max(score, CET.pass6)
   if (kind === 'cet6' && english >= 100) score = Math.max(score, CET.graduate6)
   const floor = kind === 'cet4' ? 200 : 150
   return clamp(Math.round(score), floor, CET.total)
