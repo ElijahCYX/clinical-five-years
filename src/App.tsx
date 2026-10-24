@@ -1073,7 +1073,7 @@ function RealApp() {
 
     energy = clamp(energy + 15, 0, 100)
     stress = clamp(stress, 0, 100)
-    money = Math.max(0, money - WEEKLY_FIXED_COST)
+    // 假期在家，不扣学期内的每周固定开销
 
     const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })

@@ -172,7 +172,7 @@ export function VacationScreen({
                   <span>生活费</span>
                   <strong>¥ {state.money}</strong>
                 </div>
-                <small>每周固定开销 300</small>
+                <small>假期在家 · 固定开销 0</small>
               </div>
               <div className="mini-stats">
                 <div>
