@@ -162,7 +162,7 @@ export function WeekScreen({
     }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
-      return `所有课程：准备度 +6 × K · 精力 ${costs.energy} · 压力 +${costs.stress} · 当前 ${costs.count} 门课`
+      return `所有课程：准备度 +6 × K · 精力 ${costs.energy} · 压力 +${costs.stress} · 当前 ${costs.count} 门课（消耗按 ${costs.costCount} 门封顶）`
     }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }

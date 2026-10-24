@@ -873,18 +873,22 @@ export function effectiveEnergyCost(raw: number, currentEnergy: number): number 
 /** 泡图书馆的成本随同时在修课程数增加，并受精力/抗压面板影响。 */
 export function libraryCosts(state: GameState): {
   count: number
+  costCount: number
   energy: number
   stress: number
 } {
   const count = Math.max(1, state.season.courses.length)
-  const baseEnergy = -(5 + count * 5)
-  const baseStress = 5 + count * 5
+  // 消耗最多按 3 门课计算，超过 3 门不再继续增加。
+  const costCount = Math.min(3, count)
+  const baseEnergy = -(5 + costCount * 5)
+  const baseStress = 5 + costCount * 5
   const energyAttr = state.player?.attrs.energy ?? 5
   const resilienceAttr = state.player?.attrs.resilience ?? 5
   const energyFactor = clamp(1.25 - energyAttr * 0.05, 0.75, 1.2)
   const stressFactor = clamp(1.25 - resilienceAttr * 0.05, 0.75, 1.2)
   return {
     count,
+    costCount,
     energy: effectiveEnergyCost(baseEnergy * energyFactor, state.energy),
     stress: Math.round(baseStress * stressFactor),
   }
