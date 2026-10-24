@@ -631,8 +631,14 @@ export function simulateWeek(state: GameState): WeekSimulation {
   for (const id of state.selected) {
     const action = ACTION_BY_ID[id]
     if (!action) continue
-    energy += effectiveEnergyCost(action.energy, state.energy)
-    stress += action.stress
+    if (action.id === 'library') {
+      const costs = libraryCosts(state)
+      energy += costs.energy
+      stress += costs.stress
+    } else {
+      energy += effectiveEnergyCost(action.energy, state.energy)
+      stress += action.stress
+    }
     money += action.money
     if (action.id === 'social') {
       money -= state.dinnerPlan?.cost ?? 50
@@ -862,6 +868,26 @@ export function energyCostMultiplier(energy: number): number {
 export function effectiveEnergyCost(raw: number, currentEnergy: number): number {
   if (raw >= 0) return raw
   return -Math.ceil(Math.abs(raw) * energyCostMultiplier(currentEnergy))
+}
+
+/** 泡图书馆的成本随同时在修课程数增加，并受精力/抗压面板影响。 */
+export function libraryCosts(state: GameState): {
+  count: number
+  energy: number
+  stress: number
+} {
+  const count = Math.max(1, state.season.courses.length)
+  const baseEnergy = -(5 + count * 5)
+  const baseStress = 5 + count * 5
+  const energyAttr = state.player?.attrs.energy ?? 5
+  const resilienceAttr = state.player?.attrs.resilience ?? 5
+  const energyFactor = clamp(1.25 - energyAttr * 0.05, 0.75, 1.2)
+  const stressFactor = clamp(1.25 - resilienceAttr * 0.05, 0.75, 1.2)
+  return {
+    count,
+    energy: effectiveEnergyCost(baseEnergy * energyFactor, state.energy),
+    stress: Math.round(baseStress * stressFactor),
+  }
 }
 
 export function energyTone(energy: number): 'green' | 'orange' | 'red' | 'black' {

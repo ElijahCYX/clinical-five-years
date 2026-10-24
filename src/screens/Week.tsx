@@ -8,6 +8,7 @@ import {
 import {
   effectiveEnergyCost,
   energyEffectText,
+  libraryCosts,
   englishGainForMemory,
   estimateRange,
   simulateWeek,
@@ -159,6 +160,10 @@ export function WeekScreen({
         `英语进度 +${englishGainForMemory(player.attrs.memory)}`,
       )
     }
+    if (action.id === 'library') {
+      const costs = libraryCosts(state)
+      return `所有课程：准备度 +6 × K · 精力 ${costs.energy} · 压力 +${costs.stress} · 当前 ${costs.count} 门课`
+    }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
   const preview = state.selected.length > 0 ? simulateWeek(state) : null
@@ -186,7 +191,10 @@ export function WeekScreen({
     if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'partner') return action.lockedNote ?? '尚未解锁'
-    const energyCost = effectiveEnergyCost(action.energy, state.energy)
+    const energyCost =
+      action.id === 'library'
+        ? libraryCosts(state).energy
+        : effectiveEnergyCost(action.energy, state.energy)
     if (energyCost < 0 && state.energy + energyCost < 0) return '精力不足'
     if (action.money < 0 && state.money + action.money < 0) return '生活费不足'
     return null
