@@ -216,8 +216,8 @@ export function VacationScreen({
                   </small>
                 </div>
                 <div>
-                  <span>科研</span>
-                  <strong>{state.research}</strong>
+                  <span>科研进度</span>
+                  <strong>{state.researchProgress}</strong>
                 </div>
               </div>
             </div>

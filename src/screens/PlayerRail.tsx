@@ -141,12 +141,24 @@ export function PlayerRail({
             </small>
           </div>
           <div>
-            <span>科研</span>
+            <span>科研进度</span>
             <strong>
-              {state.research}
-              {preview && preview.research !== state.research && (
-                <span className="stat-preview-value">→ {preview.research}</span>
-              )}
+              {state.researchProgress}
+              {preview &&
+                state.researchStarted &&
+                Math.min(
+                  100,
+                  state.researchProgress + preview.researchProgressGain,
+                ) !== state.researchProgress && (
+                  <span className="stat-preview-value">
+                    {' '}
+                    →{' '}
+                    {Math.min(
+                      100,
+                      state.researchProgress + preview.researchProgressGain,
+                    )}
+                  </span>
+                )}
             </strong>
           </div>
         </div>

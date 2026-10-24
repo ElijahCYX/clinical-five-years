@@ -38,7 +38,10 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
     (record) => record.evaluated && (record.awards?.length ?? 0) + (record.award ? 1 : 0) > 0,
   )
   const previousAward = bestAward(state.yearRecords)
-  const paperCount = Math.floor(state.research / 100)
+  const paperCount = Math.max(
+    Math.floor(state.research / 100),
+    state.researchPublished ? 1 : 0,
+  )
   const openingTalents = state.openingTalents
     .map((id) => OPENING_TALENT_BY_ID[id])
     .filter(Boolean)
@@ -194,7 +197,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                 </div>
                 <div>
                   <span>科研进度</span>
-                  <strong>{state.research}</strong>
+                  <strong>{state.researchProgress} / 100</strong>
                 </div>
               </div>
               <div className="dossier-growth">
