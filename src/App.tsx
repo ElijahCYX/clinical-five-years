@@ -1267,6 +1267,7 @@ function RealApp() {
               ...item,
               intimacy: Math.min(100, item.intimacy + gain),
               birthdayGiftYear: currentDate.year,
+              birthdayContactType: 'gift',
             }
           : item,
       ),
@@ -1275,6 +1276,53 @@ function RealApp() {
     persist(updated)
     return {
       message: `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`,
+      gain,
+      before: relation.intimacy,
+      after: Math.min(100, relation.intimacy + gain),
+    }
+  }
+
+  const giveBirthdayBlessing = (
+    relationshipId: string,
+  ): BirthdayGiftResult => {
+    const fail = (message: string): BirthdayGiftResult => {
+      const relation = game?.relationships.find((item) => item.id === relationshipId)
+      return {
+        message,
+        gain: 0,
+        before: relation?.intimacy ?? 0,
+        after: relation?.intimacy ?? 0,
+      }
+    }
+    if (!game) return fail('现在还不能送出祝福。')
+    const relation = game.relationships.find((item) => item.id === relationshipId)
+    if (!relation) return fail('你找不到这个人。')
+    if (relation.intimacy < 40) return fail('你们还没有熟到可以单独祝福生日。')
+    const currentDate = gameDate(game)
+    if (relation.birthdayMonth !== currentDate.month) {
+      return fail('现在还不是 TA 的生日月份。')
+    }
+    if (relation.birthdayGiftYear === currentDate.year) {
+      return fail('今年的生日已经联系过了。')
+    }
+    const gain = adjustIntimacyDelta(game, relation, 5)
+    const updated: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === relationshipId
+          ? {
+              ...item,
+              intimacy: Math.min(100, item.intimacy + gain),
+              birthdayGiftYear: currentDate.year,
+              birthdayContactType: 'blessing',
+            }
+          : item,
+      ),
+    }
+    setGame(updated)
+    persist(updated)
+    return {
+      message: `你送上了生日祝福。${relation.name} 的亲密度 +${gain}。`,
       gain,
       before: relation.intimacy,
       after: Math.min(100, relation.intimacy + gain),
@@ -2597,6 +2645,7 @@ function RealApp() {
         onConfess={confessRelation}
         onViewRelation={markRelationSeen}
         onBirthdayGift={giveBirthdayGift}
+        onBirthdayBlessing={giveBirthdayBlessing}
         onMain={() => setView(whoisReturn)}
         onWho={() => setView('whoami')}
         onTitle={goTitle}

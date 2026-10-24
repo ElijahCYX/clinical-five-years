@@ -418,6 +418,7 @@ export function createMentorRelationship(
     birthYear: 2025 - (38 + Math.floor(Math.random() * 21)),
     birthdayMonth: 1 + Math.floor(Math.random() * 12),
     birthdayGiftYear: 0,
+    birthdayContactType: null,
     partner: false,
     confessionRisk: 0,
     breakupRisk: 0,

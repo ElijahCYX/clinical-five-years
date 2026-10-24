@@ -24,6 +24,7 @@ interface WhoIsTAScreenProps {
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
+  onBirthdayBlessing?: (id: string) => BirthdayGiftResult
   onMain: () => void
   onWho: () => void
   onTitle?: () => void
@@ -66,6 +67,7 @@ export function WhoIsTAScreen({
   onConfess,
   onViewRelation,
   onBirthdayGift,
+  onBirthdayBlessing,
   onMain,
   onWho,
   onTitle,
@@ -205,7 +207,7 @@ export function WhoIsTAScreen({
                 const currentDate = gameDate(state)
                 const isBirthdayMonth =
                   relation.birthdayMonth === currentDate.month
-                const birthdayGiftedThisYear =
+                const birthdayContactedThisYear =
                   relation.birthdayGiftYear === currentDate.year
                 const patAvailable = canPat(state, relation) && patRemaining > 0
                 const confessAvailable = canConfess(player, relation)
@@ -259,33 +261,35 @@ export function WhoIsTAScreen({
                             <button
                               type="button"
                               className={`whois-birthday ${
-                                isBirthdayMonth && !birthdayGiftedThisYear
+                                isBirthdayMonth && !birthdayContactedThisYear
                                   ? 'is-active'
                                   : ''
                               }`}
                               disabled={
-                                !isBirthdayMonth || birthdayGiftedThisYear
+                                !isBirthdayMonth || birthdayContactedThisYear
                               }
                               title={
-                                birthdayGiftedThisYear
-                                  ? '本年生日礼物已送过'
+                                birthdayContactedThisYear
+                                  ? '今年生日已经联系过了'
                                   : isBirthdayMonth
-                                    ? '可以赠送生日礼物'
+                                    ? '可以送礼或送祝福'
                                     : '生日月份尚未到'
                               }
                               onClick={(event) => {
                                 event.stopPropagation()
-                                if (isBirthdayMonth && !birthdayGiftedThisYear) {
+                                if (isBirthdayMonth && !birthdayContactedThisYear) {
                                   setBirthdayTarget(relation)
                                 }
                               }}
                             >
                               生日 {relation.birthYear}.
                               {String(relation.birthdayMonth).padStart(2, '0')}
-                              {birthdayGiftedThisYear
-                                ? ' · 已送'
+                              {birthdayContactedThisYear
+                                ? relation.birthdayContactType === 'blessing'
+                                  ? ' · 已祝福'
+                                  : ' · 已送礼'
                                 : isBirthdayMonth
-                                  ? ' · 可送礼'
+                                  ? ' · 可互动'
                                   : ''}
                             </button>
                           )}
@@ -377,55 +381,63 @@ export function WhoIsTAScreen({
                 <Pill tone="gold">生日礼物</Pill>
               </div>
               <h2 className="random-event-title">
-                要给 {birthdayTarget.name} 送生日礼物吗？
+                今天是 {birthdayTarget.name} 的生日
               </h2>
             </header>
             <p className="random-event-text">
               {birthdayTarget.name} 的生日是 {birthdayTarget.birthYear} 年{' '}
-              {birthdayTarget.birthdayMonth} 月。一份不算便宜但用心的礼物，
-              也许会让你们更靠近一点。
+              {birthdayTarget.birthdayMonth} 月。你可以送一份礼物，也可以只送上一句祝福。
             </p>
-            <div className="random-event-effects">
-              <span className="random-event-effects-label">本次花费</span>
-              <div>
-                <span className="random-event-effect">生活费 -150</span>
-                <span className="random-event-effect">
-                  亲密度 +{adjustIntimacyDelta(state, birthdayTarget, 15)}
+            <div className="birthday-choice-list">
+              <button
+                type="button"
+                className="birthday-choice"
+                disabled={state.money < 150}
+                onClick={() => {
+                  const result = onBirthdayGift?.(birthdayTarget.id)
+                  if (result && result.gain > 0) {
+                    setBirthdayResult({
+                      ...result,
+                      name: birthdayTarget.name,
+                      reaction: pickBirthdayReaction(),
+                    })
+                  } else if (result) {
+                    setMessage(result.message)
+                  }
+                  setBirthdayTarget(null)
+                }}
+              >
+                <span className="birthday-choice-title">送生日礼物</span>
+                <span className="birthday-choice-desc">
+                  生活费 -150 · 亲密度 +
+                  {adjustIntimacyDelta(state, birthdayTarget, 15)}
                 </span>
-              </div>
+              </button>
+              <button
+                type="button"
+                className="birthday-choice"
+                onClick={() => {
+                  const result = onBirthdayBlessing?.(birthdayTarget.id)
+                  if (result) setMessage(result.message)
+                  setBirthdayTarget(null)
+                }}
+              >
+                <span className="birthday-choice-title">只送祝福</span>
+                <span className="birthday-choice-desc">
+                  不花生活费 · 亲密度 +
+                  {adjustIntimacyDelta(state, birthdayTarget, 5)}
+                </span>
+              </button>
             </div>
             <footer className="random-event-footer">
               <p>当前生活费 ¥{state.money}</p>
-              <div className="consumption-actions">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setBirthdayTarget(null)}
-                >
-                  不送了
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={state.money < 150}
-                  onClick={() => {
-                    const result = onBirthdayGift?.(birthdayTarget.id)
-                    if (result && result.gain > 0) {
-                      setBirthdayResult({
-                        ...result,
-                        name: birthdayTarget.name,
-                        reaction: pickBirthdayReaction(),
-                      })
-                    } else if (result) {
-                      setMessage(result.message)
-                    }
-                    setBirthdayTarget(null)
-                  }}
-                >
-                  送去祝福
-                  <span className="btn-arrow">→</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setBirthdayTarget(null)}
+              >
+                先不打扰
+              </button>
             </footer>
           </section>
         </div>

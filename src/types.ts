@@ -330,6 +330,7 @@ export interface Relationship {
   birthYear: number
   birthdayMonth: number
   birthdayGiftYear: number
+  birthdayContactType: 'gift' | 'blessing' | null
   partner: boolean
   confessionRisk: number
   breakupRisk: number
