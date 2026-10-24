@@ -5532,6 +5532,43 @@ input:focus-visible {
   }
 }
 
+/* ---------- withdraw elective week one ---------- */
+
+.withdraw-elective-panel {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--gold);
+  background: #faf1e4;
+}
+
+.withdraw-elective-panel > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8b5a2b;
+  font-size: 7.5px;
+  letter-spacing: 0.05em;
+}
+
+.withdraw-elective-panel > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.withdraw-elective-btn {
+  padding: 4px 7px;
+  border: 1px solid #b99a65;
+  background: transparent;
+  color: #7b5c2f;
+  font-family: var(--sans);
+  font-size: 7.5px;
+  cursor: pointer;
+}
+
+.withdraw-elective-btn:hover {
+  background: #f1e4cf;
+}
+
 /* ---------- plan course briefing ---------- */
 
 .plan-courses-section {

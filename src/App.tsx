@@ -557,6 +557,24 @@ function RealApp() {
     setView('whoami')
   }
 
+  const withdrawElective = (courseId: string) => {
+    if (!game || game.week !== 1) return
+    const target = game.season.courses.find(
+      (course) => course.id === courseId && course.electiveType,
+    )
+    if (!target) return
+    const next: GameState = {
+      ...game,
+      season: {
+        ...game.season,
+        courses: game.season.courses.filter((course) => course.id !== courseId),
+      },
+      electiveHistory: game.electiveHistory.filter((id) => id !== courseId),
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const abandonElective = (courseId: string) => {
     if (!game) return
     const target = game.results.find((result) => result.course.id === courseId)
@@ -1403,6 +1421,7 @@ function RealApp() {
         onToggleAction={toggleAction}
         onEndWeek={endWeek}
         onChooseFocus={chooseWeekFocus}
+        onWithdrawElective={withdrawElective}
         onOpenWhoAmI={openWhoAmI}
         onSave={saveNow}
         onTitle={goTitle}

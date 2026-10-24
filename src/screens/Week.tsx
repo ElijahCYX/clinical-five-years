@@ -34,6 +34,7 @@ interface WeekScreenProps {
   onToggleAction: (id: string) => void
   onEndWeek: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
+  onWithdrawElective?: (courseId: string) => void
   onOpenWhoAmI?: () => void
   onSave?: () => void
   onTitle?: () => void
@@ -44,6 +45,7 @@ export function WeekScreen({
   onToggleAction,
   onEndWeek,
   onChooseFocus,
+  onWithdrawElective,
   onOpenWhoAmI,
   onSave,
   onTitle,
@@ -406,6 +408,26 @@ export function WeekScreen({
                     剩余 {remainingActions} / 2 次行动
                   </Pill>
                 </div>
+
+                {state.week === 1 && courses.some((course) => course.electiveType) && (
+                  <div className="withdraw-elective-panel">
+                    <span>第一周退选窗口</span>
+                    <div>
+                      {courses
+                        .filter((course) => course.electiveType)
+                        .map((course) => (
+                          <button
+                            type="button"
+                            key={course.id}
+                            className="withdraw-elective-btn"
+                            onClick={() => onWithdrawElective?.(course.id)}
+                          >
+                            退选 {course.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 {!state.habits.includes('fitness') && !state.selected.includes('sport') && (
                   <p className="constitution-decay-note">
