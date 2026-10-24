@@ -112,6 +112,11 @@ import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { ClubRecruitment } from './screens/ClubRecruitment'
 import {
+  CLUB_EVENT_CHANCE,
+  pickClubEvent,
+  type ClubEvent,
+} from './clubEvents'
+import {
   CLUB_INACTIVITY_REMOVAL_TEXT,
   CLUB_INACTIVITY_WARNING_TEXT,
   CLUB_REJECTIONS,
@@ -1762,6 +1767,71 @@ function RealApp() {
     persist(next)
   }
 
+  const applyClubEvent = (
+    base: GameState,
+    event: ClubEvent,
+  ): { next: GameState; lines: string[] } => {
+    const membership = base.clubMembership
+    if (!membership) return { next: base, lines: [] }
+    const multiplier = roleBenefitMultiplier(membership.role)
+    const scaled = (value?: number) =>
+      value === undefined ? undefined : Math.round(value * multiplier)
+    const effects = event.effects
+    const lines: string[] = []
+    let next: GameState = {
+      ...base,
+      energy: Math.max(0, Math.min(100, base.energy + (scaled(effects.energy) ?? 0))),
+      stress: Math.max(0, Math.min(100, base.stress + (scaled(effects.stress) ?? 0))),
+      money: Math.max(0, base.money + (scaled(effects.money) ?? 0)),
+      composite: Math.max(0, base.composite + (scaled(effects.composite) ?? 0)),
+      socialGrowth: Math.max(0, base.socialGrowth + (scaled(effects.socialGrowth) ?? 0)),
+      english: Math.max(0, base.english + (scaled(effects.english) ?? 0)),
+    }
+    if (effects.energy) lines.push(`精力 ${effects.energy > 0 ? '+' : ''}${scaled(effects.energy)}`)
+    if (effects.stress) lines.push(`压力 ${effects.stress > 0 ? '+' : ''}${scaled(effects.stress)}`)
+    if (effects.money) lines.push(`生活费 ${effects.money > 0 ? '+' : ''}${scaled(effects.money)}`)
+    if (effects.composite) lines.push(`综测 +${scaled(effects.composite)}`)
+    if (effects.socialGrowth) lines.push(`人际成长 +${scaled(effects.socialGrowth)}`)
+    if (effects.english) lines.push(`英语 +${scaled(effects.english)}`)
+    if (effects.prep) {
+      const courses = base.season.courses
+      if (courses.length > 0) {
+        const course = courses[Math.floor(Math.random() * courses.length)]
+        next = {
+          ...next,
+          prep: {
+            ...next.prep,
+            [course.id]: Math.min(
+              100,
+              (next.prep[course.id] ?? 0) + (scaled(effects.prep) ?? 0),
+            ),
+          },
+        }
+        lines.push(`《${course.name}》准备度 +${scaled(effects.prep)}`)
+      }
+    }
+    if (effects.intimacy) {
+      const memberId =
+        membership.memberIds[
+          Math.floor(Math.random() * membership.memberIds.length)
+        ]
+      const relation = base.relationships.find((item) => item.id === memberId)
+      if (relation) {
+        const gain = adjustIntimacyDelta(base, relation, scaled(effects.intimacy) ?? 0)
+        next = {
+          ...next,
+          relationships: next.relationships.map((item) =>
+            item.id === relation.id
+              ? { ...item, intimacy: Math.min(100, item.intimacy + gain) }
+              : item,
+          ),
+        }
+        lines.push(`与${relation.name}亲密度 +${gain}`)
+      }
+    }
+    return { next, lines }
+  }
+
   const arrangeClubActivity = (
     acceptedIds: string[],
     declinedIds: string[],
@@ -1810,8 +1880,28 @@ function RealApp() {
           : relation,
       ),
     }
-    setGame(next)
-    persist(next)
+    let finalNext = next
+    let clubEventNotice: { event: ClubEvent; lines: string[] } | null = null
+    if (Math.random() < CLUB_EVENT_CHANCE) {
+      const event = pickClubEvent(membership.category)
+      const applied = applyClubEvent(finalNext, event)
+      finalNext = applied.next
+      clubEventNotice = { event, lines: applied.lines }
+    }
+    setGame(finalNext)
+    persist(finalNext)
+    if (clubEventNotice) {
+      showResearchNotice({
+        kind: 'club',
+        title: clubEventNotice.event.title,
+        text: clubEventNotice.event.text,
+        ruleText:
+          clubEventNotice.lines.length > 0
+            ? clubEventNotice.lines.join('；')
+            : undefined,
+        ruleLabel: '事件结果',
+      })
+    }
   }
 
   const arrangeDinner = (
