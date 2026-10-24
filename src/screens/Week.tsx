@@ -408,6 +408,12 @@ export function WeekScreen({
                   </Pill>
                 </div>
 
+                {!state.habits.includes('fitness') && !state.selected.includes('sport') && (
+                  <p className="constitution-decay-note">
+                    本周没有健身习惯或运动安排：周末体质成长 -5%。
+                  </p>
+                )}
+
                 {courses.length > 1 && state.weekFocus && (
                   <div className="week-focus-bar">
                     <span>本周主攻</span>

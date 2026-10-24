@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HABITS, PLANS, SCHOOL_NAME } from '../data'
-import type { HabitId, PlanId, Player } from '../types'
+import type { Course, HabitId, PlanId, Player } from '../types'
+import { courseDifficulty } from '../game'
 import { Eyebrow, Footer, SectionLabel, TopBar } from '../ui'
 
 interface PlanScreenProps {
@@ -8,6 +9,7 @@ interface PlanScreenProps {
   seasonLabel?: string
   initialPlan?: PlanId | null
   initialHabits?: HabitId[]
+  courses?: Course[]
   onBack?: () => void
   onConfirm: (plan: PlanId, habits: HabitId[]) => void
 }
@@ -17,6 +19,7 @@ export function PlanScreen({
   seasonLabel = '大一 · 秋',
   initialPlan = null,
   initialHabits = [],
+  courses = [],
   onBack,
   onConfirm,
 }: PlanScreenProps) {
@@ -66,6 +69,41 @@ export function PlanScreen({
         </header>
 
         <div className="paper-card plan-sheet">
+          {courses.length > 0 && (
+            <section className="plan-courses-section">
+              <SectionLabel right="难度按学分、考试类型与记忆/悟性估算">
+                00 / 本学期课程
+              </SectionLabel>
+              <div className="plan-course-grid">
+                {courses.map((course) => {
+                  const difficulty = courseDifficulty(course)
+                  return (
+                    <div className="plan-course-card" key={course.id}>
+                      <div className="plan-course-meta">
+                        <span>{course.examType}</span>
+                        <span>{course.credits} 学分</span>
+                      </div>
+                      <h3>{course.name}</h3>
+                      <p>
+                        记忆力 {course.memory} · 悟性 {course.comprehension}
+                      </p>
+                      <div className="plan-course-difficulty">
+                        <span aria-label={`难度 ${difficulty.stars} 星`}>
+                          {'★'.repeat(difficulty.stars)}
+                          {'☆'.repeat(5 - difficulty.stars)}
+                        </span>
+                        <strong>{difficulty.label}</strong>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="plan-course-note">
+                大考、学分高或记忆/悟性要求高的课程更难。先看清这学期要翻几座山，再决定计划。
+              </p>
+            </section>
+          )}
+
           <section>
             <SectionLabel right="整季一套 · 影响所有课程">01 / 学习计划</SectionLabel>
             <div className="plan-grid">
@@ -128,6 +166,9 @@ export function PlanScreen({
                 )
               })}
             </div>
+            <p className="habit-decay-note">
+              注意：没有选择「健身」习惯，且本周行动没有选择「运动」时，体质成长每周 -5%。
+            </p>
           </section>
 
           <div className="plan-footer">

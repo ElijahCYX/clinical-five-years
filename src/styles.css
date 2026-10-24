@@ -5296,6 +5296,99 @@ input:focus-visible {
   backdrop-filter: blur(3px);
 }
 
+
+/* ---------- plan course briefing ---------- */
+
+.plan-courses-section {
+  margin-bottom: 22px;
+}
+
+.plan-course-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.plan-course-card {
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 245, 0.58);
+}
+
+.plan-course-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 0.05em;
+}
+
+.plan-course-card h3 {
+  margin: 6px 0 4px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.plan-course-card p {
+  margin: 0;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.plan-course-difficulty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.plan-course-difficulty span {
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.plan-course-difficulty strong {
+  color: var(--ink-3);
+  font-family: var(--sans);
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.plan-course-note,
+.habit-decay-note,
+.constitution-decay-note {
+  margin: 9px 0 0;
+  font-size: 8.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.habit-decay-note {
+  margin-top: 8px;
+  color: #8b5a2b;
+}
+
+.constitution-decay-note {
+  margin: 0 0 10px;
+  padding: 7px 9px;
+  border-left: 2px solid #c07a3a;
+  background: #faf1e4;
+  color: #8b5a2b;
+}
+
+@media (max-width: 720px) {
+  .plan-course-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- mobile reading layout ---------- */
 
 .mobile-hud,

@@ -83,6 +83,27 @@ export function estimateScore(prep: number): number {
   return Math.round(38 + prep * 0.55)
 }
 
+const TIER_WEIGHT: Record<Course['memory'], number> = {
+  低: 0,
+  中: 1,
+  高: 2,
+}
+
+export function courseDifficulty(course: Course): {
+  score: number
+  stars: number
+  label: string
+} {
+  const score =
+    course.credits +
+    (course.examType === '大考' ? 2 : 0) +
+    TIER_WEIGHT[course.memory] +
+    TIER_WEIGHT[course.comprehension]
+  const stars = score <= 2 ? 1 : score <= 4 ? 2 : score <= 6 ? 3 : score <= 8 ? 4 : 5
+  const labels = ['轻松', '普通', '偏难', '困难', '硬核']
+  return { score, stars, label: labels[stars - 1] }
+}
+
 export function estimateRange(prep: number): [number, number] {
   return [estimateScore(prep) - 5, estimateScore(prep) + 5]
 }
@@ -531,6 +552,8 @@ export function simulateWeek(state: GameState): WeekSimulation {
     .map((id) => HABIT_BY_ID[id])
     .filter(Boolean)
   const habitApplied = habits.length > 0 && state.stress <= 60
+  const hasFitnessHabit = (state.habits ?? []).includes('fitness')
+  const hasSportAction = state.selected.includes('sport')
   const studyBonus = habitApplied
     ? habits.reduce((sum, habit) => sum + (habit.studyBonus ?? 0), 0)
     : 0
@@ -637,6 +660,10 @@ export function simulateWeek(state: GameState): WeekSimulation {
   const planCost = state.plan
     ? -effectiveEnergyCost(-planEnergyCost(state.plan), state.energy)
     : 0
+  if (!hasFitnessHabit && !hasSportAction) {
+    constitutionGrowth = Math.max(0, constitutionGrowth - 5)
+  }
+
   energy = clamp(energy + 15 - planCost, 0, 100)
   stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
   money = Math.max(0, money - WEEKLY_FIXED_COST)

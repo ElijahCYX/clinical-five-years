@@ -1305,6 +1305,7 @@ function RealApp() {
         seasonLabel={game.season.seasonLabel}
         initialPlan={game.plan}
         initialHabits={game.habits}
+        courses={game.season.courses}
         onBack={() => setView('create')}
         onConfirm={handlePlan}
       />
@@ -1464,6 +1465,7 @@ function DemoApp({ screen }: { screen: DemoName }) {
         player={demoPlayer}
         initialPlan="B"
         initialHabits={["timeManagement", "earlySleep"]}
+        courses={SEASONS[0].courses}
         onBack={() => goDemo('create')}
         onConfirm={() => goDemo('week')}
       />
