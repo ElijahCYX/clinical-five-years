@@ -35,9 +35,9 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
   const awards = state.yearRecords.filter((record) => record.award)
   const previousAward = bestAward(state.yearRecords)
   const paperCount = Math.floor(state.research / 100)
-  const openingTalent = state.openingTalent
-    ? OPENING_TALENT_BY_ID[state.openingTalent]
-    : null
+  const openingTalents = state.openingTalents
+    .map((id) => OPENING_TALENT_BY_ID[id])
+    .filter(Boolean)
   const postgradLabel =
     state.postgradChoice === 'baoyan'
       ? '保研'

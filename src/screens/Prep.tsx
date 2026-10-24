@@ -45,7 +45,7 @@ export function PrepScreen({
   const isBig = courses.length > 1
   const planId = state.plan ?? 'B'
   const multiplier = reviewMultiplier(planId)
-  const caffeineImmune = state.openingTalent === 'caffeineImmune'
+  const caffeineImmune = state.openingTalents.includes('caffeineImmune')
 
   const options: Array<{
     id: ReviewChoice

@@ -291,7 +291,7 @@ export interface GameState {
   highPressureDebuff: boolean
   lowEnergyAlert: boolean
   stressRewardedCourses: string[]
-  openingTalent: OpeningTalentId | null
+  openingTalents: OpeningTalentId[]
   mentorContactUnlocked: boolean
   roommateBond: boolean
   prep: Record<string, number>

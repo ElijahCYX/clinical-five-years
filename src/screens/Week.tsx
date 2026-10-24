@@ -97,7 +97,7 @@ export function WeekScreen({
         `英语进度 +${englishGainForMemory(player.attrs.memory)}`,
       )
     }
-    if (action.id === 'social' && state.openingTalent === 'socialBeast') {
+    if (action.id === 'social' && state.openingTalents.includes('socialBeast')) {
       return energyEffectText(
         action.effectText.replace('综测 +1', '综测 +2'),
         action.energy,
@@ -287,6 +287,32 @@ export function WeekScreen({
             </span>
           </div>
         </header>
+
+        <div className="mobile-hud">
+          <div>
+            <span>精力</span>
+            <strong>{state.energy}</strong>
+          </div>
+          <div>
+            <span>压力</span>
+            <strong>{state.stress}</strong>
+          </div>
+          <div>
+            <span>生活费</span>
+            <strong>¥{state.money}</strong>
+          </div>
+          <div>
+            <span>行动</span>
+            <strong>{remainingActions}/2</strong>
+          </div>
+        </div>
+        <div className="mobile-course-strip">
+          {courses.map((course) => (
+            <span key={course.id}>
+              {course.name} <b>{Math.round(state.prep[course.id] ?? 0)}</b>
+            </span>
+          ))}
+        </div>
 
         <main className="game-grid">
           <PlayerRail

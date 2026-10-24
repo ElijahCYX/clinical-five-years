@@ -5286,3 +5286,346 @@ input:focus-visible {
   pointer-events: none;
   backdrop-filter: blur(3px);
 }
+
+/* ---------- mobile reading layout ---------- */
+
+.mobile-hud,
+.mobile-course-strip {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .shell {
+    padding: 0 14px;
+  }
+
+  .topbar {
+    min-height: 58px;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 27px;
+    height: 27px;
+  }
+
+  .brand-cn {
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .brand-en {
+    display: none;
+  }
+
+  .save-chip {
+    margin-right: 5px;
+    padding: 6px 8px;
+    font-size: 7px;
+  }
+
+  .topbar-right {
+    gap: 5px;
+  }
+
+  .text-btn {
+    font-size: 9px;
+  }
+
+  .interface-nav {
+    margin: 6px 0 11px;
+  }
+
+  .interface-btn {
+    padding: 10px 6px;
+    font-size: 7px;
+    letter-spacing: 0.05em;
+  }
+
+  .game-grid {
+    display: block;
+    padding-bottom: 20px;
+  }
+
+  .game-left,
+  .game-right {
+    display: none;
+  }
+
+  .game-center {
+    width: 100%;
+  }
+
+  .game-head {
+    display: block;
+    padding: 12px 0 0;
+  }
+
+  .game-head h1 {
+    font-size: 34px;
+    line-height: 1.15;
+  }
+
+  .game-head-left p {
+    line-height: 1.7;
+  }
+
+  .game-head-right {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .mobile-hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 12px 0 5px;
+    border: 1px solid var(--line);
+    background: rgba(255, 252, 245, 0.7);
+  }
+
+  .mobile-hud div {
+    padding: 7px 9px;
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .mobile-hud div:last-child {
+    border-right: 0;
+  }
+
+  .mobile-hud span {
+    display: block;
+    font-size: 7px;
+    color: var(--muted);
+  }
+
+  .mobile-hud strong {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .mobile-course-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .mobile-course-strip span {
+    flex: 0 0 auto;
+    padding: 5px 8px;
+    border: 1px solid var(--line-soft);
+    color: var(--muted);
+    font-size: 7.5px;
+    white-space: nowrap;
+  }
+
+  .mobile-course-strip b {
+    margin-left: 3px;
+    color: var(--ink-3);
+    font-family: var(--serif);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .game-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .week-title-row {
+    display: block;
+  }
+
+  .week-title-row .pill {
+    margin-top: 7px;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-card {
+    min-height: 0;
+    padding: 12px 13px;
+  }
+
+  .action-card h3 {
+    font-size: 17px;
+  }
+
+  .action-footer {
+    display: block;
+  }
+
+  .action-footer .btn-primary {
+    width: 100%;
+    margin-top: 9px;
+  }
+
+  .selected-summary {
+    min-height: 0;
+    line-height: 1.8;
+  }
+
+  .game-footer {
+    display: block;
+    line-height: 1.8;
+    padding-bottom: 14px;
+  }
+
+  .coming-soon {
+    display: none;
+  }
+
+  .prep-grid {
+    display: block;
+  }
+
+  .prep-aside {
+    margin-top: 14px;
+  }
+
+  .report-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .result-actions {
+    flex-wrap: wrap;
+  }
+
+  .result-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .whoami-head {
+    display: block;
+    margin: 18px 0 14px;
+  }
+
+  .whoami-mark {
+    display: none;
+  }
+
+  .dossier-cover {
+    padding: 17px;
+  }
+
+  .dossier-cover-main h2 {
+    font-size: 25px;
+  }
+
+  .dossier-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dossier-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dossier-year-row {
+    grid-template-columns: 1.1fr 0.9fr 0.8fr 0.7fr 1.4fr;
+    font-size: 7.5px;
+  }
+
+  .talent-select-head,
+  .whoami-head {
+    margin-top: 18px;
+  }
+
+  .opening-talent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .talent-select-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .talent-select-footer .btn-primary {
+    width: 100%;
+  }
+
+  .event-wrap {
+    padding-top: 14px;
+  }
+
+  .event-card {
+    padding: 18px 16px;
+  }
+
+  .event-title {
+    font-size: 38px;
+  }
+
+  .plan-summary {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .habit-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .plan-footer {
+    display: block;
+  }
+
+  .plan-footer .btn-primary {
+    width: 100%;
+    margin-top: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title,
+  .game-head h1 {
+    font-size: 28px;
+  }
+
+  .mobile-hud strong {
+    font-size: 14px;
+  }
+
+  .mobile-hud div {
+    padding: 6px;
+  }
+
+  .action-card {
+    padding: 11px;
+  }
+
+  .event-title {
+    font-size: 30px;
+  }
+
+  .result-hero {
+    display: block;
+  }
+
+  .result-badge {
+    margin-top: 10px;
+  }
+
+  .result-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+@media (max-width: 820px) {
+  #app-version {
+    position: static;
+    display: inline-block;
+    margin: 0 14px 12px;
+  }
+}

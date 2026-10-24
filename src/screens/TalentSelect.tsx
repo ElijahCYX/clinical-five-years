@@ -5,7 +5,7 @@ import { Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
 
 interface TalentSelectScreenProps {
   state: GameState
-  onConfirm: (talent: OpeningTalentId | null) => void
+  onConfirm: (talents: OpeningTalentId[]) => void
   onBack?: () => void
 }
 
@@ -41,29 +41,41 @@ export function TalentSelectScreen({
   const player = state.player
   const aptitude = player ? TALENT_BY_ID[player.talent] : null
   const isPlain = player?.talent === 'plain'
+  const isGenius = player?.talent === 'genius'
+  const maxChoices = isGenius ? 2 : 1
+  const maxRefreshes = isGenius ? 2 : 1
   const [slots, setSlots] = useState<OpeningTalentId[]>(() =>
     isPlain ? [] : sampleThree(),
   )
-  const [refreshed, setRefreshed] = useState<[boolean, boolean, boolean]>([
-    false,
-    false,
-    false,
+  const [refreshCounts, setRefreshCounts] = useState<[number, number, number]>([
+    0,
+    0,
+    0,
   ])
-  const [selected, setSelected] = useState<OpeningTalentId | null>(null)
+  const [selected, setSelected] = useState<OpeningTalentId[]>([])
 
   if (!player) return null
 
   const refresh = (index: number) => {
-    if (refreshed[index]) return
+    if (refreshCounts[index] >= maxRefreshes) return
     const old = slots[index]
     const next = refreshOne(slots, index)
     setSlots(next)
-    if (selected === old) setSelected(null)
-    setRefreshed((current) => current.map((item, i) => (i === index ? true : item)) as [
-      boolean,
-      boolean,
-      boolean,
-    ])
+    setSelected((current) => current.filter((id) => id !== old))
+    setRefreshCounts(
+      (current) =>
+        current.map((count, i) =>
+          i === index ? count + 1 : count,
+        ) as [number, number, number],
+    )
+  }
+
+  const toggleSelection = (id: OpeningTalentId) => {
+    setSelected((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id)
+      if (current.length < maxChoices) return [...current, id]
+      return [...current.slice(1), id]
+    })
   }
 
   return (
@@ -81,12 +93,14 @@ export function TalentSelectScreen({
         <header className="talent-select-head">
           <Eyebrow>OPENING TALENT / BEFORE DAY ONE</Eyebrow>
           <h1 className="page-title">
-            {isPlain ? '平庸者的开局' : '挑一个开局天赋'}
+            {isPlain ? '平庸者的开局' : isGenius ? '天才的额外特权' : '挑一个开局天赋'}
           </h1>
           <p className="page-lede">
             {isPlain
               ? '你以「平庸」的资质走进临江大学。学校把所有天赋摆在你面前，然后礼貌地告诉你：看看就好。'
-              : `你的资质是「${aptitude?.name ?? '未知'}」。三个天赋任选其一，每个天赋下面各有一次刷新机会。选完，五年正式开始。`}
+              : isGenius
+                ? `你的资质是「${aptitude?.name ?? '天才'}」。天才可以带走两个开局天赋，每个天赋卡最多刷新两次。选完，五年正式开始。`
+                : `你的资质是「${aptitude?.name ?? '未知'}」。三个天赋任选其一，每个天赋下面各有一次刷新机会。选完，五年正式开始。`}
           </p>
         </header>
 
@@ -119,7 +133,7 @@ export function TalentSelectScreen({
             </section>
             <div className="talent-select-footer">
               <p>接受平庸，也是一种天赋。</p>
-              <button type="button" className="btn btn-primary" onClick={() => onConfirm(null)}>
+              <button type="button" className="btn btn-primary" onClick={() => onConfirm([])}>
                 接受平庸，开始五年
                 <span className="btn-arrow">→</span>
               </button>
@@ -132,13 +146,13 @@ export function TalentSelectScreen({
                 const talent = OPENING_TALENTS.find((item) => item.id === id)
                 return (
                   <div
-                    className={`opening-talent-card ${selected === id ? 'is-selected' : ''}`}
+                    className={`opening-talent-card ${selected.includes(id) ? 'is-selected' : ''}`}
                     key={`${id}-${index}`}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setSelected(id)}
+                    onClick={() => toggleSelection(id)}
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') setSelected(id)
+                      if (event.key === 'Enter' || event.key === ' ') toggleSelection(id)
                     }}
                   >
                     <div className="opening-talent-top">
@@ -148,7 +162,7 @@ export function TalentSelectScreen({
                     <p>{talent?.desc}</p>
                     <strong>{talent?.effectText}</strong>
                     <span className="opening-talent-pick">
-                      {selected === id ? '已选择' : '点选'}
+                      {selected.includes(id) ? '已选择' : '点选'}
                     </span>
                     <button
                       type="button"
@@ -157,23 +171,25 @@ export function TalentSelectScreen({
                         event.stopPropagation()
                         refresh(index)
                       }}
-                      disabled={refreshed[index]}
+                      disabled={refreshCounts[index] >= maxRefreshes}
                     >
-                      {refreshed[index] ? '本卡已刷新' : '刷新这张'}
+                      {refreshCounts[index] >= maxRefreshes
+                        ? '本卡已刷新'
+                        : `刷新这张（剩余 ${maxRefreshes - refreshCounts[index]} 次）`}
                     </button>
                   </div>
                 )
               })}
             </div>
             <div className="talent-select-footer">
-              <p>每个刷新按钮只有一次点击机会，选完不能反悔。</p>
+              <p>{isGenius ? '天才可以选两个天赋；每张卡最多刷新两次。' : '每个刷新按钮只有一次点击机会，选完不能反悔。'}</p>
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={!selected}
-                onClick={() => selected && onConfirm(selected)}
+                disabled={selected.length !== maxChoices}
+                onClick={() => selected.length === maxChoices && onConfirm(selected)}
               >
-                就它了，开始五年
+                {isGenius ? `带上这两个（${selected.length}/${maxChoices}），开始五年` : '就它了，开始五年'}
                 <span className="btn-arrow">→</span>
               </button>
             </div>

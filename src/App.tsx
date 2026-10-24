@@ -78,7 +78,7 @@ import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 
-const SAVE_KEY = 'clinical-five-years-save-v14'
+const SAVE_KEY = 'clinical-five-years-save-v15'
 
 type View = ScreenName | 'crisis' | 'whoami'
 
@@ -452,10 +452,10 @@ function RealApp() {
     commit(next, 'talentSelect')
   }
 
-  const handleOpeningTalent = (talent: OpeningTalentId | null) => {
+  const handleOpeningTalent = (talents: OpeningTalentId[]) => {
     if (!game) return
-    let next = applyOpeningTalent({ ...game, screen: 'plan' }, talent)
-    if (talent === 'modelMonster' && next.player) {
+    let next = applyOpeningTalent({ ...game, screen: 'plan' }, talents)
+    if (talents.includes('modelMonster') && next.player) {
       const chance = Math.min(0.75, next.player.attrs.appearance * 0.08)
       if (Math.random() < chance) {
         next = {
@@ -629,7 +629,7 @@ function RealApp() {
         prep[course.id] * 0.55 +
         (Math.random() * 2 * effect.variance - effect.variance)
       if (game.examAllNighter) {
-        rawScore *= game.openingTalent === 'caffeineImmune' ? 0.975 : 0.95
+        rawScore *= game.openingTalents.includes('caffeineImmune') ? 0.975 : 0.95
       }
       const score = applyScoreRescue(
         game,
@@ -708,7 +708,7 @@ function RealApp() {
       money: game.money - 10,
       energy: clamp(game.energy + 10, 0, 100),
       stress: clamp(
-        game.stress + (game.openingTalent === 'caffeineImmune' ? 0 : 2),
+        game.stress + (game.openingTalents.includes('caffeineImmune') ? 0 : 2),
         0,
         100,
       ),

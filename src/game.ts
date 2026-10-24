@@ -283,7 +283,7 @@ export function newGameState(player: Player): GameState {
     highPressureDebuff: false,
     lowEnergyAlert: false,
     stressRewardedCourses: [],
-    openingTalent: null,
+    openingTalents: [],
     mentorContactUnlocked: false,
     roommateBond: false,
     constitutionGrowth: 0,
@@ -411,30 +411,30 @@ export function cetScore(
 }
 
 export function examReviewTalentMultiplier(
-  state: Pick<GameState, 'openingTalent'>,
+  state: Pick<GameState, 'openingTalents'>,
 ): number {
-  return state.openingTalent === 'cramKing' ? 1.1 : 1
+  return state.openingTalents.includes('cramKing') ? 1.1 : 1
 }
 
 export function coursePrepTalentMultiplier(
-  state: Pick<GameState, 'openingTalent'>,
+  state: Pick<GameState, 'openingTalents'>,
   course: Course,
 ): number {
-  return state.openingTalent === 'memoryBread' && course.memory === '高' ? 1.2 : 1
+  return state.openingTalents.includes('memoryBread') && course.memory === '高' ? 1.2 : 1
 }
 
 export function kaoyanPrepMultiplier(
-  state: Pick<GameState, 'openingTalent'>,
+  state: Pick<GameState, 'openingTalents'>,
 ): number {
-  return state.openingTalent === 'kaoyanChosen' ? 1.2 : 1
+  return state.openingTalents.includes('kaoyanChosen') ? 1.2 : 1
 }
 
 export function applyScoreRescue(
-  state: Pick<GameState, 'openingTalent'>,
+  state: Pick<GameState, 'openingTalents'>,
   score: number,
 ): number {
   if (
-    state.openingTalent === 'caiCaiLaoLao' &&
+    state.openingTalents.includes('caiCaiLaoLao') &&
     score >= 55 &&
     score <= 59
   ) {
@@ -445,53 +445,32 @@ export function applyScoreRescue(
 
 export function applyOpeningTalent(
   base: GameState,
-  talent: OpeningTalentId | null,
+  talents: OpeningTalentId[],
 ): GameState {
-  if (!talent) return { ...base, openingTalent: null }
   const player = base.player
-  if (!player) return { ...base, openingTalent: talent }
-  let next: GameState = { ...base, openingTalent: talent }
-  if (talent === 'accent') {
-    next = { ...next, english: next.english + 25 }
-  }
-  if (talent === 'medicalFamily') {
-    next = { ...next, mentorContactUnlocked: true }
-  }
-  if (talent === 'modelMonster') {
-    next = {
-      ...next,
-      player: {
-        ...player,
-        attrs: {
-          ...player.attrs,
-          appearance: Math.min(10, player.attrs.appearance + 1),
-        },
-      },
+  let next: GameState = { ...base, openingTalents: [...talents] }
+  if (!player) return next
+  let attrs = { ...player.attrs }
+  let english = next.english
+  let mentorContactUnlocked = next.mentorContactUnlocked
+  for (const talent of talents) {
+    if (talent === 'accent') english += 25
+    if (talent === 'medicalFamily') mentorContactUnlocked = true
+    if (talent === 'modelMonster') {
+      attrs = { ...attrs, appearance: Math.min(10, attrs.appearance + 1) }
+    }
+    if (talent === 'steadyHands') {
+      attrs = { ...attrs, dexterity: Math.min(10, attrs.dexterity + 2) }
+    }
+    if (talent === 'memoryBread') {
+      attrs = { ...attrs, memory: Math.min(10, attrs.memory + 2) }
     }
   }
-  if (talent === 'steadyHands') {
-    next = {
-      ...next,
-      player: {
-        ...player,
-        attrs: {
-          ...player.attrs,
-          dexterity: Math.min(10, player.attrs.dexterity + 2),
-        },
-      },
-    }
-  }
-  if (talent === 'memoryBread') {
-    next = {
-      ...next,
-      player: {
-        ...player,
-        attrs: {
-          ...player.attrs,
-          memory: Math.min(10, player.attrs.memory + 2),
-        },
-      },
-    }
+  next = {
+    ...next,
+    english,
+    mentorContactUnlocked,
+    player: { ...player, attrs },
   }
   return next
 }
@@ -499,10 +478,10 @@ export function applyOpeningTalent(
 /** 每周开场自动生效的开局天赋。 */
 export function applyWeeklyOpeningTalent(base: GameState): GameState {
   let next = base
-  if (base.openingTalent === 'pressureCooker') {
+  if (base.openingTalents.includes('pressureCooker')) {
     next = { ...next, stress: clamp(Math.round(next.stress * 0.9), 0, 100) }
   }
-  if (base.openingTalent === 'energyMule') {
+  if (base.openingTalents.includes('energyMule')) {
     next = { ...next, energy: clamp(next.energy + 10, 0, 100) }
   }
   return next
@@ -581,7 +560,7 @@ export function simulateWeek(state: GameState): WeekSimulation {
         : action.english ?? 0
     composite +=
       (action.composite ?? 0) +
-      (action.id === 'social' && state.openingTalent === 'socialBeast' ? 1 : 0)
+      (action.id === 'social' && state.openingTalents.includes('socialBeast') ? 1 : 0)
     research += action.research ?? 0
     kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
     if (action.study) {
