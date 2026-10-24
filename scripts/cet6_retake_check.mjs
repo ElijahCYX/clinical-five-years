@@ -1,0 +1,21 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1600,height:1100} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{
+  const {newGameState}=await import('/src/game.ts'); const {SEASONS}=await import('/src/data.ts'); const {demoPlayer}=await import('/src/demo.ts')
+  const s=newGameState(demoPlayer); s.seasonIndex=1; s.season=SEASONS[1]; s.screen='cetEvent'; s.week=3; s.plan='B'; s.money=2000; s.english=80; s.cet4Score=500; s.cet6Score=560
+  localStorage.setItem('clinical-five-years-save-v7',JSON.stringify({game:s,savedAt:Date.now()}))
+})
+await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(350)
+const cards=page.locator('.cet-option')
+console.log('cards:', await cards.count())
+console.log('cet4 disabled:', await cards.nth(0).isDisabled())
+console.log('cet6 disabled:', await cards.nth(1).isDisabled())
+console.log('cet6 text:', (await cards.nth(1).innerText()).replace(/\n/g,' | '))
+await cards.nth(1).click(); await page.locator('.event-actions button',{hasText:'确认'}).click(); await page.waitForTimeout(350)
+const save=await page.evaluate(()=>JSON.parse(localStorage.getItem('clinical-five-years-save-v7')).game)
+console.log('registered:', save.cet6Registered, 'window:', save.cetWindow)
+console.log('errors:', errors.slice(0,5))
+await browser.close()

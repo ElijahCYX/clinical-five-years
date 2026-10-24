@@ -17,6 +17,7 @@ interface PrepScreenProps {
   onChoose: (choice: ReviewChoice) => void
   onCoffee?: () => void
   onAllNighter?: () => void
+  onEnglishPrep?: () => void
   onTitle?: () => void
 }
 
@@ -26,6 +27,7 @@ export function PrepScreen({
   onChoose,
   onCoffee,
   onAllNighter,
+  onEnglishPrep,
   onTitle,
 }: PrepScreenProps) {
   const [choice, setChoice] = useState<ReviewChoice | null>(initialChoice)
@@ -109,7 +111,15 @@ export function PrepScreen({
   const optionEffects = useMemo(
     () =>
       options.map((option) => {
-        const effect = getReviewEffect(option.id, courses, player.attrs, planId)
+        const rawEffect = getReviewEffect(option.id, courses, player.attrs, planId)
+        const effect = state.examEnglishPrep
+          ? {
+              ...rawEffect,
+              gains: Object.fromEntries(
+                Object.entries(rawEffect.gains).map(([id, gain]) => [id, gain * 0.9]),
+              ),
+            }
+          : rawEffect
         const projected = courses.reduce<Record<string, number>>((acc, course) => {
           acc[course.id] = Math.min(
             100,
@@ -119,7 +129,7 @@ export function PrepScreen({
         }, {})
         return { ...option, effect, projected }
       }),
-    [state.prep, state.season.id, options.length],
+    [state.prep, state.season.id, options.length, state.examEnglishPrep],
   )
 
   const selected = optionEffects.find((option) => option.id === choice)
@@ -412,6 +422,49 @@ export function PrepScreen({
                   {state.examAllNighter ? '已刷夜' : '刷一夜'}
                 </button>
               </div>
+              {state.season.examKind === '大考' && (
+                <div className="boost-row">
+                  <div>
+                    <h4>英语备考</h4>
+                    <p>用考试周的一部分时间背单词、刷 CET 真题，给下一场四六级加一点底。</p>
+                    <small>
+                      精力 -10 · 压力 +5 · 英语进度 +5 · 本次复习收益 -10%
+                      {state.cetWindow ? ' · CET 通过率 +10%' : ' · 本季未报名 CET，通过率加成不生效'}
+                    </small>
+                    {state.examEnglishPrep ? (
+                      <small className="boost-now">已生效 · 本场不可撤销</small>
+                    ) : (
+                      <div className="boost-deltas">
+                        <div>
+                          <span>精力</span>
+                          <b>
+                            {state.energy} → {clamp(state.energy - 10, 0, 100)}
+                          </b>
+                        </div>
+                        <div>
+                          <span>压力</span>
+                          <b>
+                            {state.stress} → {clamp(state.stress + 5, 0, 100)}
+                          </b>
+                        </div>
+                        <div>
+                          <span>英语</span>
+                          <b>{state.english} → {state.english + 5}</b>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="boost-btn"
+                    onClick={onEnglishPrep}
+                    disabled={state.examEnglishPrep}
+                  >
+                    {state.examEnglishPrep ? '已备考' : '背一轮'}
+                  </button>
+                </div>
+              )}
+
             </div>
 
             <div className="paper-card exam-table-card">

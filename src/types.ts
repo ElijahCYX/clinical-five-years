@@ -208,8 +208,11 @@ export interface GameState {
   cet4Registered: boolean
   cet6Registered: boolean
   cetEventDone: boolean
+  cetWindow: 'winter' | 'summer' | null
+  cetAttemptBonus: number
   examCoffee: boolean
   examAllNighter: boolean
+  examEnglishPrep: boolean
   peResults: PeResult[]
   pendingMakeups: Course[]
   postgradChoice: PostgradChoice

@@ -36,7 +36,7 @@ export function CetResultScreen({ state, nextLabel = '下一学年', onContinue,
             <div className="event-title-row">
               <div>
                 <h1 className="event-title">成绩公布</h1>
-                <p className="event-sub">{nextLabel} · 开学前 · 英语四六级</p>
+                <p className="event-sub">{nextLabel} · 学期初 · 英语四六级</p>
               </div>
               <Pill tone={cet6Qualified ? 'green' : 'gold'}>
                 {cet6Qualified ? '毕业英语已合格' : '仍有提升空间'}
@@ -93,7 +93,7 @@ export function CetResultScreen({ state, nextLabel = '下一学年', onContinue,
 
             <div className="event-actions">
               <button type="button" className="btn btn-primary" onClick={onContinue}>
-                查看学年档案
+                继续学期计划
                 <span className="btn-arrow">→</span>
               </button>
             </div>

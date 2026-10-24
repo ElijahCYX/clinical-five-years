@@ -21,7 +21,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
   const cet4Passed = (state.cet4Score ?? 0) >= CET.pass4
   const cet6Qualified = (state.cet6Score ?? 0) >= CET.graduate6
   const canCet4 = !cet4Passed
-  const canCet6 = cet4Passed && !cet6Qualified
+  const canCet6 = cet4Passed
   const canAfford = state.money >= CET.registrationCost
 
   const confirm = () => {
@@ -56,7 +56,10 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
               <Pill tone="gold">限本周事件</Pill>
             </div>
             <p className="event-lede">
-              全国大学英语四、六级考试报名开始。报名费 10 元，成绩将在下一年秋季开学时公布。
+              全国大学英语四、六级考试报名开始。报名费 {CET.registrationCost} 元。
+              {state.season.seasonLabel.includes('冬')
+                ? '本次冬季考试成绩将在春季学期初公布。'
+                : '本次夏季考试成绩将在秋季学期初公布。'}
               这是毕业与保研简历上都会用到的一张成绩单。
             </p>
 
@@ -92,7 +95,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
                 <p>总分 750，425 分通过。</p>
                 <ul>
                   <li>英语进度 ≥ 40：四级保底 425</li>
-                  <li>报名费 10 元</li>
+                  <li>报名费 {CET.registrationCost} 元</li>
                 </ul>
                 <small>
                   {canCet4
@@ -115,13 +118,13 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
                 <ul>
                   <li>英语进度 ≥ 75：六级保底 425</li>
                   <li>英语进度 ≥ 100：六级保底 550</li>
-                  <li>报名费 10 元</li>
+                  <li>报名费 {CET.registrationCost} 元</li>
                 </ul>
                 <small>
                   {!cet4Passed
                     ? '需要先通过 CET-4。'
                     : cet6Qualified
-                      ? `已满足毕业要求：${state.cet6Score} 分`
+                      ? `已达到毕业线：${state.cet6Score} 分，可继续刷分`
                       : `四级已通过：${state.cet4Score} 分`}
                 </small>
               </button>

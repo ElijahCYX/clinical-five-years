@@ -234,8 +234,11 @@ export function newGameState(player: Player): GameState {
     cet4Registered: false,
     cet6Registered: false,
     cetEventDone: false,
+    cetWindow: null,
+    cetAttemptBonus: 0,
     examCoffee: false,
     examAllNighter: false,
+    examEnglishPrep: false,
     peResults: [],
     pendingMakeups: [],
     postgradChoice: null,
@@ -494,7 +497,12 @@ export function postgradChanceFor(state: GameState): number {
   const gpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : 0
   const cet6 = state.cet6Score ?? 0
-  const cetBonus = cet6 >= 550 ? 0.22 : cet6 >= 425 ? 0.08 : 0
+  const cetBonus =
+    cet6 >= 550
+      ? 0.22 + Math.min((cet6 - 550) / 500, 0.15)
+      : cet6 >= 425
+        ? 0.08
+        : 0
   const base =
     0.1 +
     Math.max(0, gpa - 2.5) * 0.22 +
@@ -515,6 +523,7 @@ export function kaoyanScoreFor(state: GameState): number {
         Math.min(state.english, 150) * 1.2 +
         player.attrs.memory * 12 +
         player.attrs.resilience * 8 +
+        Math.min((state.cet6Score ?? 0) * 0.12, 90) +
         state.kaoyanPrep * 18,
     ),
     0,

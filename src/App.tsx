@@ -59,7 +59,7 @@ import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
 
-const SAVE_KEY = 'clinical-five-years-save-v5'
+const SAVE_KEY = 'clinical-five-years-save-v7'
 
 type View = ScreenName
 
@@ -222,6 +222,7 @@ function prepareSeason(base: GameState, index: number): GameState {
     cetEventDone: false,
     examCoffee: false,
     examAllNighter: false,
+    examEnglishPrep: false,
     pendingMakeups: [],
   }
 }
@@ -361,7 +362,8 @@ function RealApp() {
 
     const shouldPrepare = game.week >= 3
     const isCetEvent =
-      game.season.seasonLabel.endsWith('夏') &&
+      (game.season.seasonLabel.endsWith('夏') || game.season.seasonLabel.endsWith('冬')) &&
+      game.seasonIndex !== 19 &&
       game.week === 2 &&
       !game.cetEventDone
     const next: GameState = {
@@ -390,13 +392,19 @@ function RealApp() {
   const chooseReview = (choice: ReviewChoice) => {
     if (!game || !game.plan || !game.player) return
     const effect = getReviewEffect(choice, game.season.courses, game.player.attrs, game.plan)
+    const gains = Object.fromEntries(
+      Object.entries(effect.gains).map(([id, gain]) => [
+        id,
+        gain * (game.examEnglishPrep ? 0.9 : 1),
+      ]),
+    )
     const energy = clamp(game.energy + effect.energy, 0, 100)
     const stress = clamp(game.stress + effect.stress, 0, 100)
     const money = Math.max(0, game.money - 250)
     const prep = { ...game.prep }
 
     const results = game.season.courses.map((course) => {
-      prep[course.id] = clamp((prep[course.id] ?? 0) + (effect.gains[course.id] ?? 0), 0, 100)
+      prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
       let rawScore =
         38 +
         prep[course.id] * 0.55 +
@@ -466,6 +474,22 @@ function RealApp() {
     persist(next)
   }
 
+  const handleEnglishPrep = () => {
+    if (!game || game.examEnglishPrep) return
+    const next: GameState = {
+      ...game,
+      energy: clamp(game.energy - 10, 0, 100),
+      stress: clamp(game.stress + 5, 0, 100),
+      english: game.english + 5,
+      cetAttemptBonus: game.cetWindow
+        ? Math.min(0.5, game.cetAttemptBonus + 0.1)
+        : game.cetAttemptBonus,
+      examEnglishPrep: true,
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const handleAllNighter = () => {
     if (!game || game.examAllNighter) return
     const prep = { ...game.prep }
@@ -493,6 +517,8 @@ function RealApp() {
       money: game.money - CET.registrationCost,
       cet4Registered: true,
       cetEventDone: true,
+      cetWindow: game.season.seasonLabel.includes('冬') ? 'winter' : 'summer',
+      cetAttemptBonus: game.cetAttemptBonus,
       screen: 'week',
     }
     commit(next, 'week')
@@ -501,13 +527,14 @@ function RealApp() {
   const handleCetRegister6 = () => {
     if (!game) return
     const cet4Passed = (game.cet4Score ?? 0) >= CET.pass4
-    const cet6Qualified = (game.cet6Score ?? 0) >= CET.graduate6
-    if (!cet4Passed || cet6Qualified || game.money < CET.registrationCost) return
+    if (!cet4Passed || game.money < CET.registrationCost) return
     const next: GameState = {
       ...game,
       money: game.money - CET.registrationCost,
       cet6Registered: true,
       cetEventDone: true,
+      cetWindow: game.season.seasonLabel.includes('冬') ? 'winter' : 'summer',
+      cetAttemptBonus: game.cetAttemptBonus,
       screen: 'week',
     }
     commit(next, 'week')
@@ -544,30 +571,55 @@ function RealApp() {
   const withCetResults = (base: GameState): GameState => {
     const tookCet4 = base.cet4Registered
     const tookCet6 = base.cet6Registered
+    const bonus = Math.max(0, Math.min(1, base.cetAttemptBonus))
     let cet4Score = base.cet4Score
     let cet6Score = base.cet6Score
-    if (tookCet4) cet4Score = cetScore('cet4', base.english, base.player!.attrs.memory)
-    if (tookCet6) cet6Score = cetScore('cet6', base.english, base.player!.attrs.memory)
+    if (tookCet4) {
+      cet4Score = cetScore('cet4', base.english, base.player!.attrs.memory)
+      if (cet4Score < CET.pass4 && Math.random() < bonus) cet4Score = CET.pass4
+    }
+    if (tookCet6) {
+      const attempt = cetScore('cet6', base.english, base.player!.attrs.memory)
+      const adjusted =
+        attempt < CET.pass6 && Math.random() < bonus ? CET.pass6 : attempt
+      cet6Score = Math.max(base.cet6Score ?? 0, adjusted)
+    }
     return {
       ...base,
       cet4Score,
       cet6Score,
       cet4Registered: false,
       cet6Registered: false,
+      cetWindow: null,
+      cetAttemptBonus: 0,
     }
   }
 
   const handleCetResultContinue = () => {
     if (!game) return
-    if (game.seasonIndex === 19) {
-      finalizeGraduation(game)
+    if (game.seasonIndex === 14 && !game.postgradChoice) {
+      commit(
+        {
+          ...game,
+          screen: 'route',
+          postgradChance: game.postgradChance ?? postgradChanceFor(game),
+        },
+        'route',
+      )
       return
     }
-    commit({ ...game, screen: 'yearend', vacation: null }, 'yearend')
+    commit({ ...game, screen: 'plan' }, 'plan')
   }
 
   const beginSeason = (base: GameState, index: number) => {
     const prepared = prepareSeason(base, index)
+    const pendingCet =
+      (base.cetWindow === 'winter' && index % 4 === 2) ||
+      (base.cetWindow === 'summer' && index % 4 === 0)
+    if (pendingCet) {
+      commit({ ...withCetResults(prepared), screen: 'cetResult' }, 'cetResult')
+      return
+    }
     if (index === 14 && !base.postgradChoice) {
       commit(
         { ...prepared, screen: 'route', postgradChance: postgradChanceFor(prepared) },
@@ -634,22 +686,12 @@ function RealApp() {
 
     // 大三临床前、大四夏：学年结算（大四无暑假）
     if (index === 11 || index === 15) {
-      if (index === 15 && (current.cet4Registered || current.cet6Registered)) {
-        current = withCetResults(current)
-        commit({ ...current, screen: 'cetResult' }, 'cetResult')
-        return
-      }
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
       return
     }
 
     // 大五夏：毕业结算 + 毕业生体育补考
     if (index === 19) {
-      if (current.cet4Registered || current.cet6Registered) {
-        current = withCetResults(current)
-        commit({ ...current, screen: 'cetResult' }, 'cetResult')
-        return
-      }
       finalizeGraduation(current)
       return
     }
@@ -809,33 +851,9 @@ function RealApp() {
     }
 
     if (game.vacation.kind === 'winter') {
-      commit(prepareSeason(base, game.seasonIndex + 1), 'plan')
+      beginSeason(base, game.seasonIndex + 1)
     } else {
-      const tookCet4 = base.cet4Registered
-      const tookCet6 = base.cet6Registered
-      let cet4Score = base.cet4Score
-      let cet6Score = base.cet6Score
-      if (tookCet4) {
-        cet4Score = cetScore('cet4', base.english, base.player!.attrs.memory)
-      }
-      if (tookCet6) {
-        cet6Score = cetScore('cet6', base.english, base.player!.attrs.memory)
-      }
-      if (tookCet4 || tookCet6) {
-        commit(
-          {
-            ...base,
-            screen: 'cetResult',
-            cet4Score,
-            cet6Score,
-            cet4Registered: false,
-            cet6Registered: false,
-          },
-          'cetResult',
-        )
-      } else {
-        commit({ ...base, screen: 'yearend', vacation: null }, 'yearend')
-      }
+      commit({ ...base, screen: 'yearend', vacation: null }, 'yearend')
     }
   }
 
@@ -891,7 +909,7 @@ function RealApp() {
     return (
       <CetResultScreen
         state={game}
-        nextLabel={SEASONS[game.seasonIndex + 1]?.seasonLabel ?? '下一学年'}
+        nextLabel={game.season.seasonLabel}
         onContinue={handleCetResultContinue}
         onTitle={goTitle}
       />
@@ -973,6 +991,7 @@ function RealApp() {
         onChoose={chooseReview}
         onCoffee={handleCoffee}
         onAllNighter={handleAllNighter}
+        onEnglishPrep={handleEnglishPrep}
         onTitle={goTitle}
       />
     )

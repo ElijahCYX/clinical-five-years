@@ -20,7 +20,7 @@ export const CET = {
   pass4: 425,
   pass6: 425,
   graduate6: 550,
-  registrationCost: 10,
+  registrationCost: 50,
 }
 
 export const ATTRS: AttrDef[] = [
