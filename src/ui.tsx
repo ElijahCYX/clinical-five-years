@@ -75,10 +75,12 @@ export function InterfaceNav({
   active,
   onMain,
   onWho,
+  onTA,
 }: {
-  active: 'main' | 'who'
+  active: 'main' | 'who' | 'ta'
   onMain: () => void
   onWho: () => void
+  onTA: () => void
 }) {
   return (
     <nav className="interface-nav" aria-label="界面切换">
@@ -97,6 +99,14 @@ export function InterfaceNav({
         aria-current={active === 'who' ? 'page' : undefined}
       >
         我是谁
+      </button>
+      <button
+        type="button"
+        className={`interface-btn ${active === 'ta' ? 'is-active' : ''}`}
+        onClick={onTA}
+        aria-current={active === 'ta' ? 'page' : undefined}
+      >
+        TA 是谁
       </button>
     </nav>
   )

@@ -1,0 +1,13 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox','--disable-gpu'] })
+const page = await browser.newPage({ viewport:{width:1400,height:1000} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error') errors.push(m.text())})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+const sim=await page.evaluate(async()=>{const g=await import('/src/game.ts'); const d=await import('/src/data.ts'); const demo=await import('/src/demo.ts'); const s=g.newGameState(demo.demoPlayer); s.seasonIndex=0; s.season=d.SEASONS[0]; s.plan='B'; s.habits=['timeManagement','earlySleep']; s.weekFocus='balanced'; s.selected=['selfCare','rest']; const r=g.simulateWeek(s); return {energy:r.energy,stress:r.stress,money:r.money,constitutionGrowth:r.constitutionGrowth}})
+console.log(sim)
+await page.evaluate(async()=>{const g=await import('/src/game.ts'); const d=await import('/src/data.ts'); const demo=await import('/src/demo.ts'); const s=g.newGameState(demo.demoPlayer); s.screen='week'; s.seasonIndex=0; s.season=d.SEASONS[0]; s.week=1; s.plan='B'; s.habits=['timeManagement']; s.weekFocus='balanced'; s.electiveSelectionDone=true; s.electiveOffers=[]; s.eventWeek=1; s.money=40; localStorage.setItem('clinical-five-years-save-v21',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'}); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(500)
+console.log('selfCare 40:',await page.locator('.action-card',{hasText:'对自己好一点'}).isDisabled(), await page.locator('.action-card',{hasText:'对自己好一点'}).locator('.action-locked').innerText().catch(()=>''))
+console.log('social 40:',await page.locator('.action-card',{hasText:'和朋友吃饭'}).isDisabled(), await page.locator('.action-card',{hasText:'和朋友吃饭'}).locator('.action-locked').innerText().catch(()=>''))
+console.log('errors',errors.slice(0,5))
+await browser.close()

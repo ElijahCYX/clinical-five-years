@@ -291,6 +291,44 @@ export interface PendingEvent {
   effects: EventEffect
 }
 
+
+export type RelationshipKind =
+  | 'roommate'
+  | 'friend'
+  | 'classmate'
+  | 'mentor'
+  | 'counselor'
+  | 'romance'
+
+export interface RelationshipStats {
+  talent: TalentId
+  gpa: number
+  attrs: Record<AttrKey, number>
+}
+
+export interface Relationship {
+  id: string
+  name: string
+  gender: Gender
+  orientation: SexualOrientation
+  kind: RelationshipKind
+  identity: string
+  intimacy: number
+  statsKnown: boolean
+  knownStats: RelationshipStats | null
+  stats: RelationshipStats
+  weeklyAction: string
+  lastPatKey: string
+  partner: boolean
+}
+
+export interface DinnerPlan {
+  acceptedIds: string[]
+  declinedIds: string[]
+  cost: number
+  summary: string[]
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -361,6 +399,9 @@ export interface GameState {
   eventHistory: string[]
   pendingEvent: PendingEvent | null
   socialModuleUnlocked: boolean
+  relationships: Relationship[]
+  dinnerPlan: DinnerPlan | null
+  romanceUnlocked: boolean
 }
 
 export type DemoName =

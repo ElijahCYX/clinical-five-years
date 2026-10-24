@@ -4,6 +4,7 @@ import type {
   PendingEvent,
   Player,
 } from './types'
+import { createEventFriend } from './social'
 
 interface EventSeed {
   id: string
@@ -300,6 +301,16 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
         100,
       )
     }
+  }
+  if (
+    state.player &&
+    ((effect.socialGrowth ?? 0) >= 5 || effect.socialUnlock) &&
+    !next.relationships.some((relation) => relation.kind === 'friend')
+  ) {
+    next.relationships = [
+      ...next.relationships,
+      createEventFriend(state.player),
+    ]
   }
   return next
 }

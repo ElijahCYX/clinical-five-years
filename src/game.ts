@@ -352,6 +352,9 @@ export function newGameState(player: Player): GameState {
     eventHistory: [],
     pendingEvent: null,
     socialModuleUnlocked: false,
+    relationships: [],
+    dinnerPlan: null,
+    romanceUnlocked: false,
   }
 }
 
@@ -627,6 +630,9 @@ export function simulateWeek(state: GameState): WeekSimulation {
     energy += effectiveEnergyCost(action.energy, state.energy)
     stress += action.stress
     money += action.money
+    if (action.id === 'social') {
+      money -= state.dinnerPlan?.cost ?? 50
+    }
     english +=
       action.id === 'english'
         ? englishGainForMemory(attrs.memory)

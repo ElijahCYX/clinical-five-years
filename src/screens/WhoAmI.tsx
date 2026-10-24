@@ -13,12 +13,13 @@ import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 interface WhoAmIScreenProps {
   state: GameState
   onMain: () => void
+  onTA?: () => void
   onTitle?: () => void
 }
 
 const YEAR_NAMES = ['大一', '大二', '大三', '大四', '大五']
 
-export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
+export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps) {
   const player = state.player
   if (!player) return null
 
@@ -75,6 +76,7 @@ export function WhoAmIScreen({ state, onMain, onTitle }: WhoAmIScreenProps) {
           active="who"
           onMain={onMain}
           onWho={() => undefined}
+          onTA={onTA ?? (() => undefined)}
         />
 
         <header className="whoami-head">

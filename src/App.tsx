@@ -82,11 +82,25 @@ import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
 import { setSaveHandler } from './saveBridge'
 import { applyEvent, rollWeeklyEvent } from './events'
 import { RandomEventModal } from './screens/RandomEvent'
+import { WhoIsTAScreen } from './screens/WhoIsTA'
+import {
+  canConfess,
+  confessionChance,
+  createCourseFriend,
+  createInitialRelationships,
+  nextRoommateAction,
+  normalizeRelationships,
+  patRelationship,
+  revealMaybe,
+} from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v20'
-const LEGACY_SAVE_KEYS = ['clinical-five-years-save-v19']
+const SAVE_KEY = 'clinical-five-years-save-v21'
+const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v20',
+  'clinical-five-years-save-v19',
+]
 
-type View = ScreenName | 'crisis' | 'whoami'
+type View = ScreenName | 'crisis' | 'whoami' | 'whois'
 
 function persist(game: GameState) {
   try {
@@ -115,6 +129,14 @@ function readSave(): GameState | null {
       eventHistory: game.eventHistory ?? [],
       pendingEvent: game.pendingEvent ?? null,
       socialModuleUnlocked: game.socialModuleUnlocked ?? false,
+      relationships:
+        game.relationships && game.relationships.length > 0
+          ? normalizeRelationships(game.relationships)
+          : game.player
+            ? createInitialRelationships(game.player)
+            : [],
+      dinnerPlan: game.dinnerPlan ?? null,
+      romanceUnlocked: game.romanceUnlocked ?? false,
     }
   } catch {
     return null
@@ -404,6 +426,7 @@ function RealApp() {
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
   const [whoamiReturn, setWhoamiReturn] = useState<View>('week')
+  const [whoisReturn, setWhoisReturn] = useState<View>('week')
 
   useEffect(() => {
     setHasSave(Boolean(readSave()))
@@ -525,7 +548,11 @@ function RealApp() {
 
   const handleCreate = (player: Player) => {
     setCrisisKind(null)
-    const next = { ...newGameState(player), screen: 'talentSelect' as const }
+    const next = {
+      ...newGameState(player),
+      screen: 'talentSelect' as const,
+      relationships: createInitialRelationships(player),
+    }
     commit(next, 'talentSelect')
   }
 
@@ -581,6 +608,13 @@ function RealApp() {
       ],
       electiveOffers: [],
       electiveSelectionDone: true,
+      relationships:
+        electiveCourses.length > 0 && game.player
+          ? [
+              ...game.relationships,
+              createCourseFriend(game.player, electiveCourses[0].name),
+            ]
+          : game.relationships,
     }
     commit(next, 'plan')
   }
@@ -622,6 +656,73 @@ function RealApp() {
     if (!game) return
     setWhoamiReturn(view)
     setView('whoami')
+  }
+
+  const openWhoIs = () => {
+    if (!game) return
+    setWhoisReturn(view)
+    setView('whois')
+  }
+
+  const arrangeDinner = (
+    acceptedIds: string[],
+    declinedIds: string[],
+    cost: number,
+  ) => {
+    if (!game || game.selected.includes('social') || game.selected.length >= 2) {
+      return
+    }
+    const summary = acceptedIds
+      .map((id) => game.relationships.find((relation) => relation.id === id)?.name)
+      .filter(Boolean) as string[]
+    const next: GameState = {
+      ...game,
+      selected: [...game.selected, 'social'],
+      dinnerPlan: { acceptedIds, declinedIds, cost, summary },
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const patRelation = (id: string) => {
+    if (!game) return
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation) return
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === id ? patRelationship(relation, game) : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const confessRelation = (id: string): string => {
+    if (!game || !game.player) return '现在还不是时候。'
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation) return '你找不到这个人。'
+    if (relation.partner) return '你们已经在恋爱了。'
+    if (!canConfess(game.player, relation)) {
+      return `你和${relation.name}还没有熟到可以表白。再拍一拍，或者一起经历点什么。`
+    }
+    const chance = confessionChance(game.player, relation)
+    const success = Math.random() < chance
+    const updated = success
+      ? { ...relation, partner: true, intimacy: Math.min(100, relation.intimacy + 5) }
+      : relation
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === id ? updated : item,
+      ),
+      romanceUnlocked: game.romanceUnlocked || success,
+    }
+    setGame(next)
+    persist(next)
+    return success
+      ? `你向${relation.name}表白了。TA 愣了几秒，然后说：“那就试试吧。”恋爱模块已解锁。`
+      : `你向${relation.name}表白了。TA 沉默了一会儿，说：“你是个好人，但我现在只想先把期末过了。”`
   }
 
   const withdrawElective = (courseId: string) => {
@@ -681,7 +782,9 @@ function RealApp() {
 
   const toggleAction = (id: string) => {
     if (!game) return
-    setGame(toggleSelected(game, id, id === 'library'))
+    const next = toggleSelected(game, id, id === 'library')
+    setGame(id === 'social' ? { ...next, dinnerPlan: null } : next)
+    if (id === 'social') persist({ ...next, dinnerPlan: null })
   }
 
   const toggleVacationAction = (id: string) => {
@@ -717,9 +820,25 @@ function RealApp() {
       game.seasonIndex !== 19 &&
       game.week === 2 &&
       !game.cetEventDone
+    const dinnerAccepted = game.dinnerPlan?.acceptedIds ?? []
+    const relationships = game.relationships.map((relation) => {
+      let updated = relation
+      if (relation.kind === 'roommate') {
+        updated = { ...updated, weeklyAction: nextRoommateAction() }
+      }
+      if (dinnerAccepted.includes(relation.id)) {
+        updated = revealMaybe({
+          ...updated,
+          intimacy: Math.min(100, updated.intimacy + 3),
+        })
+      }
+      return updated
+    })
     const next: GameState = {
       ...game,
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
+      relationships,
+      dinnerPlan: null,
       player: { ...player, attrs: grown.attrs },
       week: shouldPrepare ? 4 : game.week + 1,
       energy: sim.energy,
@@ -1419,6 +1538,20 @@ function RealApp() {
       <WhoAmIScreen
         state={game}
         onMain={() => setView(whoamiReturn)}
+        onTA={openWhoIs}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'whois') {
+    return (
+      <WhoIsTAScreen
+        state={game}
+        onPat={patRelation}
+        onConfess={confessRelation}
+        onMain={() => setView(whoisReturn)}
+        onWho={() => setView('whoami')}
         onTitle={goTitle}
       />
     )
@@ -1526,6 +1659,8 @@ function RealApp() {
           onChooseFocus={chooseWeekFocus}
           onWithdrawElective={withdrawElective}
           onOpenWhoAmI={openWhoAmI}
+          onOpenTA={openWhoIs}
+          onArrangeDinner={arrangeDinner}
           onSave={saveNow}
           onTitle={goTitle}
         />

@@ -15,6 +15,12 @@ import {
 import type { ActionDef, GameState } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
+import { DinnerModal } from './Dinner'
+import {
+  isDinnerFriend,
+  relationshipKindLabel,
+  relationshipStatsLine,
+} from '../social'
 
 const VISIBLE_ACTIONS = [
   'library',
@@ -22,13 +28,14 @@ const VISIBLE_ACTIONS = [
   'research',
   'club',
   'rest',
+  'selfCare',
   'social',
   'partTime',
   'sport',
   'english',
 ]
 
-type GameTab = 'week' | 'people' | 'grades' | 'research' | 'diary'
+type GameTab = 'week' | 'people' | 'grades' | 'research' | 'roommates' | 'diary'
 
 interface WeekScreenProps {
   state: GameState
@@ -37,6 +44,8 @@ interface WeekScreenProps {
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onWithdrawElective?: (courseId: string) => void
   onOpenWhoAmI?: () => void
+  onOpenTA?: () => void
+  onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -48,11 +57,14 @@ export function WeekScreen({
   onChooseFocus,
   onWithdrawElective,
   onOpenWhoAmI,
+  onOpenTA,
+  onArrangeDinner,
   onSave,
   onTitle,
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
+  const [dinnerOpen, setDinnerOpen] = useState(false)
   const player = state.player
   if (!player) return null
 
@@ -85,6 +97,11 @@ export function WeekScreen({
       state.selected.length < 2
     ) {
       setFocusPrompt('library')
+      return
+    }
+    if (id === 'social' && countOf('social') === 0) {
+      if (state.selected.length >= 2) return
+      setDinnerOpen(true)
       return
     }
     onToggleAction(id)
@@ -124,6 +141,12 @@ export function WeekScreen({
       !state.season.courses.some((course) => course.electiveType)
     ) {
       return '本学期没有选修课程'
+    }
+    if (action.id === 'social') {
+      if (!state.relationships.some((relation) => isDinnerFriend(relation))) {
+        return '还没有可以一起吃饭的朋友'
+      }
+      if (state.money < 50) return '生活费不足'
     }
     if (action.requires === 'mentor') return action.lockedNote ?? '尚未解锁'
     if (action.requires === 'club') return action.lockedNote ?? '尚未解锁'
@@ -229,6 +252,54 @@ export function WeekScreen({
     </div>
   )
 
+  const renderRoommates = () => (
+    <div className="tab-panel">
+      <SectionLabel right={`${state.relationships.length} 人`}>
+        舍友与认识的人
+      </SectionLabel>
+      {state.relationships.length === 0 ? (
+        <p className="placeholder-note">还没有认识的人。下学期也许会遇见谁。</p>
+      ) : (
+        <div className="roommate-grid">
+          {state.relationships.map((relation) => {
+            const stats = relationshipStatsLine(relation)
+            return (
+              <article className="roommate-card" key={relation.id}>
+                <div className="roommate-top">
+                  <div className="roommate-avatar">{relation.name.slice(0, 1)}</div>
+                  <div>
+                    <h4>{relation.name}</h4>
+                    <p>
+                      {relation.identity}
+                      {relationshipKindLabel(relation.kind) !== relation.identity
+                        ? ` · ${relationshipKindLabel(relation.kind)}`
+                        : ''}
+                    </p>
+                  </div>
+                  <span className="roommate-intimacy">{relation.intimacy}</span>
+                </div>
+                <Bar value={relation.intimacy} thin />
+                {relation.kind === 'roommate' && (
+                  <p className="roommate-action">本周：{relation.weeklyAction}</p>
+                )}
+                <div className="roommate-stats">
+                  {stats.length > 0 ? (
+                    stats.map((line) => <span key={line}>{line}</span>)
+                  ) : (
+                    <span className="roommate-unknown">面板 ??? · 亲密度 100 后完全解锁</span>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+      <button type="button" className="text-btn tab-link" onClick={onOpenTA}>
+        去 TA 是谁看完整关系 →
+      </button>
+    </div>
+  )
+
   const renderDiary = () => (
     <div className="tab-panel">
       <SectionLabel right={`${state.logs.length} 条记录`}>日记</SectionLabel>
@@ -271,6 +342,7 @@ export function WeekScreen({
           active="main"
           onMain={() => undefined}
           onWho={onOpenWhoAmI ?? (() => undefined)}
+          onTA={onOpenTA ?? (() => undefined)}
         />
 
         <header className="game-head">
@@ -391,6 +463,7 @@ export function WeekScreen({
                   ['people', '人物'],
                   ['grades', '成绩'],
                   ['research', '科研'],
+                  ['roommates', '舍友'],
                   ['diary', '日记'],
                 ] as Array<[GameTab, string]>
               ).map(([key, label]) => (
@@ -540,6 +613,7 @@ export function WeekScreen({
             {tab === 'people' && renderAttributePanel()}
             {tab === 'grades' && renderGrades()}
             {tab === 'research' && renderResearch()}
+            {tab === 'roommates' && renderRoommates()}
             {tab === 'diary' && renderDiary()}
           </section>
 
@@ -683,6 +757,18 @@ export function WeekScreen({
             </p>
           </div>
         </div>
+      )}
+
+      {dinnerOpen && (
+        <DinnerModal
+          relationships={state.relationships}
+          money={state.money}
+          onCancel={() => setDinnerOpen(false)}
+          onConfirm={(acceptedIds, declinedIds, cost) => {
+            setDinnerOpen(false)
+            onArrangeDinner?.(acceptedIds, declinedIds, cost)
+          }}
+        />
       )}
     </div>
   )
