@@ -6,10 +6,17 @@ interface ResultScreenProps {
   state: GameState
   nextLabel: string
   onContinue: () => void
+  onSave?: () => void
   onTitle?: () => void
 }
 
-export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultScreenProps) {
+export function ResultScreen({
+  state,
+  nextLabel,
+  onContinue,
+  onSave,
+  onTitle,
+}: ResultScreenProps) {
   const player = state.player
   if (!player) return null
 
@@ -194,6 +201,9 @@ export function ResultScreen({ state, nextLabel, onContinue, onTitle }: ResultSc
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={onTitle}>
                   回到标题
+                </button>
+                <button type="button" className="btn btn-save" onClick={onSave}>
+                  保存存档
                 </button>
               </div>
             </div>

@@ -206,15 +206,9 @@ export function WeekScreen({
         <TopBar
           onTitle={onTitle}
           right={
-            <>
-              <button className="text-btn" type="button" onClick={onSave}>
-                保存
-              </button>
-              <span className="topbar-divider" />
-              <button className="text-btn" type="button" onClick={onTitle}>
-                返回标题
-              </button>
-            </>
+            <button className="text-btn" type="button" onClick={onTitle}>
+              返回标题
+            </button>
           }
         />
 
@@ -504,9 +498,6 @@ export function WeekScreen({
             <div className="right-links">
               <button className="text-btn" type="button" onClick={onTitle}>
                 返回报到页
-              </button>
-              <button className="text-btn" type="button" onClick={onSave}>
-                保存进度
               </button>
             </div>
           </aside>

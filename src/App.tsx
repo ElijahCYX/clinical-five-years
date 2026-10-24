@@ -66,6 +66,7 @@ import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
+import { setSaveHandler } from './saveBridge'
 
 const SAVE_KEY = 'clinical-five-years-save-v12'
 
@@ -353,6 +354,18 @@ function RealApp() {
   useEffect(() => {
     setHasSave(Boolean(readSave()))
   }, [])
+
+  useEffect(() => {
+    if (!game || view === 'title' || view === 'create') {
+      setSaveHandler(null)
+      return
+    }
+    setSaveHandler(() => {
+      persist(game)
+      setHasSave(true)
+    })
+    return () => setSaveHandler(null)
+  }, [game, view])
 
   useEffect(() => {
     if (
@@ -1215,6 +1228,7 @@ function RealApp() {
         state={game}
         nextLabel={resultNextLabel(game.seasonIndex)}
         onContinue={handleResultContinue}
+        onSave={saveNow}
         onTitle={goTitle}
       />
     )

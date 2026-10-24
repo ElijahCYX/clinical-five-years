@@ -233,6 +233,39 @@ input:focus-visible {
   color: var(--line-strong);
 }
 
+.save-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+  padding: 7px 13px;
+  border: 1px solid #234b3e;
+  background: #234b3e;
+  color: #f4f0e5;
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.save-chip:hover {
+  background: #2f5d4d;
+  transform: translateY(-1px);
+}
+
+.save-chip:active {
+  transform: translateY(0);
+}
+
+.save-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(169, 133, 73, 0.24);
+}
+
 .topbar-right {
   margin-left: auto;
   display: flex;
@@ -3968,7 +4001,40 @@ input:focus-visible {
     font-size: 14px;
   }
 
-  .topbar-right {
+  .save-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+  padding: 7px 13px;
+  border: 1px solid #234b3e;
+  background: #234b3e;
+  color: #f4f0e5;
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.save-chip:hover {
+  background: #2f5d4d;
+  transform: translateY(-1px);
+}
+
+.save-chip:active {
+  transform: translateY(0);
+}
+
+.save-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(169, 133, 73, 0.24);
+}
+
+.topbar-right {
     gap: 12px;
   }
 
@@ -4212,6 +4278,18 @@ input:focus-visible {
 
 
 
+
+/* ---------- result save button ---------- */
+
+.btn-save {
+  border: 1px solid #234b3e;
+  background: #234b3e;
+  color: #f4f0e5;
+}
+
+.btn-save:hover {
+  background: #2f5d4d;
+}
 
 /* ---------- result stress relief ---------- */
 

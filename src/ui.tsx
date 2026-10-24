@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import { GAME_TITLE, SCHOOL_EN, SCHOOL_NAME } from './data'
+import { getSaveHandler, requestSave, subscribeSave } from './saveBridge'
 
 export function CrossMark({ size = 34 }: { size?: number }) {
   return (
@@ -24,6 +25,26 @@ interface TopBarProps {
   onTitle?: () => void
 }
 
+function SaveTopbarButton() {
+  const canSave = useSyncExternalStore(
+    subscribeSave,
+    () => Boolean(getSaveHandler()),
+    () => false,
+  )
+  if (!canSave) return null
+  return (
+    <button
+      className="save-chip"
+      type="button"
+      onClick={() => requestSave()}
+      title="保存当前进度"
+    >
+      <span className="save-chip-dot" aria-hidden="true" />
+      保存进度
+    </button>
+  )
+}
+
 export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
   return (
     <header className="topbar">
@@ -41,7 +62,10 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
           <span className="topbar-tag">五年，二十一季，慢慢成为医生</span>
         </div>
       )}
-      <div className="topbar-right">{right}</div>
+      <div className="topbar-right">
+        <SaveTopbarButton />
+        {right}
+      </div>
     </header>
   )
 }
