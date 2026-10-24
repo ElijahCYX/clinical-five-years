@@ -812,12 +812,16 @@ export function WeekScreen({
                         <p className="action-effect">{actionEffectText(action)}</p>
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
-                          {action.id === 'library' && selectedCount > 0 && state.selected.length >= 2 && (
-                            <span className="action-repeat">再点取消</span>
-                          )}
-                          {action.id === 'library' && selectedCount < 2 && state.selected.length < 2 && (
-                            <span className="action-repeat">可重复选择</span>
-                          )}
+                          {(action.id === 'library' || action.id === 'research') &&
+                            selectedCount > 0 &&
+                            state.selected.length >= 2 && (
+                              <span className="action-repeat">再点取消</span>
+                            )}
+                          {(action.id === 'library' || action.id === 'research') &&
+                            selectedCount < 2 &&
+                            state.selected.length < 2 && (
+                              <span className="action-repeat">可重复选择</span>
+                            )}
                           {selected && (
                             <span className="action-selected">
                               已选{selectedCount > 1 ? ` ×${selectedCount}` : ''}

@@ -1046,7 +1046,10 @@ function RealApp() {
       const isFull = prev.selected.length >= 2
       // 已选中的可重复行动：选满时优先取消一次，而不是尝试再增加
       if (count > 0 && (isFull || count >= 2)) {
-        return { ...prev, selected: prev.selected.filter((item) => item !== id) }
+        const nextSelected = [...prev.selected]
+        const lastIndex = nextSelected.lastIndexOf(id)
+        if (lastIndex >= 0) nextSelected.splice(lastIndex, 1)
+        return { ...prev, selected: nextSelected }
       }
       if (isFull) return prev
       return { ...prev, selected: [...prev.selected, id] }
@@ -1338,7 +1341,11 @@ function RealApp() {
 
   const toggleAction = (id: string) => {
     if (!game) return
-    const next = toggleSelected(game, id, id === 'library')
+    const next = toggleSelected(
+      game,
+      id,
+      id === 'library' || id === 'research',
+    )
     setGame(id === 'social' ? { ...next, dinnerPlan: null } : next)
     if (id === 'social') persist({ ...next, dinnerPlan: null })
   }
