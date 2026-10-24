@@ -2153,13 +2153,19 @@ function RealApp() {
     return { next, message: messages.join(' '), events }
   }
 
-  const autoPatTopRelations = (): PatResult => {
+  const autoPatTopRelations = (mode: 'close' | 'longtime'): PatResult => {
     if (!game) return { message: '现在还不能拍。', events: [] }
     const remaining = patRemainingThisWeek(game)
     if (remaining <= 0) return { message: '本周的拍一拍次数已经用完了。', events: [] }
     const targets = game.relationships
       .filter((relation) => canPat(game, relation))
-      .sort((a, b) => b.intimacy - a.intimacy)
+      .sort((a, b) =>
+        mode === 'close'
+          ? b.intimacy - a.intimacy || a.id.localeCompare(b.id)
+          : a.lastPatAbsWeek - b.lastPatAbsWeek ||
+            b.intimacy - a.intimacy ||
+            a.id.localeCompare(b.id),
+      )
       .slice(0, remaining)
     if (targets.length === 0) return { message: '本周还没有可以拍的人。', events: [] }
     let next = game
@@ -2184,7 +2190,11 @@ function RealApp() {
       )
     }
     return {
-      message: `已自动拍了拍：${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`,
+      message: `${
+        mode === 'close'
+          ? '你把这一周的拍一拍留给了最亲近的人：'
+          : '你去问候了几位许久未见的朋友：'
+      }${targets.map((relation) => relation.name).join('、')}。${messages.join(' ')}`,
       events,
     }
   }

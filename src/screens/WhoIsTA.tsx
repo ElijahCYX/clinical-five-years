@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type {
+  AutoPatMode,
   BirthdayGiftResult,
   GameState,
   PatEvent,
@@ -27,7 +28,7 @@ import { romanceRiskAfterWeek } from '../events'
 interface WhoIsTAScreenProps {
   state: GameState
   onPat: (id: string) => PatResult
-  onAutoPat: () => PatResult
+  onAutoPat: (mode: AutoPatMode) => PatResult
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
@@ -83,6 +84,7 @@ export function WhoIsTAScreen({
   const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
   const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
   const [patEvents, setPatEvents] = useState<PatEvent[]>([])
+  const [autoPatOpen, setAutoPatOpen] = useState(false)
   const [birthdayResult, setBirthdayResult] = useState<
     (BirthdayGiftResult & { name: string; reaction: string }) | null
   >(null)
@@ -150,7 +152,7 @@ export function WhoIsTAScreen({
               type="button"
               className="whois-bulk-pat"
               disabled={patRemaining === 0 || !relations.some((r) => canPat(state, r))}
-              onClick={() => handlePatResult(onAutoPat())}
+              onClick={() => setAutoPatOpen(true)}
             >
               <span>本周拍一拍剩余 {patRemaining} / {patLimit(state)} 次</span>
               <small>
@@ -500,6 +502,66 @@ export function WhoIsTAScreen({
           </section>
         </div>
       )}
+      {autoPatOpen && (
+        <div className="auto-pat-overlay" role="dialog" aria-modal="true">
+          <div
+            className="auto-pat-backdrop"
+            onClick={() => setAutoPatOpen(false)}
+          />
+          <section className="auto-pat-modal">
+            <header className="auto-pat-head">
+              <span className="random-event-eyebrow">拍一拍 / AUTO PAT</span>
+              <h2>这一周的三下，留给谁？</h2>
+              <p>
+                本周还剩 {patRemaining} 次拍一拍。你可以把这几下留给最熟悉的人，
+                也可以去敲一敲那些很久没有出现在消息列表里的名字。
+              </p>
+            </header>
+            <div className="auto-pat-options">
+              <button
+                type="button"
+                className="auto-pat-option"
+                onClick={() => {
+                  setAutoPatOpen(false)
+                  handlePatResult(onAutoPat('close'))
+                }}
+              >
+                <span className="auto-pat-icon">◎</span>
+                <strong>拍最亲密的人</strong>
+                <small>
+                  按亲密度从高到低，拍一拍身边最亲近的{' '}
+                  {Math.min(patRemaining, relations.filter((r) => canPat(state, r)).length)} 位。
+                </small>
+              </button>
+              <button
+                type="button"
+                className="auto-pat-option"
+                onClick={() => {
+                  setAutoPatOpen(false)
+                  handlePatResult(onAutoPat('longtime'))
+                }}
+              >
+                <span className="auto-pat-icon">↺</span>
+                <strong>去问候许久未见的人</strong>
+                <small>
+                  按上次拍一拍的时间从久到近，拍一拍最久没有联系的{' '}
+                  {Math.min(patRemaining, relations.filter((r) => canPat(state, r)).length)} 位朋友。
+                </small>
+              </button>
+            </div>
+            <footer className="auto-pat-footer">
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setAutoPatOpen(false)}
+              >
+                先不拍
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+
       {patEvents.length > 0 && (
         <div className="random-event-overlay" role="dialog" aria-modal="true">
           <div className="random-event-backdrop" />

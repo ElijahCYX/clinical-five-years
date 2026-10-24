@@ -428,6 +428,8 @@ export interface VacationTravelPlan {
   committed?: boolean
 }
 
+export type AutoPatMode = 'close' | 'longtime'
+
 export interface PatEvent {
   id: string
   name: string
