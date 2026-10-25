@@ -98,7 +98,7 @@ function EncounterModal({
                 }}
               >
                 <span>{String.fromCharCode(65 + index)}</span>
-                {item.text}
+                {replaceName(item.text)}
               </button>
             ))}
             <p className="encounter-warning">选定前不会显示后果。</p>
