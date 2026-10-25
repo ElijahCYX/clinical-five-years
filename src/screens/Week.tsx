@@ -330,7 +330,31 @@ export function WeekScreen({
 
   const renderAttributePanel = () => (
     <div className="tab-panel">
-      <SectionLabel right={archetype}>天赋面板</SectionLabel>
+      <SectionLabel right={archetype}>人物档案</SectionLabel>
+      <div className="identity-card identity-in-tab">
+        <div className="identity-line">
+          <span>入学档案称号</span>
+          <strong>{archetype}</strong>
+        </div>
+        <div className="identity-line">
+          <span>天赋档位</span>
+          <strong>{talent.name}</strong>
+        </div>
+        <div className="identity-line">
+          <span>当前学业</span>
+          <strong>
+            {cumulativeGpa === null ? '第一学期' : `GPA ${cumulativeGpa.toFixed(2)}`}
+          </strong>
+        </div>
+        <div className="identity-line">
+          <span>姓名 / 性别</span>
+          <strong>{player.name} · {player.gender}</strong>
+        </div>
+        <div className="identity-line">
+          <span>家庭背景</span>
+          <strong>{background.name}</strong>
+        </div>
+      </div>
       <div className="attr-readonly">
         {ATTRS.map((attr) => (
           <div className="attr-readonly-row" key={attr.key}>
@@ -887,61 +911,11 @@ export function WeekScreen({
 
 
           <section className="game-center">
-            <div className="exam-banner">
-              <div className="exam-top">
-                <div>
-                  <span className="exam-label">本阶段学习</span>
-                  <strong>
-                    {state.season.examKind} ·{' '}
-                    {state.season.courses.map((item) => item.name).join(' / ')}
-                  </strong>
-                </div>
-                <span className="exam-count">距考试 {Math.max(1, 4 - state.week)} 周</span>
-              </div>
-              <div className="exam-course-list">
-                {state.season.courses.map((item) => {
-                  const prep = state.prep[item.id] ?? 0
-                  const previewPrep = preview?.prep[item.id] ?? prep
-                  const [min, max] = estimateRange(previewPrep)
-                  return (
-                    <div className="exam-course" key={item.id}>
-                      <div className="exam-course-line">
-                        <span>
-                          {item.name}
-                          {item.makeup && <span className="makeup-tag">补考</span>}
-                        </span>
-                        <span>
-                          {previewPrep !== prep ? (
-                            <>
-                              准备度 {Math.round(prep)} → {Math.round(previewPrep)} / 100 · 预计{' '}
-                              {min}–{max} 分
-                            </>
-                          ) : (
-                            <>
-                              准备度 {Math.round(prep)} / 100 · 预计 {min}–{max} 分
-                            </>
-                          )}
-                        </span>
-                      </div>
-                      <Bar
-                        value={prep}
-                        tone={previewPrep >= 60 ? 'green' : 'gold'}
-                        previewValue={previewPrep}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="exam-note">
-                非假期每周自动积累 · 第 4 周考前复习 · 行动结束后考试
-              </p>
-            </div>
-
             <nav className="tabs">
               {(
                 [
                   ['week', '本周安排'],
-                  ['people', '人物'],
+                  ['people', '档案'],
                   ['grades', '成绩'],
                   ['research', '科研'],
                   ['club', '社团'],
@@ -1152,28 +1126,54 @@ export function WeekScreen({
               </blockquote>
             </div>
 
-            <div className="paper-card identity-card">
-              <div className="card-head">
-                <span>IDENTITY</span>
-                <span>档案</span>
+            <div className="exam-banner">
+              <div className="exam-top">
+                <div>
+                  <span className="exam-label">本阶段学习</span>
+                  <strong>
+                    {state.season.examKind} ·{' '}
+                    {state.season.courses.map((item) => item.name).join(' / ')}
+                  </strong>
+                </div>
+                <span className="exam-count">距考试 {Math.max(1, 4 - state.week)} 周</span>
               </div>
-              <div className="identity-line">
-                <span>入学档案称号</span>
-                <strong>{archetype}</strong>
+              <div className="exam-course-list">
+                {state.season.courses.map((item) => {
+                  const prep = state.prep[item.id] ?? 0
+                  const previewPrep = preview?.prep[item.id] ?? prep
+                  const [min, max] = estimateRange(previewPrep)
+                  return (
+                    <div className="exam-course" key={item.id}>
+                      <div className="exam-course-line">
+                        <span>
+                          {item.name}
+                          {item.makeup && <span className="makeup-tag">补考</span>}
+                        </span>
+                        <span>
+                          {previewPrep !== prep ? (
+                            <>
+                              准备度 {Math.round(prep)} → {Math.round(previewPrep)} / 100 · 预计{' '}
+                              {min}–{max} 分
+                            </>
+                          ) : (
+                            <>
+                              准备度 {Math.round(prep)} / 100 · 预计 {min}–{max} 分
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <Bar
+                        value={prep}
+                        tone={previewPrep >= 60 ? 'green' : 'gold'}
+                        previewValue={previewPrep}
+                      />
+                    </div>
+                  )
+                })}
               </div>
-              <div className="identity-line">
-                <span>天赋档位</span>
-                <strong>{talent.name}</strong>
-              </div>
-              <div className="identity-line">
-                <span>当前学业</span>
-                <strong>
-                  {cumulativeGpa === null ? '第一学期' : `GPA ${cumulativeGpa.toFixed(2)}`}
-                </strong>
-              </div>
-              <div className="identity-art" aria-hidden="true">
-                <span>✦</span>
-              </div>
+              <p className="exam-note">
+                非假期每周自动积累 · 第 4 周考前复习 · 行动结束后考试
+              </p>
             </div>
 
             <CampusNoticeBoard state={state} />

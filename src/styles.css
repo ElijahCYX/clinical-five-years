@@ -11355,3 +11355,96 @@ body.dinner-open {
     line-height: 1.25;
   }
 }
+
+/* right-column course progress and identity-in-tab */
+.game-right .exam-banner {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 11px 9px;
+  background: #e9eee4;
+}
+
+.game-right .exam-top {
+  display: block;
+}
+
+.game-right .exam-label {
+  font-size: 7.5px;
+  letter-spacing: 0.12em;
+}
+
+.game-right .exam-top strong {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.game-right .exam-count {
+  display: block;
+  margin-top: 3px;
+  padding-top: 0;
+  font-size: 8px;
+}
+
+.game-right .exam-course-list {
+  margin: 7px 0 0;
+}
+
+.game-right .exam-course {
+  margin-bottom: 6px;
+}
+
+.game-right .exam-course:last-child {
+  margin-bottom: 0;
+}
+
+.game-right .exam-course-line {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.game-right .exam-course-line span:first-child {
+  display: block;
+  color: var(--ink-2);
+}
+
+.game-right .exam-course-line span:last-child {
+  display: block;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.45;
+}
+
+.game-right .exam-note {
+  margin-top: 6px;
+  font-size: 7.5px;
+  line-height: 1.5;
+}
+
+.identity-in-tab {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.identity-in-tab .identity-line:first-child {
+  padding-top: 0;
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .game-right .exam-banner {
+    padding: 9px 10px;
+  }
+
+  .game-right .exam-top strong {
+    font-size: 12px;
+  }
+
+  .identity-in-tab {
+    margin-bottom: 10px;
+  }
+}
