@@ -194,7 +194,7 @@ export function WeekScreen({
   const handleActionClick = (id: string) => {
     if (id === 'club') {
       if (clubCommitted) return
-      if (canApplyClub) {
+      if (canApplyClub && clubMemberships.length === 0) {
         onApplyClub?.()
         return
       }
@@ -237,11 +237,10 @@ export function WeekScreen({
       : !state.researchStarted
         ? '实验室打杂'
         : researchStage(state.researchProgress).name
-  const clubActionName = canApplyClub
-    ? clubMemberships.length > 0
-      ? '申请加入第二个社团'
-      : '申请加入社团学生会'
-    : '社团活动'
+  const clubActionName =
+    canApplyClub && clubMemberships.length === 0
+      ? '申请加入社团 / 学生会'
+      : '社团 / 学生会活动'
   const displayActionName = (action: ActionDef) => {
     if (action.id === 'research') return researchActionName
     if (action.id === 'club') return clubActionName
@@ -260,7 +259,9 @@ export function WeekScreen({
       return `所有课程：准备度 +6 × K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
     }
     if (action.id === 'club') {
-      if (canApplyClub) return '消耗一次本周行动，浏览新组织或申请第二个社团'
+      if (canApplyClub && clubMemberships.length === 0) {
+        return '消耗一次本周行动，浏览并申请加入组织'
+      }
       if (selectedMembership) {
         const role = selectedMembership.role
         return `人际成长 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
@@ -1034,9 +1035,11 @@ export function WeekScreen({
                       (action.id === 'social' && dinnerCommitted) ||
                       (action.id === 'club' && clubCommitted)
                     return (
-                      <button
+                      <div
                         key={action.id}
-                        type="button"
+                        role="button"
+                        tabIndex={disabled || committed ? -1 : 0}
+                        aria-disabled={disabled || committed}
                         className={`action-card ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         } ${committed ? 'is-committed' : ''}`}
@@ -1045,7 +1048,16 @@ export function WeekScreen({
                           !committed &&
                           handleActionClick(action.id)
                         }
-                        disabled={disabled || committed}
+                        onKeyDown={(event) => {
+                          if (
+                            (event.key === 'Enter' || event.key === ' ') &&
+                            !disabled &&
+                            !committed
+                          ) {
+                            event.preventDefault()
+                            handleActionClick(action.id)
+                          }
+                        }}
                       >
                         <div className="action-meta">
                           <span>{action.category}</span>
@@ -1078,7 +1090,22 @@ export function WeekScreen({
                           )}
                           {locked && <span className="action-locked">{locked}</span>}
                         </div>
-                      </button>
+                        {action.id === 'club' &&
+                          canApplyClub &&
+                          clubMemberships.length > 0 &&
+                          !committed && (
+                            <button
+                              type="button"
+                              className="action-mini-btn"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                onApplyClub?.()
+                              }}
+                            >
+                              申请第二个社团
+                            </button>
+                          )}
+                      </div>
                     )
                   })}
                 </div>
