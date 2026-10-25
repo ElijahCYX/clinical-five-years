@@ -112,6 +112,13 @@ function makeRelationship(
     birthdayNextYear: 0,
     patBlockedUntilWeek: 0,
     partner: false,
+    confessRejected: false,
+    intimacyFrozenSeason: undefined,
+    frozenIntimacy: undefined,
+    partnerSinceSeasonIndex: undefined,
+    partnerSinceWeek: undefined,
+    partnerSinceLabel: undefined,
+    lastContactKey: '',
     confessionRisk: 0,
     breakupRisk: 0,
     ex: false,
@@ -296,6 +303,7 @@ export function adjustIntimacyDelta(
   delta: number,
 ): number {
   if (!delta) return 0
+  if (relation.intimacyFrozenSeason === state.season.id) return 0
   return Math.round(delta * intimacyMultiplier(state, relation))
 }
 
@@ -431,6 +439,13 @@ export function normalizeRelationships(
     birthdayNextYear: relation.birthdayNextYear ?? 0,
     patBlockedUntilWeek: relation.patBlockedUntilWeek ?? 0,
     partner: relation.partner ?? false,
+    confessRejected: relation.confessRejected ?? false,
+    intimacyFrozenSeason: relation.intimacyFrozenSeason,
+    frozenIntimacy: relation.frozenIntimacy,
+    partnerSinceSeasonIndex: relation.partnerSinceSeasonIndex,
+    partnerSinceWeek: relation.partnerSinceWeek,
+    partnerSinceLabel: relation.partnerSinceLabel,
+    lastContactKey: relation.lastContactKey ?? '',
     confessionRisk: relation.confessionRisk ?? 0,
     breakupRisk: relation.breakupRisk ?? 0,
     ex: relation.ex ?? false,

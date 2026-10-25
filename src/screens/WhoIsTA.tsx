@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type {
   AutoPatMode,
   BirthdayGiftResult,
+  ConfessionResult,
   GameState,
   PatEvent,
   PatResult,
@@ -29,7 +30,7 @@ interface WhoIsTAScreenProps {
   state: GameState
   onPat: (id: string) => PatResult
   onAutoPat: (mode: AutoPatMode) => PatResult
-  onConfess: (id: string) => string
+  onConfess: (id: string) => ConfessionResult
   onViewRelation?: (id: string) => void
   onMarkAllSeen?: () => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
@@ -86,6 +87,8 @@ export function WhoIsTAScreen({
   const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
   const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
   const [patEvents, setPatEvents] = useState<PatEvent[]>([])
+  const [confessionResult, setConfessionResult] =
+    useState<ConfessionResult | null>(null)
   const [autoPatOpen, setAutoPatOpen] = useState(false)
   const [birthdayResult, setBirthdayResult] = useState<
     (BirthdayGiftResult & { name: string; reaction: string }) | null
@@ -238,7 +241,8 @@ export function WhoIsTAScreen({
                   relation.birthdayGiftYear === currentDate.year
                 const patBlocked = isPatBlocked(state, relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
-                const confessAvailable = canConfess(player, relation)
+                const confessAvailable =
+                  !relation.confessRejected && canConfess(player, relation)
                 const chance = Math.round(confessionChance(player, relation) * 100)
                 return (
                   <article
@@ -384,15 +388,16 @@ export function WhoIsTAScreen({
                         className="whois-action whois-confess"
                         disabled={!confessAvailable}
                         onClick={() => {
-                          const result = onConfess(relation.id)
-                          setMessage(result)
+                          setConfessionResult(onConfess(relation.id))
                         }}
                       >
                         {relation.partner
                           ? '已经是恋人'
-                          : confessAvailable
-                            ? `表白 · ${chance}%`
-                            : '还不能表白'}
+                          : relation.confessRejected
+                            ? '已被拒绝'
+                            : confessAvailable
+                              ? `表白 · ${chance}%`
+                              : '还不能表白'}
                       </button>
                     </div>
                   </article>
@@ -514,6 +519,40 @@ export function WhoIsTAScreen({
           </section>
         </div>
       )}
+      {confessionResult && (
+        <div className="confession-overlay" role="dialog" aria-modal="true">
+          <div
+            className="confession-backdrop"
+            onClick={() => setConfessionResult(null)}
+          />
+          <section
+            className={`confession-modal ${
+              confessionResult.success ? 'is-success' : 'is-rejected'
+            }`}
+          >
+            <span className="confession-kicker">
+              {confessionResult.success ? 'CONFESSION / ACCEPTED' : 'CONFESSION / REJECTED'}
+            </span>
+            <h2>
+              {confessionResult.success
+                ? 'TA 答应了'
+                : confessionResult.name
+                  ? `TA 没有答应`
+                  : '现在还不能表白'}
+            </h2>
+            <p>{confessionResult.text}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setConfessionResult(null)}
+            >
+              {confessionResult.success ? '收下这个答案' : '我明白了'}
+              <span className="btn-arrow">→</span>
+            </button>
+          </section>
+        </div>
+      )}
+
       {autoPatOpen && (
         <div className="auto-pat-overlay" role="dialog" aria-modal="true">
           <div

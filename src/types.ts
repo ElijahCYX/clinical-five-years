@@ -353,6 +353,13 @@ export interface Relationship {
   patBlockedUntilWeek: number
   clubOrgId?: string
   partner: boolean
+  confessRejected?: boolean
+  intimacyFrozenSeason?: string
+  frozenIntimacy?: number
+  partnerSinceSeasonIndex?: number
+  partnerSinceWeek?: number
+  partnerSinceLabel?: string
+  lastContactKey?: string
   confessionRisk: number
   breakupRisk: number
   ex: boolean
@@ -448,6 +455,20 @@ export interface PatEvent {
 export interface PatResult {
   message: string
   events: PatEvent[]
+}
+
+export interface ConfessionResult {
+  success: boolean
+  name: string
+  text: string
+}
+
+export interface LoverContactResult {
+  answered: boolean
+  name: string
+  title: string
+  text: string
+  lines: string[]
 }
 
 export interface BirthdayGiftResult {

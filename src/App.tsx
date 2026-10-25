@@ -54,7 +54,9 @@ import type {
   PlanId,
   Player,
   BirthdayGiftResult,
+  ConfessionResult,
   DinnerInviteResult,
+  LoverContactResult,
   PostgradChoice,
   Relationship,
   ReviewChoice,
@@ -112,6 +114,8 @@ import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { ClubRecruitment } from './screens/ClubRecruitment'
 import { pushCampusNotice } from './campusBroadcast'
+import { pickConfessionText } from './confessionOutcomes'
+import { pickLoverEvent } from './loverEvents'
 import {
   CLUB_EVENT_CHANCE,
   pickClubEvent,
@@ -154,8 +158,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v39'
+const SAVE_KEY = 'clinical-five-years-save-v40'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v39',
   'clinical-five-years-save-v38',
   'clinical-five-years-save-v37',
   'clinical-five-years-save-v36',
@@ -613,6 +618,29 @@ function RealApp() {
       body.classList.remove('stress-high', 'stress-critical', 'energy-low')
     }
   }, [game, view])
+
+  useEffect(() => {
+    if (!game) return
+    const frozen = game.relationships.filter(
+      (relation) =>
+        relation.intimacyFrozenSeason === game.season.id &&
+        typeof relation.frozenIntimacy === 'number' &&
+        relation.intimacy !== relation.frozenIntimacy,
+    )
+    if (frozen.length === 0) return
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((relation) =>
+        relation.intimacyFrozenSeason === game.season.id &&
+        typeof relation.frozenIntimacy === 'number' &&
+        relation.intimacy !== relation.frozenIntimacy
+          ? { ...relation, intimacy: relation.frozenIntimacy }
+          : relation,
+      ),
+    }
+    setGame(next)
+    persist(next)
+  }, [game])
 
   useEffect(() => {
     if (!game || view !== 'week') return
@@ -2240,30 +2268,58 @@ function RealApp() {
     return { message: outcome.message, events: outcome.events }
   }
 
-  const confessRelation = (id: string): string => {
-    if (!game || !game.player) return '现在还不是时候。'
+  const confessRelation = (id: string): ConfessionResult => {
+    if (!game || !game.player) {
+      return { success: false, name: '', text: '现在还不是时候。' }
+    }
     const relation = game.relationships.find((item) => item.id === id)
-    if (!relation) return '你找不到这个人。'
-    if (relation.partner) return '你们已经在恋爱了。'
+    if (!relation) {
+      return { success: false, name: '', text: '你找不到这个人。' }
+    }
+    if (relation.partner) {
+      return { success: false, name: relation.name, text: '你们已经在恋爱了。' }
+    }
+    if (relation.confessRejected) {
+      return {
+        success: false,
+        name: relation.name,
+        text: '你已经向 TA 表白过了。TA 的答案没有改变。',
+      }
+    }
     if (!canConfess(game.player, relation)) {
-      return `你和${relation.name}还没有熟到可以表白。再拍一拍，或者一起经历点什么。`
+      return {
+        success: false,
+        name: relation.name,
+        text: `你和${relation.name}还没有熟到可以表白。再拍一拍，或者一起经历点什么。`,
+      }
     }
     const chance = confessionChance(game.player, relation)
     const success = Math.random() < chance
+    const text = pickConfessionText(success)
+    const gain = Math.min(
+      5,
+      Math.max(0, adjustIntimacyDelta(game, relation, 5)),
+    )
     const updated = success
       ? {
           ...relation,
           partner: true,
-          intimacy: Math.min(
-            100,
-            relation.intimacy + adjustIntimacyDelta(game, relation, 5),
-          ),
+          intimacy: Math.min(100, relation.intimacy + gain),
+          partnerSinceSeasonIndex: game.seasonIndex,
+          partnerSinceWeek: game.week,
+          partnerSinceLabel: game.season.seasonLabel,
+          confessRejected: false,
           ex: false,
           exWeek: 0,
           exPenalty: false,
           breakupRisk: 0,
         }
-      : relation
+      : {
+          ...relation,
+          confessRejected: true,
+          intimacyFrozenSeason: game.season.id,
+          frozenIntimacy: relation.intimacy,
+        }
     const next: GameState = {
       ...game,
       relationships: game.relationships.map((item) =>
@@ -2273,9 +2329,112 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
-    return success
-      ? `你向${relation.name}表白了。TA 愣了几秒，然后说：“那就试试吧。”恋爱模块已解锁。`
-      : `你向${relation.name}表白了。TA 沉默了一会儿，说：“你是个好人，但我现在只想先把期末过了。”`
+    return { success, name: relation.name, text }
+  }
+
+  const contactLover = (id: string): LoverContactResult => {
+    if (!game || !game.player) {
+      return {
+        answered: false,
+        name: '',
+        title: '暂时联系不上',
+        text: '现在还不是联系 TA 的时候。',
+        lines: [],
+      }
+    }
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation || !relation.partner) {
+      return {
+        answered: false,
+        name: relation?.name ?? '',
+        title: '没有接通',
+        text: '你还没有和这个人成为恋人。',
+        lines: [],
+      }
+    }
+    if (relation.lastContactKey === currentWeekKey(game)) {
+      return {
+        answered: false,
+        name: relation.name,
+        title: '本周已经联系过了',
+        text: '电话已经打过了，这一周先让彼此过自己的生活。',
+        lines: [],
+      }
+    }
+    const chance = Math.max(
+      0.15,
+      Math.min(
+        0.92,
+        0.25 +
+          relation.intimacy / 250 +
+          game.player.attrs.appearance * 0.02 +
+          game.player.attrs.social * 0.02,
+      ),
+    )
+    const answered = Math.random() < chance
+    if (!answered) {
+      const stress = Math.min(5, 3)
+      const next: GameState = {
+        ...game,
+        stress: Math.min(100, game.stress + stress),
+        relationships: game.relationships.map((item) =>
+          item.id === relation.id
+            ? { ...item, lastContactKey: currentWeekKey(game) }
+            : item,
+        ),
+      }
+      setGame(next)
+      persist(next)
+      return {
+        answered: false,
+        name: relation.name,
+        title: '电话没有接通',
+        text: `电话响了很久，最后转进了语音信箱。你盯着屏幕看了一会儿，把想说的话又咽了回去。`,
+        lines: [`压力 +${stress}`],
+      }
+    }
+    const event = pickLoverEvent(game.stress, game.money)
+    const moneyCost = Math.min(game.money, event.money ?? 0)
+    const rawIntimacy = Math.max(0, event.intimacy ?? 0)
+    const intimacyGain = Math.min(
+      5,
+      Math.max(0, adjustIntimacyDelta(game, relation, rawIntimacy)),
+    )
+    const stressCap = event.kind === 'support' ? 10 : 5
+    const stressRelief = Math.min(
+      stressCap,
+      Math.abs(Math.min(0, event.stress ?? 0)),
+    )
+    const energyGain = Math.min(5, Math.max(0, event.energy ?? 0))
+    const updated = {
+      ...relation,
+      intimacy: Math.min(100, relation.intimacy + intimacyGain),
+    }
+    const next: GameState = {
+      ...game,
+      money: Math.max(0, game.money - moneyCost),
+      stress: Math.max(0, game.stress - stressRelief),
+      energy: Math.min(100, game.energy + energyGain),
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id
+          ? { ...updated, lastContactKey: currentWeekKey(game) }
+          : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    const lines: string[] = []
+    if (moneyCost > 0) lines.push(`生活费 -${moneyCost}`)
+    if (intimacyGain > 0) lines.push(`亲密度 +${intimacyGain}`)
+    if (stressRelief > 0) lines.push(`压力 -${stressRelief}`)
+    if (energyGain > 0) lines.push(`精力 +${energyGain}`)
+    return {
+      answered: true,
+      name: relation.name,
+      title: event.title,
+      text: event.text,
+      lines,
+    }
   }
 
   const withdrawElective = (courseId: string) => {
@@ -3656,6 +3815,7 @@ function RealApp() {
           onArrangeClubActivity={arrangeClubActivity}
           onSaveClubInvites={saveClubInvites}
           onQuitClub={quitClub}
+          onContactLover={contactLover}
           onNpcConfession={handleNpcConfession}
           onResolveConsumption={resolveConsumption}
           onSave={saveNow}

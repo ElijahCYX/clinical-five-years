@@ -22,6 +22,7 @@ import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
 import { CampusNoticeBoard } from './CampusNotice'
+import { BondScreen } from './Bond'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
@@ -47,7 +48,7 @@ const VISIBLE_ACTIONS = [
   'english',
 ]
 
-type GameTab = 'week' | 'people' | 'grades' | 'research' | 'club' | 'roommates' | 'diary'
+type GameTab = 'week' | 'people' | 'grades' | 'research' | 'club' | 'bond' | 'roommates' | 'diary'
 
 interface WeekScreenProps {
   state: GameState
@@ -63,6 +64,7 @@ interface WeekScreenProps {
   onArrangeClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
   onSaveClubInvites?: (results: DinnerInviteResult[], orgId: string) => void
   onQuitClub?: (orgId: string) => void
+  onContactLover?: (relationshipId: string) => import('../types').LoverContactResult
   onNpcConfession?: (accept: boolean) => void
   onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
@@ -83,6 +85,7 @@ export function WeekScreen({
   onArrangeClubActivity,
   onSaveClubInvites,
   onQuitClub,
+  onContactLover,
   onNpcConfession,
   onResolveConsumption,
   onSave,
@@ -911,6 +914,7 @@ export function WeekScreen({
                   ['grades', '成绩'],
                   ['research', '科研'],
                   ['club', '社团'],
+                  ['bond', '羁绊'],
                   ['roommates', '舍友'],
                   ['diary', '日记'],
                 ] as Array<[GameTab, string]>
@@ -1078,6 +1082,18 @@ export function WeekScreen({
             {tab === 'grades' && renderGrades()}
             {tab === 'research' && renderResearch()}
             {tab === 'club' && renderClub()}
+            {tab === 'bond' && (
+              <BondScreen
+                state={state}
+                onContact={(id) => onContactLover?.(id) ?? {
+                  answered: false,
+                  name: '',
+                  title: '暂时联系不上',
+                  text: '现在还不能联系 TA。',
+                  lines: [],
+                }}
+              />
+            )}
             {tab === 'roommates' && renderRoommates()}
             {tab === 'diary' && renderDiary()}
           </section>
