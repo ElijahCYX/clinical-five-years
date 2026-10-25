@@ -12378,3 +12378,46 @@ body.dinner-open {
     flex: 0 0 auto;
   }
 }
+
+/* Let the timetable fill the available center column instead of leaving a blank tail. */
+.timetable-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+}
+
+.timetable-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.timetable-grid {
+  flex: 1 1 auto;
+  height: 100%;
+  grid-template-rows: 34px repeat(3, minmax(0, 1fr));
+}
+
+.timetable-slot {
+  min-height: 0;
+}
+
+.timetable-slot strong {
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .timetable-sheet {
+    min-height: 0;
+  }
+
+  .timetable-grid {
+    height: auto;
+    grid-template-rows: 32px repeat(3, 82px);
+  }
+
+  .timetable-slot {
+    min-height: 82px;
+  }
+}
