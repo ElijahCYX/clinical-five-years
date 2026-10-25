@@ -276,6 +276,26 @@ export function WeekScreen({
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
   const preview = state.selected.length > 0 ? simulateWeek(state) : null
+  const energyPreviewDelta = preview ? preview.energy - state.energy : null
+  const stressPreviewDelta = preview ? preview.stress - state.stress : null
+  const previewDeltaText = (delta: number | null, goodWhenPositive: boolean) => {
+    if (delta === null) return null
+    const tone =
+      delta === 0
+        ? 'is-flat'
+        : goodWhenPositive
+          ? delta > 0
+            ? 'is-good'
+            : 'is-bad'
+          : delta < 0
+            ? 'is-good'
+            : 'is-bad'
+    return (
+      <em className={`mobile-hud-delta ${tone}`}>
+        {delta > 0 ? `预计 +${delta}` : delta < 0 ? `预计 ${delta}` : '预计 ±0'}
+      </em>
+    )
+  }
   const kaoyanWindow =
     (state.postgradChoice === 'both' &&
       ['大四 · 夏', '大五 · 秋', '大五 · 冬'].includes(state.season.seasonLabel)) ||
@@ -848,11 +868,17 @@ export function WeekScreen({
         <div className="mobile-hud">
           <div>
             <span>精力</span>
-            <strong>{state.energy}</strong>
+            <strong>
+              {state.energy}
+              {previewDeltaText(energyPreviewDelta, true)}
+            </strong>
           </div>
           <div>
             <span>压力</span>
-            <strong>{state.stress}</strong>
+            <strong>
+              {state.stress}
+              {previewDeltaText(stressPreviewDelta, false)}
+            </strong>
           </div>
           <div>
             <span>生活费</span>
