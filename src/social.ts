@@ -232,10 +232,41 @@ export function unseenRelationCount(state: GameState): number {
 
 export const GAME_START_YEAR = 2021
 
+export type SeasonPhase = 'autumn' | 'winter' | 'spring' | 'summer' | 'preclinical'
+
+// 21 terms: years 1-2 are four terms; year 3 has an extra preclinical summer term.
+const YEAR_START_INDICES = [0, 4, 8, 13, 17]
+
+export function academicYearForSeason(index: number): number {
+  if (index >= 17) return 5
+  if (index >= 13) return 4
+  if (index >= 8) return 3
+  if (index >= 4) return 2
+  return 1
+}
+
+export function seasonPhaseForIndex(index: number): SeasonPhase {
+  if (index === 12) return 'preclinical'
+  const yearStart = index < 8 ? (index < 4 ? 0 : 4) : index < 13 ? 8 : index < 17 ? 13 : 17
+  const offset = index - yearStart
+  if (offset === 0) return 'autumn'
+  if (offset === 1) return 'winter'
+  if (offset === 2) return 'spring'
+  return 'summer'
+}
+
+export function isAutumnSeasonIndex(index: number): boolean {
+  return YEAR_START_INDICES.includes(index)
+}
+
+export function isYearFinalSeasonIndex(index: number): boolean {
+  return [3, 7, 12, 16, 20].includes(index)
+}
+
 export function gameDate(state: GameState): { year: number; month: number } {
-  const phase = state.seasonIndex % 4
-  const academicYear = Math.floor(state.seasonIndex / 4)
-  const baseYear = GAME_START_YEAR + academicYear
+  const academicYear = academicYearForSeason(state.seasonIndex)
+  const phase = seasonPhaseForIndex(state.seasonIndex)
+  const baseYear = GAME_START_YEAR + academicYear - 1
   if (state.vacation) {
     const week = Math.max(1, Math.min(3, state.vacation.week))
     if (state.vacation.kind === 'winter') {
@@ -244,14 +275,18 @@ export function gameDate(state: GameState): { year: number; month: number } {
     return { year: baseYear + 1, month: [7, 8, 8][week - 1] }
   }
   const week = Math.max(1, Math.min(4, state.week))
-  if (phase === 0) return { year: baseYear, month: [9, 10, 11, 11][week - 1] }
-  if (phase === 1) {
+  if (phase === 'autumn') return { year: baseYear, month: [9, 10, 11, 11][week - 1] }
+  if (phase === 'winter') {
     return {
       year: week === 1 ? baseYear : baseYear + 1,
       month: [12, 1, 2, 2][week - 1],
     }
   }
-  if (phase === 2) return { year: baseYear + 1, month: [3, 4, 5, 5][week - 1] }
+  if (phase === 'spring') return { year: baseYear + 1, month: [3, 4, 5, 5][week - 1] }
+  if (phase === 'preclinical') return { year: baseYear + 1, month: [7, 7, 8, 8][week - 1] }
+  if (state.seasonIndex === 11) {
+    return { year: baseYear + 1, month: [5, 5, 6, 6][week - 1] }
+  }
   return { year: baseYear + 1, month: [6, 7, 8, 8][week - 1] }
 }
 

@@ -53,10 +53,12 @@ export const TIER_RULES: Record<SkillTier, { target: number; slope: number }> = 
 export function courseK(course: Course, attrs: Record<AttrKey, number>): number {
   const memoryRule = TIER_RULES[course.memory]
   const comprehensionRule = TIER_RULES[course.comprehension]
+  const operationRule = course.operation ? TIER_RULES[course.operation] : null
   const k =
     1 +
     memoryRule.slope * (attrs.memory - memoryRule.target) +
-    comprehensionRule.slope * (attrs.comprehension - comprehensionRule.target)
+    comprehensionRule.slope * (attrs.comprehension - comprehensionRule.target) +
+    (operationRule ? operationRule.slope * (attrs.dexterity - operationRule.target) : 0)
   return clamp(k, 0.6, 1.4)
 }
 
@@ -100,7 +102,8 @@ export function courseDifficulty(course: Course): {
     course.credits +
     (course.examType === '大考' ? 2 : 0) +
     TIER_WEIGHT[course.memory] +
-    TIER_WEIGHT[course.comprehension]
+    TIER_WEIGHT[course.comprehension] +
+    (course.operation ? TIER_WEIGHT[course.operation] : 0)
   const stars = score <= 2 ? 1 : score <= 4 ? 2 : score <= 6 ? 3 : score <= 8 ? 4 : 5
   const labels = ['轻松', '普通', '偏难', '困难', '硬核']
   return { score, stars, label: labels[stars - 1] }
@@ -927,7 +930,7 @@ export function kaoyanScoreFor(state: GameState): number {
   )
 }
 
-export const GRADUATION_CREDITS = 184
+export const GRADUATION_CREDITS = 188
 export const ELECTIVE_CREDITS_REQUIRED = 10
 
 export function graduationReasons(state: GameState): string[] {

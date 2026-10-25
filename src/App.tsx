@@ -160,10 +160,14 @@ import {
   isStaffRelation,
   revealMaybe,
   vacationTravelInviteKey,
+  academicYearForSeason,
+  isAutumnSeasonIndex,
+  isYearFinalSeasonIndex,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v42'
+const SAVE_KEY = 'clinical-five-years-save-v43'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v42',
   'clinical-five-years-save-v41',
   'clinical-five-years-save-v40',
   'clinical-five-years-save-v39',
@@ -199,15 +203,57 @@ function persist(game: GameState) {
   }
 }
 
+function migrateLegacySeasonLayout(game: GameState): GameState {
+  // v42 and older used 20 terms with 大三夏 merged into 大三·临床前.
+  const mappedIndex = game.seasonIndex === 11 ? 12 : game.seasonIndex >= 12 ? game.seasonIndex + 1 : game.seasonIndex
+  const mapIndex = (index: number) => (index === 11 ? 12 : index >= 12 ? index + 1 : index)
+  return {
+    ...game,
+    seasonIndex: mappedIndex,
+    season: SEASONS[mappedIndex] ?? game.season,
+    clubMemberships: (game.clubMemberships ?? []).map((membership) => ({
+      ...membership,
+      joinedSeasonIndex: mapIndex(membership.joinedSeasonIndex ?? 0),
+      roleSinceSeasonIndex: mapIndex(membership.roleSinceSeasonIndex ?? 0),
+      presidentStartSeasonIndex:
+        membership.presidentStartSeasonIndex === null
+          ? null
+          : mapIndex(membership.presidentStartSeasonIndex),
+      activitySeasonIndex: mapIndex(membership.activitySeasonIndex ?? 0),
+    })),
+    clubHistory: (game.clubHistory ?? []).map((entry) => ({
+      ...entry,
+      joinedSeasonIndex: mapIndex(entry.joinedSeasonIndex ?? 0),
+      leftSeasonIndex: mapIndex(entry.leftSeasonIndex ?? 0),
+    })),
+    relationships: (game.relationships ?? []).map((relation) => ({
+      ...relation,
+      partnerSinceSeasonIndex:
+        typeof relation.partnerSinceSeasonIndex === 'number'
+          ? mapIndex(relation.partnerSinceSeasonIndex)
+          : relation.partnerSinceSeasonIndex,
+    })),
+    screen:
+      game.screen === 'randomEvent'
+        ? 'week'
+        : game.seasonIndex === 11 && game.screen === 'result'
+          ? 'result'
+          : game.screen,
+  }
+}
+
 function readSave(): GameState | null {
   try {
-    const raw =
-      localStorage.getItem(SAVE_KEY) ??
+    const currentRaw = localStorage.getItem(SAVE_KEY)
+    const legacyRaw =
+      currentRaw ??
       LEGACY_SAVE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { game?: GameState }
+    if (!legacyRaw) return null
+    const parsed = JSON.parse(legacyRaw) as { game?: GameState }
     if (!parsed.game) return null
-    const game = parsed.game
+    const game = currentRaw
+      ? parsed.game
+      : migrateLegacySeasonLayout(parsed.game)
     const legacyMembership = (
       game as GameState & { clubMembership?: GameState['clubMemberships'][number] | null }
     ).clubMembership
@@ -359,19 +405,18 @@ function buildVacationLog(
 }
 
 function resultNextLabel(index: number): string {
-  if (index === 15) return '学年结算'
-  if (index === 16) return '推免结果'
-  if (index === 17) return '考研初试'
-  if (index === 18) return '考研结果'
-  if (index === 19) return '毕业结算'
+  if (index === 12 || index === 16) return '学年结算'
+  if (index === 17) return '推免结果'
+  if (index === 18) return '考研初试'
+  if (index === 19) return '考研结果'
+  if (index === 20) return '毕业结算'
   if (index === 1 || index === 5 || index === 9) return '寒假'
   if (index === 3 || index === 7) return '暑假'
-  if (index === 11) return '学年结算'
   return SEASONS[index + 1]?.seasonLabel ?? '继续'
 }
 
 function yearNumber(index: number): number {
-  return Math.floor(index / 4) + 1
+  return academicYearForSeason(index)
 }
 
 function yearName(index: number): string {
@@ -379,7 +424,7 @@ function yearName(index: number): string {
 }
 
 function isYearFinal(index: number): boolean {
-  return [3, 7, 11, 15, 19].includes(index)
+  return isYearFinalSeasonIndex(index)
 }
 
 function finalizeYear(base: GameState): GameState {
@@ -768,7 +813,7 @@ function RealApp() {
       game.week === 1 &&
       memberships.length > 0 &&
       game.seasonIndex > 0 &&
-      game.seasonIndex % 4 === 0 &&
+      isAutumnSeasonIndex(game.seasonIndex) &&
       game.clubLastPromotionSeason !== game.season.id
     ) {
       const notices: string[] = []
@@ -3232,14 +3277,14 @@ function RealApp() {
 
   const handleCetResultContinue = () => {
     if (!game) return
-    if (game.seasonIndex > 0 && game.seasonIndex % 4 === 0) {
+    if (isAutumnSeasonIndex(game.seasonIndex) && game.seasonIndex > 0) {
       const withScholarship = evaluateScholarship(game, game.seasonIndex)
       if (withScholarship) {
         commit({ ...withScholarship, screen: 'scholarship' }, 'scholarship')
         return
       }
     }
-    if (game.seasonIndex === 14 && !game.postgradChoice) {
+    if (game.seasonIndex === 15 && !game.postgradChoice) {
       commit(
         {
           ...game,
@@ -3256,20 +3301,20 @@ function RealApp() {
   const beginSeason = (base: GameState, index: number) => {
     const prepared = prepareSeason(base, index)
     const pendingCet =
-      (base.cetWindow === 'winter' && index % 4 === 2) ||
-      (base.cetWindow === 'summer' && index % 4 === 0)
+      (base.cetWindow === 'winter' && index >= 2 && !isAutumnSeasonIndex(index) && [2, 6, 10, 15, 19].includes(index)) ||
+      (base.cetWindow === 'summer' && isAutumnSeasonIndex(index))
     if (pendingCet) {
       commit({ ...withCetResults(prepared), screen: 'cetResult' }, 'cetResult')
       return
     }
-    if (index > 0 && index % 4 === 0) {
+    if (index > 0 && isAutumnSeasonIndex(index)) {
       const withScholarship = evaluateScholarship(prepared, index)
       if (withScholarship) {
         commit({ ...withScholarship, screen: 'scholarship' }, 'scholarship')
         return
       }
     }
-    if (index === 14 && !base.postgradChoice) {
+    if (index === 15 && !base.postgradChoice) {
       commit(
         { ...prepared, screen: 'route', postgradChance: postgradChanceFor(prepared) },
         'route',
@@ -3304,27 +3349,27 @@ function RealApp() {
 
   const handleBaoyanContinue = () => {
     if (!game) return
-    beginSeason(game, 17)
+    beginSeason(game, 18)
   }
 
   const handleKaoyanRegister = () => {
     if (!game) return
-    beginSeason({ ...game, kaoyanRegistered: true, screen: 'plan' }, 17)
+    beginSeason({ ...game, kaoyanRegistered: true, screen: 'plan' }, 18)
   }
 
   const handleBaoyanEmployment = () => {
     if (!game) return
-    beginSeason({ ...game, postgradChoice: 'employment', screen: 'plan' }, 17)
+    beginSeason({ ...game, postgradChoice: 'employment', screen: 'plan' }, 18)
   }
 
   const handleKaoyanExamContinue = () => {
     if (!game) return
-    beginSeason(game, 18)
+    beginSeason(game, 19)
   }
 
   const handleKaoyanResultContinue = () => {
     if (!game) return
-    beginSeason(game, 19)
+    beginSeason(game, 20)
   }
 
   const handleScholarshipContinue = () => {
@@ -3337,7 +3382,7 @@ function RealApp() {
     let current = game
     if (
       current.clubMemberships.length > 0 &&
-      current.seasonIndex % 4 === 3 &&
+      isYearFinal(current.seasonIndex) &&
       current.clubAnnualBonusSeason !== current.season.id
     ) {
       const bonus = current.clubMemberships.reduce((sum, membership) => {
@@ -3356,15 +3401,15 @@ function RealApp() {
     if (isYearFinal(current.seasonIndex)) current = settlePe(current)
     const index = current.seasonIndex
 
-    // 大三夏（临床前）、大四夏：学年结算（大四无暑假）
-    if (index === 11 || index === 15) {
+    // 大三临床前、大四夏：学年结算（大四无暑假）
+    if (index === 12 || index === 16) {
       current = finalizeYear(current)
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
       return
     }
 
     // 大五夏：毕业结算 + 毕业生体育补考
-    if (index === 19) {
+    if (index === 20) {
       finalizeGraduation(current)
       return
     }
@@ -3380,7 +3425,7 @@ function RealApp() {
     }
 
     // 大五秋：推免结果
-    if (index === 16) {
+    if (index === 17) {
       if (current.postgradChoice && current.postgradChoice !== 'employment') {
         const success =
           Math.random() < (current.postgradChance ?? postgradChanceFor(current))
@@ -3394,12 +3439,12 @@ function RealApp() {
         )
         return
       }
-      beginSeason(current, 17)
+      beginSeason(current, 18)
       return
     }
 
     // 大五冬：考研初试
-    if (index === 17) {
+    if (index === 18) {
       if (current.kaoyanRegistered) {
         commit(
           {
@@ -3411,12 +3456,12 @@ function RealApp() {
         )
         return
       }
-      beginSeason(current, 18)
+      beginSeason(current, 19)
       return
     }
 
     // 大五春：考研结果
-    if (index === 18) {
+    if (index === 19) {
       if (current.kaoyanRegistered) {
         commit(
           {
@@ -3429,7 +3474,7 @@ function RealApp() {
         )
         return
       }
-      beginSeason(current, 19)
+      beginSeason(current, 20)
       return
     }
 

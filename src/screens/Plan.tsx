@@ -123,7 +123,7 @@ export function PlanScreen({
                       </div>
                       <h3>{course.name}</h3>
                       <p>
-                        记忆力 {course.memory} · 悟性 {course.comprehension}
+                        记忆力 {course.memory} · 悟性 {course.comprehension}{course.operation ? ` · 操作 ${course.operation}` : ''}
                       </p>
                       <div className="plan-course-difficulty">
                         <span aria-label={`难度 ${difficulty.stars} 星`}>

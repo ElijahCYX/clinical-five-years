@@ -157,6 +157,7 @@ export interface Course {
   memory: SkillTier
   comprehension: SkillTier
   electiveType?: ElectiveType
+  operation?: SkillTier
   selectionChance?: number
   /** 补考课程：继承原课程的学分与原始绩点，最终绩点取两次平均。 */
   makeup?: boolean

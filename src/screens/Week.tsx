@@ -27,6 +27,7 @@ import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
   currentWeekKey,
+  academicYearForSeason,
   isDinnerFriend,
   orientationLabel,
   patRemainingThisWeek,
@@ -140,7 +141,7 @@ export function WeekScreen({
   const politicsEarned = state.politicsCredits
   const electiveEarned = state.electiveCredits
   const graduationTargets = [
-    { key: 'professional', label: '专业课', earned: professionalEarned, target: 163 },
+    { key: 'professional', label: '专业课', earned: professionalEarned, target: 167 },
     { key: 'politics', label: '思政课', earned: politicsEarned, target: 11 },
     { key: 'elective', label: '选修课', earned: electiveEarned, target: 10 },
   ]
@@ -165,7 +166,7 @@ export function WeekScreen({
     count: state.selected.filter((item) => item === id).length,
   }))
   const countOf = (id: string) => state.selected.filter((item) => item === id).length
-  const clubYear = Math.floor(state.seasonIndex / 4) + 1
+  const clubYear = academicYearForSeason(state.seasonIndex)
   const clubMemberships = state.clubMemberships ?? []
   const existingClubs = clubMemberships.filter(
     (membership) =>
@@ -440,7 +441,7 @@ export function WeekScreen({
         </div>
         <div>
           <span>毕业总要求</span>
-          <strong>184</strong>
+          <strong>188</strong>
         </div>
       </div>
 
@@ -1263,7 +1264,7 @@ export function WeekScreen({
                   <span className="focus-choice-en">MAIN / 75%</span>
                   <strong>{course.name}</strong>
                   <small>
-                    {course.credits} 学分 · 记忆力 {course.memory} · 悟性 {course.comprehension}
+                    {course.credits} 学分 · 记忆力 {course.memory} · 悟性 {course.comprehension}{course.operation ? ` · 操作 ${course.operation}` : ''}
                   </small>
                   <em>主攻</em>
                 </button>

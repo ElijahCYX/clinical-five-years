@@ -284,6 +284,7 @@ export function PrepScreen({
                           <span>
                             {course.examType} · {course.credits} 学分 · 记忆力{' '}
                             {course.memory} · 悟性 {course.comprehension}
+                            {course.operation ? ` · 操作 ${course.operation}` : ''}
                           </span>
                         </div>
                         {isBig && (
