@@ -1695,8 +1695,33 @@ function RealApp() {
       }
       setGame(next)
       persist(next)
+    } else {
+      const next: GameState = {
+        ...game,
+        screen: 'week',
+        selected: game.selected.filter((id) => id !== 'club'),
+        clubActivityPlan: null,
+      }
+      setGame(next)
+      persist(next)
     }
     setView('week')
+  }
+
+  const handleClubRecruitmentTitle = () => {
+    if (game && clubRecruitmentMode === 'application') {
+      const next: GameState = {
+        ...game,
+        screen: 'week',
+        selected: game.selected.filter((id) => id !== 'club'),
+        clubActivityPlan: null,
+      }
+      setGame(next)
+      persist(next)
+      setHasSave(true)
+    }
+    setCrisisKind(null)
+    setView('title')
   }
 
   const startClubApplication = () => {
@@ -4120,7 +4145,11 @@ function RealApp() {
           isApplication ? handleClubApplicationSubmit : handleInitialClubSubmit
         }
         onSkip={handleClubRecruitmentSkip}
-        onTitle={goTitle}
+        onTitle={
+          clubRecruitmentMode === 'application'
+            ? handleClubRecruitmentTitle
+            : goTitle
+        }
       />
     )
   }
