@@ -10794,3 +10794,149 @@ body.dinner-open {
     white-space: nowrap;
   }
 }
+
+/* compact create screen inside the locked 16:10 desktop canvas */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .create-screen .shell {
+    overflow: hidden;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .create-screen .create-head {
+    max-width: 840px;
+    padding: 6px 0 6px;
+  }
+
+  .create-screen .create-head .page-title {
+    margin: 3px 0 3px;
+  }
+
+  .create-screen .create-head .page-lede {
+    line-height: 1.5;
+  }
+
+  .create-screen .create-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 28px;
+    padding-bottom: 0;
+  }
+
+  .create-screen .talent-grid {
+    gap: 8px;
+    margin-bottom: 13px;
+  }
+
+  .create-screen .talent-card {
+    min-height: 100px;
+    padding: 8px 10px 7px;
+  }
+
+  .create-screen .talent-blurb {
+    line-height: 1.4;
+  }
+
+  .create-screen .attr-section .section-label {
+    margin-bottom: 8px;
+  }
+
+  .create-screen .attr-group-label {
+    padding: 5px 0 1px;
+  }
+
+  .create-screen .attr-row {
+    padding: 2px 0;
+    gap: 10px;
+  }
+
+  .create-screen .attr-identity {
+    gap: 2px 6px;
+  }
+
+  .create-screen .attr-blurb {
+    line-height: 1.4;
+  }
+
+  .create-screen .attr-tools {
+    margin-top: 6px;
+  }
+
+  .create-screen .create-aside {
+    position: static;
+    gap: 8px;
+  }
+
+  .create-screen .id-preview {
+    min-height: 218px;
+    padding: 14px 16px 54px;
+  }
+
+  .create-screen .id-preview .id-name {
+    margin: 11px 0 2px;
+  }
+
+  .create-screen .id-preview .id-divider {
+    margin: 9px 0 7px;
+  }
+
+  .create-screen .id-preview .stamp {
+    right: 13px;
+    bottom: 10px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .create-screen .id-preview .stamp-inner {
+    width: 43px;
+    height: 43px;
+  }
+
+  .create-screen .id-preview .stamp-text {
+    font-size: 6.5px;
+  }
+
+  .create-screen .basic-info .section-label {
+    margin-bottom: 8px;
+  }
+
+  .create-screen .basic-info .field {
+    margin-bottom: 7px;
+  }
+
+  .create-screen .basic-info .field > span {
+    margin-bottom: 2px;
+  }
+
+  .create-screen .basic-info .segmented button {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .create-screen .basic-info .background-card {
+    padding: 5px 8px;
+  }
+
+  .create-screen .basic-info .field-note {
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  .create-screen .confirm-box {
+    margin-top: 0;
+    padding: 8px 10px;
+  }
+
+  .create-screen .confirm-status {
+    margin-bottom: 5px;
+  }
+
+  .create-screen .confirm-box .btn {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+
+  .create-screen .footer {
+    margin-top: 4px;
+    padding: 6px 0 4px;
+  }
+}
