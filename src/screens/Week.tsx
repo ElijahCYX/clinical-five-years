@@ -65,6 +65,8 @@ interface WeekScreenProps {
   onSaveClubInvites?: (results: DinnerInviteResult[], orgId: string) => void
   onQuitClub?: (orgId: string) => void
   onContactLover?: (relationshipId: string) => import('../types').LoverContactResult
+  onBreakBond?: (relationshipId: string) => import('../types').BondActionResult
+  onReconcileBond?: (relationshipId: string) => import('../types').BondActionResult
   onNpcConfession?: (accept: boolean) => void
   onResolveConsumption?: (accept: boolean) => void
   onSave?: () => void
@@ -86,6 +88,8 @@ export function WeekScreen({
   onSaveClubInvites,
   onQuitClub,
   onContactLover,
+  onBreakBond,
+  onReconcileBond,
   onNpcConfession,
   onResolveConsumption,
   onSave,
@@ -1125,6 +1129,22 @@ export function WeekScreen({
                   text: '现在还不能联系 TA。',
                   lines: [],
                 }}
+                onBreakBond={(id) =>
+                  onBreakBond?.(id) ?? {
+                    success: false,
+                    type: 'lover',
+                    name: '',
+                    text: '现在还不能解除羁绊。',
+                  }
+                }
+                onReconcileBond={(id) =>
+                  onReconcileBond?.(id) ?? {
+                    success: false,
+                    type: 'lover',
+                    name: '',
+                    text: '现在还不能复合。',
+                  }
+                }
               />
             )}
             {tab === 'roommates' && renderRoommates()}

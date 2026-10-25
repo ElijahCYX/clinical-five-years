@@ -54,6 +54,7 @@ import type {
   PlanId,
   Player,
   BirthdayGiftResult,
+  BondActionResult,
   BondType,
   ConfessionResult,
   DinnerInviteResult,
@@ -117,6 +118,7 @@ import { ClubRecruitment } from './screens/ClubRecruitment'
 import { pushCampusNotice } from './campusBroadcast'
 import { pickConfessionText } from './confessionOutcomes'
 import { pickLoverEvent } from './loverEvents'
+import { pickBondReaction } from './bondTexts'
 import { BROTHER_BOND_TEXT, SISTER_BOND_TEXT } from './bonds'
 import {
   CLUB_EVENT_CHANCE,
@@ -160,8 +162,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v41'
+const SAVE_KEY = 'clinical-five-years-save-v42'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v41',
   'clinical-five-years-save-v40',
   'clinical-five-years-save-v39',
   'clinical-five-years-save-v38',
@@ -624,9 +627,14 @@ function RealApp() {
 
   useEffect(() => {
     if (!game) return
+    const now = progressWeek(game)
+    const isFrozen = (relation: GameState['relationships'][number]) =>
+      relation.intimacyFrozenSeason === game.season.id ||
+      (typeof relation.intimacyFrozenUntilWeek === 'number' &&
+        now <= relation.intimacyFrozenUntilWeek)
     const frozen = game.relationships.filter(
       (relation) =>
-        relation.intimacyFrozenSeason === game.season.id &&
+        isFrozen(relation) &&
         typeof relation.frozenIntimacy === 'number' &&
         relation.intimacy !== relation.frozenIntimacy,
     )
@@ -634,10 +642,42 @@ function RealApp() {
     const next: GameState = {
       ...game,
       relationships: game.relationships.map((relation) =>
-        relation.intimacyFrozenSeason === game.season.id &&
+        isFrozen(relation) &&
         typeof relation.frozenIntimacy === 'number' &&
         relation.intimacy !== relation.frozenIntimacy
           ? { ...relation, intimacy: relation.frozenIntimacy }
+          : relation,
+      ),
+    }
+    setGame(next)
+    persist(next)
+  }, [game])
+
+  useEffect(() => {
+    if (!game) return
+    const now = progressWeek(game)
+    const hadExpired = game.relationships.some(
+      (relation) =>
+        relation.brokenBondType &&
+        typeof relation.bondCalmUntilWeek === 'number' &&
+        now > relation.bondCalmUntilWeek,
+    )
+    if (!hadExpired) return
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((relation) =>
+        relation.brokenBondType &&
+        typeof relation.bondCalmUntilWeek === 'number' &&
+        now > relation.bondCalmUntilWeek
+          ? {
+              ...relation,
+              brokenBondType: undefined,
+              bondBreakWeek: undefined,
+              bondCalmUntilWeek: undefined,
+              bondReconcileAttempted: false,
+              intimacyFrozenUntilWeek: undefined,
+              frozenIntimacy: undefined,
+            }
           : relation,
       ),
     }
@@ -2340,6 +2380,138 @@ function RealApp() {
     return { success, name: relation.name, text, bondType: 'lover' }
   }
 
+  const breakBond = (id: string): BondActionResult => {
+    if (!game || !game.player) {
+      return { success: false, type: 'lover', name: '', text: '现在还不能解除羁绊。' }
+    }
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation) {
+      return { success: false, type: 'lover', name: '', text: '你找不到这个人。' }
+    }
+    const type =
+      relation.bondType ?? (relation.partner ? 'lover' : undefined)
+    if (!type) {
+      return {
+        success: false,
+        type: 'lover',
+        name: relation.name,
+        text: '你们之间没有可以解除的羁绊。',
+      }
+    }
+    if (relation.brokenBondType) {
+      return {
+        success: false,
+        type,
+        name: relation.name,
+        text: '你们已经在冷静期里了。',
+      }
+    }
+    const now = progressWeek(game)
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id
+          ? {
+              ...item,
+              bondType: undefined,
+              partner: false,
+              brokenBondType: type,
+              bondBreakWeek: now,
+              bondCalmUntilWeek: now + 2,
+              bondReconcileAttempted: false,
+              intimacyFrozenUntilWeek: now + 2,
+              frozenIntimacy: item.intimacy,
+            }
+          : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    return {
+      success: true,
+      type,
+      name: relation.name,
+      text: pickBondReaction(type, 'break'),
+    }
+  }
+
+  const reconcileBond = (id: string): BondActionResult => {
+    if (!game || !game.player) {
+      return { success: false, type: 'lover', name: '', text: '现在还不能复合。' }
+    }
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation || !relation.brokenBondType) {
+      return {
+        success: false,
+        type: 'lover',
+        name: relation?.name ?? '',
+        text: '你们现在没有处于冷静期的羁绊。',
+      }
+    }
+    const type = relation.brokenBondType
+    const now = progressWeek(game)
+    if (
+      typeof relation.bondCalmUntilWeek !== 'number' ||
+      now > relation.bondCalmUntilWeek
+    ) {
+      return {
+        success: false,
+        type,
+        name: relation.name,
+        text: '冷静期已经结束。',
+      }
+    }
+    if (relation.bondReconcileAttempted) {
+      return {
+        success: false,
+        type,
+        name: relation.name,
+        text: '这个冷静期里已经尝试过复合了。',
+      }
+    }
+    const calmWeek = Math.max(
+      1,
+      Math.min(3, now - (relation.bondBreakWeek ?? now) + 1),
+    )
+    const penalty = [20, 40, 60][calmWeek - 1] ?? 60
+    const attrs = Object.values(game.player.attrs)
+    const average = attrs.reduce((sum, value) => sum + value, 0) / attrs.length
+    const chance = Math.max(
+      0,
+      Math.min(100, Math.round(relation.intimacy * 0.7 + average * 4 - penalty)),
+    )
+    const success = Math.random() * 100 < chance
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id
+          ? success
+            ? {
+                ...item,
+                bondType: type,
+                partner: type === 'lover',
+                brokenBondType: undefined,
+                bondBreakWeek: undefined,
+                bondCalmUntilWeek: undefined,
+                bondReconcileAttempted: false,
+                intimacyFrozenUntilWeek: undefined,
+                frozenIntimacy: undefined,
+              }
+            : { ...item, bondReconcileAttempted: true }
+          : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    return {
+      success,
+      type,
+      name: relation.name,
+      text: pickBondReaction(type, success ? 'success' : 'fail'),
+      chance,
+    }
+  }
+
   const contactLover = (id: string): LoverContactResult => {
     if (!game || !game.player) {
       return {
@@ -3886,6 +4058,8 @@ function RealApp() {
           onSaveClubInvites={saveClubInvites}
           onQuitClub={quitClub}
           onContactLover={contactLover}
+          onBreakBond={breakBond}
+          onReconcileBond={reconcileBond}
           onNpcConfession={handleNpcConfession}
           onResolveConsumption={resolveConsumption}
           onSave={saveNow}

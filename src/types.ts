@@ -362,6 +362,11 @@ export interface Relationship {
   partnerSinceWeek?: number
   partnerSinceLabel?: string
   lastContactKey?: string
+  brokenBondType?: BondType
+  bondBreakWeek?: number
+  bondCalmUntilWeek?: number
+  bondReconcileAttempted?: boolean
+  intimacyFrozenUntilWeek?: number
   confessionRisk: number
   breakupRisk: number
   ex: boolean
@@ -464,6 +469,14 @@ export interface ConfessionResult {
   name: string
   text: string
   bondType?: BondType
+}
+
+export interface BondActionResult {
+  success: boolean
+  type: BondType
+  name: string
+  text: string
+  chance?: number
 }
 
 export interface LoverContactResult {
