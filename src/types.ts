@@ -648,6 +648,9 @@ export interface GameState {
   appearanceGrowth: number
   actionsUsed: number
   selected: string[]
+  weekSlot: number
+  weekSlotSkipped: boolean
+  weekSlotActions: string[]
   logs: WeekLog[]
   results: ExamResult[]
   cumulativeCredits: number

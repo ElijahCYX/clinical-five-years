@@ -64,6 +64,11 @@ const WEEKDAY_EVENING = [2, 5, 8, 11, 14]
 const WEEKEND_MORNING_AFTERNOON = [15, 16, 18, 19]
 const WEEKEND_EVENING = [17, 20]
 
+export function timetableCourseAt(state: GameState, slotIndex: number): Course | null {
+  if (slotIndex < 0 || slotIndex > 20) return null
+  return buildTimetable(state).cells[slotIndex].course
+}
+
 export function buildTimetable(state: GameState): TimetableData {
   const cells: TimetableCell[] = Array.from({ length: 21 }, (_, index) => ({
     day: Math.floor(index / 3),

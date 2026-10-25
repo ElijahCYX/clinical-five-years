@@ -27,6 +27,7 @@ import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
   buildTimetable,
+  timetableCourseAt,
   TIMETABLE_DAYS,
   TIMETABLE_SLOTS,
 } from '../timetable'
@@ -69,6 +70,10 @@ interface WeekScreenProps {
   state: GameState
   onToggleAction: (id: string) => void
   onEndWeek: () => void
+  onAttendCourse?: () => void
+  onSkipCourse?: () => void
+  onSlotAction?: (actionId: string) => void
+  onSleepIn?: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onWithdrawElective?: (courseId: string) => void
   onOpenWhoAmI?: () => void
@@ -92,6 +97,10 @@ export function WeekScreen({
   state,
   onToggleAction,
   onEndWeek,
+  onAttendCourse,
+  onSkipCourse,
+  onSlotAction,
+  onSleepIn,
   onChooseFocus,
   onWithdrawElective,
   onOpenWhoAmI,
@@ -326,6 +335,13 @@ export function WeekScreen({
   const visibleActions = kaoyanWindow
     ? [...VISIBLE_ACTIONS, 'kaoyan']
     : VISIBLE_ACTIONS
+  const weekTimetable = buildTimetable(state)
+  const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
+  const currentSlotCourse =
+    !state.weekSlotSkipped && timetableCourseAt(state, weekSlot)
+  const currentSlotDay = TIMETABLE_DAYS[Math.floor(weekSlot / 3)]
+  const currentSlotPhase = TIMETABLE_SLOTS[weekSlot % 3]
+  const currentSlotIsMorning = weekSlot % 3 === 0
 
   const lockReason = (action: ActionDef): string | null => {
     if (
@@ -995,8 +1011,8 @@ export function WeekScreen({
             <strong>¥{state.money}</strong>
           </div>
           <div>
-            <span>行动</span>
-            <strong>{remainingActions}/2</strong>
+            <span>时间段</span>
+            <strong>{weekSlot + 1}/21</strong>
           </div>
         </div>
         <div className="mobile-course-strip">
@@ -1079,11 +1095,70 @@ export function WeekScreen({
                 <div className="week-title-row">
                   <div>
                     <h2>这周，你想怎么过？</h2>
-                    <p>一周只能认真做两件事。选好之后，时间会替你结算。</p>
+                    <p>21 个时间段，每次选择都会推进时间。当前：{currentSlotDay} · {currentSlotPhase}。</p>
                   </div>
-                  <Pill tone={remainingActions === 0 ? 'green' : 'plain'}>
-                    剩余 {remainingActions} / 2 次行动
-                  </Pill>
+                  <Pill tone="green">第 {weekSlot + 1} / 21 段</Pill>
+                </div>
+
+                <div className="week-slot-strip" aria-label="本周时间段进度">
+                  {Array.from({ length: 21 }, (_, index) => {
+                    const day = TIMETABLE_DAYS[Math.floor(index / 3)]
+                    const phase = TIMETABLE_SLOTS[index % 3]
+                    const cell = weekTimetable.cells[index]
+                    return (
+                      <div
+                        key={`${day}-${phase}`}
+                        className={`week-slot-square ${
+                          index < state.weekSlot
+                            ? 'is-past'
+                            : index === state.weekSlot
+                              ? 'is-current'
+                              : 'is-future'
+                        } ${cell.course ? 'has-course' : ''}`}
+                        title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
+                      >
+                        <span>{index + 1}</span>
+                        <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {currentSlotCourse ? (
+                  <section className="paper-card slot-course-panel">
+                    <div className="slot-course-meta">
+                      <span>当前时间段有课 · {currentSlotDay} {currentSlotPhase}</span>
+                      <Pill>{currentSlotCourse.credits} 学分</Pill>
+                    </div>
+                    <h3>{currentSlotCourse.name}</h3>
+                    <p>这个时间段已被课程占用。听课会消耗 5 点精力；翘课会把它变成可自由支配的时间。</p>
+                    <div className="slot-course-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={onAttendCourse}
+                      >
+                        听课 <small>精力 -5</small>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={onSkipCourse}
+                      >
+                        翘课 <small>转为自由时间</small>
+                      </button>
+                    </div>
+                  </section>
+                ) : (
+                  <>
+
+                <div className="free-slot-heading">
+                  <span>自由行动</span>
+                  <p>
+                    {state.weekSlotSkipped
+                      ? '你翘掉了这节课，这个时间段现在归你自己安排。'
+                      : '当前时间段没有课程，可以自由安排。'}
+                  </p>
                 </div>
 
                 {state.week === 1 && courses.some((course) => course.electiveType) && (
@@ -1107,7 +1182,7 @@ export function WeekScreen({
                 )}
 
 
-                {!state.habits.includes('fitness') && !state.selected.includes('sport') && (
+                {!state.habits.includes('fitness') && !state.weekSlotActions.includes('sport') && (
                   <p className="constitution-decay-note">
                     本周没有健身习惯或运动安排：周末体质成长 -5%。
                   </p>
@@ -1128,6 +1203,32 @@ export function WeekScreen({
                 )}
 
                 <div className="actions-grid">
+                  {currentSlotIsMorning && (
+                    <div
+                      className="action-card sleep-in-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onSleepIn?.()}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onSleepIn?.()
+                        }
+                      }}
+                    >
+                      <div className="action-meta">
+                        <span>生活</span>
+                        <span className="action-no">ZZZ</span>
+                      </div>
+                      <h3>睡懒觉</h3>
+                      <p className="action-flavor">把闹钟按掉，再睡一个回笼觉。</p>
+                      <p className="action-effect">精力 +10 · 压力 -5</p>
+                      <div className="action-bottom">
+                        <span className="action-en">SLEEP IN</span>
+                        <span className="action-repeat">消耗 1 个时间段</span>
+                      </div>
+                    </div>
+                  )}
                   {visibleActions.map((id) => {
                     const action = ACTIONS.find((item) => item.id === id)
                     if (!action) return null
@@ -1147,19 +1248,14 @@ export function WeekScreen({
                         className={`action-card ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         } ${committed ? 'is-committed' : ''}`}
-                        onClick={() =>
-                          !disabled &&
-                          !committed &&
-                          handleActionClick(action.id)
-                        }
+                        onClick={() => !disabled && onSlotAction?.(action.id)}
                         onKeyDown={(event) => {
                           if (
                             (event.key === 'Enter' || event.key === ' ') &&
-                            !disabled &&
-                            !committed
+                            !disabled
                           ) {
                             event.preventDefault()
-                            handleActionClick(action.id)
+                            onSlotAction?.(action.id)
                           }
                         }}
                       >
@@ -1172,25 +1268,8 @@ export function WeekScreen({
                         <p className="action-effect">{actionEffectText(action)}</p>
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
-                          {(action.id === 'library' || action.id === 'research') &&
-                            selectedCount > 0 &&
-                            state.selected.length >= 2 && (
-                              <span className="action-repeat">再点取消</span>
-                            )}
-                          {(action.id === 'library' || action.id === 'research') &&
-                            selectedCount < 2 &&
-                            state.selected.length < 2 && (
-                              <span className="action-repeat">可重复选择</span>
-                            )}
-                          {selected && (
-                            <span className="action-selected">
-                              已选{selectedCount > 1 ? ` ×${selectedCount}` : ''}
-                            </span>
-                          )}
-                          {committed && (
-                            <span className="action-repeat">
-                              {action.id === 'club' ? '本周已参与 · 不可取消' : '已约好 · 不可取消'}
-                            </span>
+                          {!locked && (
+                            <span className="action-repeat">消耗 1 个时间段</span>
                           )}
                           {locked && <span className="action-locked">{locked}</span>}
                         </div>
@@ -1216,27 +1295,12 @@ export function WeekScreen({
 
                 <div className="action-footer">
                   <div className="selected-summary">
-                    <span>本周已选</span>
-                    {state.selected.length === 0 ? (
-                      <strong className="muted">还没有选择行动</strong>
-                    ) : (
-                      selectedGroups.map((group) => (
-                        <strong key={group.id}>
-                          {displayActionName(ACTIONS.find((item) => item.id === group.id) ?? ACTIONS[0])}
-                          {group.count > 1 ? ` ×${group.count}` : ''}
-                        </strong>
-                      ))
-                    )}
+                    <span>时间段</span>
+                    <strong>
+                      {currentSlotDay} · {currentSlotPhase} · 第 {weekSlot + 1} / 21 段
+                    </strong>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={state.selected.length !== 2}
-                    onClick={onEndWeek}
-                  >
-                    结束本周
-                    <span className="btn-arrow">→</span>
-                  </button>
+                  <span className="slot-auto-note">选择行动后自动进入下一时间段</span>
                 </div>
 
                 <div className="coming-soon" aria-label="等待开发的功能">
@@ -1246,6 +1310,8 @@ export function WeekScreen({
                   <span className="coming-soon-item">校园事件 · 等待开发</span>
                   <span className="coming-soon-item">人物关系 · 等待开发</span>
                 </div>
+                  </>
+                )}
               </>
             )}
 

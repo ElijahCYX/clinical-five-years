@@ -13,6 +13,7 @@ import {
   VACATIONS,
 } from './data'
 import { buildDemoState, demoPlayer } from './demo'
+import { buildTimetable, timetableCourseAt } from './timetable'
 import {
   backgroundAllowance,
   clamp,
@@ -33,6 +34,10 @@ import {
   postgradChanceFor,
   scholarshipFor,
   effectiveEnergyCost,
+  libraryCosts,
+  labChoreEnergyCost,
+  researchGainForComprehension,
+  englishGainForMemory,
   estimateRange,
   generateElectiveOffers,
   estimateScore,
@@ -556,6 +561,9 @@ function prepareSeason(base: GameState, index: number): GameState {
     results: [],
     selected: [],
     actionsUsed: 0,
+    weekSlot: 0,
+    weekSlotSkipped: false,
+    weekSlotActions: [],
     vacation: null,
     cetEventDone: false,
     examCoffee: false,
@@ -1810,6 +1818,9 @@ function RealApp() {
       week: 1,
       selected: [],
       actionsUsed: 0,
+      weekSlot: 0,
+      weekSlotSkipped: false,
+      weekSlotActions: [],
     }
     const finalNext = applyWeeklyOpeningTalent(next)
     if (!finalNext.clubInitialRecruitmentDone) {
@@ -1819,7 +1830,7 @@ function RealApp() {
       setView('clubRecruitment')
       return
     }
-    commit(finalNext, 'week')
+    commit({ ...finalNext, energy: clamp(finalNext.energy + 5, 0, 100) }, 'week')
   }
 
   const toggleSelected = (prev: GameState, id: string, repeatable: boolean): GameState => {
@@ -2851,12 +2862,18 @@ function RealApp() {
     setGame(toggleSelected(game, id, false))
   }
 
-  const endWeek = () => {
-    if (!game || !game.plan || game.selected.length !== 2) return
-    const player = game.player
+  const endWeek = (baseArg: GameState | null = null) => {
+    const base = baseArg ?? game
+    if (!base || !base.plan || !base.player) return
+    const slotMode = Boolean(baseArg)
+    if (!slotMode && base.selected.length !== 2) return
+    const player = base.player
     if (!player) return
 
-    const sim = simulateWeek(game)
+    const sim = simulateWeek(
+      slotMode ? { ...base, selected: [] } : base,
+      slotMode ? base.weekSlotActions : [],
+    )
     const grown = growAttributes(
       sim.attrs,
       sim.constitutionGrowth,
@@ -2864,7 +2881,7 @@ function RealApp() {
       sim.socialGrowth,
     )
     const prepTotal = Object.values(sim.prep).reduce((sum, value) => sum + value, 0)
-    const log = buildWeekLog(game, {
+    const log = buildWeekLog(base, {
       energy: sim.energy,
       stress: sim.stress,
       money: sim.money,
@@ -2874,40 +2891,40 @@ function RealApp() {
     })
 
     const researchProgress = clamp(
-      game.researchProgress + sim.researchProgressGain,
+      base.researchProgress + sim.researchProgressGain,
       0,
       100,
     )
-    const publishedNow = researchProgress >= 100 && !game.researchPublished
-    const mentorProfile = game.mentorProfileId
-      ? MENTOR_BY_ID[game.mentorProfileId]
+    const publishedNow = researchProgress >= 100 && !base.researchPublished
+    const mentorProfile = base.mentorProfileId
+      ? MENTOR_BY_ID[base.mentorProfileId]
       : null
     const publishedJournal =
       publishedNow && mentorProfile && mentorProfile.journals.length > 0
         ? mentorProfile.journals[
             Math.floor(Math.random() * mentorProfile.journals.length)
           ]
-        : game.researchJournal
+        : base.researchJournal
 
-    const shouldPrepare = game.week >= 3
+    const shouldPrepare = base.week >= 3
     const isCetEvent =
-      (game.season.seasonLabel.endsWith('夏') || game.season.seasonLabel.endsWith('冬')) &&
-      game.seasonIndex !== 19 &&
-      game.week === 2 &&
-      !game.cetEventDone
-    const dinnerAccepted = game.dinnerPlan?.committed
+      (base.season.seasonLabel.endsWith('夏') || base.season.seasonLabel.endsWith('冬')) &&
+      base.seasonIndex !== 19 &&
+      base.week === 2 &&
+      !base.cetEventDone
+    const dinnerAccepted = base.dinnerPlan?.committed
       ? []
-      : game.dinnerPlan?.acceptedIds ?? []
+      : base.dinnerPlan?.acceptedIds ?? []
     const dinnerIntimacyGain =
       dinnerAccepted.length > 0
         ? Math.max(1, Math.floor(6 / dinnerAccepted.length))
         : 0
     const relationshipsWithBirthdayMisses = applyMissedBirthdayPenalties({
-      ...game,
+      ...base,
       relationships: applyFriendContactDecay(
       {
-        ...game,
-        relationships: game.relationships.map((relation) => {
+        ...base,
+        relationships: base.relationships.map((relation) => {
           let updated = relation
           if (relation.kind === 'roommate') {
             updated = {
@@ -2915,7 +2932,7 @@ function RealApp() {
               weeklyAction: nextRoommateAction(),
               intimacy: Math.min(
                 100,
-                updated.intimacy + adjustIntimacyDelta(game, relation, 3),
+                updated.intimacy + adjustIntimacyDelta(base, relation, 3),
               ),
             }
           }
@@ -2925,7 +2942,7 @@ function RealApp() {
               intimacy: Math.min(
                 100,
                 updated.intimacy +
-                  adjustIntimacyDelta(game, relation, dinnerIntimacyGain),
+                  adjustIntimacyDelta(base, relation, dinnerIntimacyGain),
               ),
             })
           }
@@ -2935,19 +2952,19 @@ function RealApp() {
               intimacy: Math.min(
                 100,
                 updated.intimacy +
-                  adjustIntimacyDelta(game, relation, sim.mentorIntimacyGain),
+                  adjustIntimacyDelta(base, relation, sim.mentorIntimacyGain),
               ),
             }
           }
           return updated
         }),
       },
-      progressWeek(game),
+      progressWeek(base),
       ),
     })
     const relationships = relationshipsWithBirthdayMisses
     const next: GameState = {
-      ...game,
+      ...base,
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
       relationships,
       dinnerPlan: null,
@@ -2955,8 +2972,8 @@ function RealApp() {
       clubActivityPlan: null,
       clubInvites: null,
       player: { ...player, attrs: grown.attrs },
-      week: shouldPrepare ? 4 : game.week + 1,
-      energy: sim.energy,
+      week: shouldPrepare ? 4 : base.week + 1,
+      energy: sim.energy + (!shouldPrepare ? 5 : 0),
       stress: sim.stress,
       money: sim.money,
       english: sim.english,
@@ -2969,26 +2986,30 @@ function RealApp() {
       socialGrowth: grown.socialGrowth,
       familyAffection: Math.min(
         100,
-        game.familyAffection + sim.familyAffectionGain,
+        base.familyAffection + sim.familyAffectionGain,
       ),
       researchProgress,
-      researchPublished: game.researchPublished || publishedNow,
+      researchPublished: base.researchPublished || publishedNow,
       researchJournal: publishedJournal,
       publishedPapers:
-        game.publishedPapers + (publishedNow ? 1 : 0),
+        base.publishedPapers + (publishedNow ? 1 : 0),
       awaitingNextProject:
-        game.awaitingNextProject || publishedNow,
+        base.awaitingNextProject || publishedNow,
       lastResearchWeek:
-        game.researchStarted && game.selected.includes('research')
-          ? absoluteWeek(game)
-          : game.lastResearchWeek,
+        base.researchStarted &&
+        (slotMode ? base.weekSlotActions : base.selected).includes('research')
+          ? absoluteWeek(base)
+          : base.lastResearchWeek,
       weekFocus: null,
       selected: [],
       actionsUsed: 0,
-      logs: [...game.logs, log],
+      weekSlot: 0,
+      weekSlotSkipped: false,
+      weekSlotActions: [],
+      logs: [...base.logs, log],
     }
 
-    const clubBenefit = applyClubSemesterBenefit(next, game)
+    const clubBenefit = applyClubSemesterBenefit(next, base)
     const finalNext = applyWeeklyOpeningTalent(clubBenefit.next)
     commit(
       finalNext,
@@ -3009,6 +3030,168 @@ function RealApp() {
         '你的论文被正式接收了。导师在群里发了一个很克制的“恭喜”，随后把组会 PPT 的最后一页换成了你的文章截图。你盯着屏幕看了很久，决定今晚奖励自己一顿食堂小炒。',
       )
     }
+  }
+
+  const applySlotAction = (base: GameState, actionId: string): GameState => {
+    if (!base.player) return base
+    const action = ACTION_BY_ID[actionId]
+    if (!action) return base
+    const player = base.player
+    let energy = base.energy
+    let stress = base.stress
+    let money = base.money
+    let english = base.english
+    let composite = base.composite
+    let research = base.research
+    let kaoyanPrep = base.kaoyanPrep
+    let constitutionGrowth = base.constitutionGrowth
+    let appearanceGrowth = base.appearanceGrowth
+    let socialGrowth = base.socialGrowth
+    let prep = { ...base.prep }
+    let researchProgress = base.researchProgress
+
+    if (action.id === 'library') {
+      const costs = libraryCosts(base)
+      energy += costs.energy
+      stress += costs.stress
+      for (const course of base.season.courses) {
+        const gain =
+          6 *
+          courseK(course, player.attrs) *
+          prepGainMultiplier(base) *
+          coursePrepTalentMultiplier(base, course) *
+          (base.energy < 40 ? 0.5 : 1)
+        prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
+      }
+    } else if (action.id === 'research') {
+      if (base.labEntered && !base.researchStarted) {
+        energy += labChoreEnergyCost(player.attrs.comprehension)
+        stress += action.stress
+      } else if (base.labEntered && !base.researchPublished) {
+        energy += effectiveEnergyCost(action.energy, base.energy)
+        stress += action.stress
+        const gain = researchGainForComprehension(player.attrs.comprehension)
+        research += gain
+        researchProgress = clamp(researchProgress + gain, 0, 100)
+      }
+    } else if (action.id === 'electiveHomework') {
+      energy += effectiveEnergyCost(action.energy, base.energy)
+      stress += action.stress
+      for (const course of base.season.courses) {
+        if (!course.electiveType) continue
+        const gain = course.electiveType === 'politics' ? 15 : 20
+        prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
+      }
+    } else if (action.id === 'social') {
+      energy += 8
+      stress -= 8
+      money -= 50
+    } else if (action.id === 'club') {
+      energy += effectiveEnergyCost(action.energy, base.energy)
+      stress += action.stress
+      money += action.money
+      socialGrowth += 5
+    } else {
+      energy += effectiveEnergyCost(action.energy, base.energy)
+      stress += action.stress
+      money += action.money
+      if (action.id === 'english') {
+        english += englishGainForMemory(player.attrs.memory)
+      } else {
+        english += action.english ?? 0
+      }
+      composite += action.composite ?? 0
+      research += action.research ?? 0
+      kaoyanPrep += action.kaoyanPrep ?? 0
+      if (action.growth === 'constitution') {
+        constitutionGrowth += action.growthAmount ?? 0
+      }
+    }
+
+    return {
+      ...base,
+      energy: clamp(energy, 0, 100),
+      stress: clamp(stress, 0, 100),
+      money: Math.max(0, money),
+      english,
+      composite,
+      research,
+      kaoyanPrep,
+      prep,
+      researchProgress,
+      constitutionGrowth,
+      appearanceGrowth,
+      socialGrowth,
+    }
+  }
+
+  const advanceWeekSlot = (base: GameState): GameState => {
+    const nextSlot = base.weekSlot + 1
+    return {
+      ...base,
+      weekSlot: nextSlot,
+      weekSlotSkipped: false,
+      weekSlotActions: base.weekSlotActions,
+      energy:
+        nextSlot < 21 && nextSlot % 3 === 0
+          ? clamp(base.energy + 5, 0, 100)
+          : base.energy,
+    }
+  }
+
+  const finishWeekSlot = (base: GameState, actionId?: string) => {
+    const advanced = advanceWeekSlot({
+      ...base,
+      weekSlotActions: actionId
+        ? [...base.weekSlotActions, actionId]
+        : base.weekSlotActions,
+    })
+    if (advanced.weekSlot >= 21) {
+      endWeek(advanced)
+      return
+    }
+    commit(advanced, 'week')
+  }
+
+  const attendCurrentCourse = () => {
+    if (!game || game.weekSlotSkipped) return
+    const course = timetableCourseAt(game, game.weekSlot)
+    if (!course) return
+    finishWeekSlot(
+      { ...game, energy: clamp(game.energy - 5, 0, 100) },
+      `attend:${course.id}`,
+    )
+  }
+
+  const skipCurrentCourse = () => {
+    if (!game || game.weekSlotSkipped) return
+    const course = timetableCourseAt(game, game.weekSlot)
+    if (!course) return
+    const next = { ...game, weekSlotSkipped: true }
+    setGame(next)
+    persist(next)
+  }
+
+  const performWeekSlotAction = (actionId: string) => {
+    if (!game) return
+    if (game.weekSlotSkipped) {
+      // current slot was skipped and is now free
+    } else if (timetableCourseAt(game, game.weekSlot)) {
+      return
+    }
+    const next = applySlotAction(game, actionId)
+    finishWeekSlot(next, actionId)
+  }
+
+  const sleepInCurrentSlot = () => {
+    if (!game || game.weekSlot % 3 !== 0) return
+    if (!game.weekSlotSkipped && timetableCourseAt(game, game.weekSlot)) return
+    const next = {
+      ...game,
+      energy: clamp(game.energy + 10, 0, 100),
+      stress: clamp(game.stress - 5, 0, 100),
+    }
+    finishWeekSlot(next, 'sleepIn')
   }
 
   const chooseReview = (choice: ReviewChoice) => {
@@ -4263,6 +4446,10 @@ function RealApp() {
           state={game}
           onToggleAction={toggleAction}
           onEndWeek={endWeek}
+          onAttendCourse={attendCurrentCourse}
+          onSkipCourse={skipCurrentCourse}
+          onSlotAction={performWeekSlotAction}
+          onSleepIn={sleepInCurrentSlot}
           onChooseFocus={chooseWeekFocus}
           onWithdrawElective={withdrawElective}
           onOpenWhoAmI={openWhoAmI}

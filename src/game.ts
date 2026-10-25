@@ -357,6 +357,9 @@ export function newGameState(player: Player): GameState {
     appearanceGrowth: 0,
     actionsUsed: 0,
     selected: [],
+    weekSlot: 0,
+    weekSlotSkipped: false,
+    weekSlotActions: [],
     logs: [],
     results: [],
     cumulativeCredits: 0,
@@ -670,7 +673,7 @@ export function researchGainForComprehension(comprehension: number): number {
   return 4
 }
 
-export function simulateWeek(state: GameState): WeekSimulation {
+export function simulateWeek(state: GameState, slotActions: string[] = []): WeekSimulation {
   const player = state.player!
   const plan = state.plan ? PLAN_BY_ID[state.plan] : null
   const habits = (state.habits ?? [])
@@ -678,7 +681,8 @@ export function simulateWeek(state: GameState): WeekSimulation {
     .filter(Boolean)
   const habitApplied = habits.length > 0 && state.stress <= 60
   const hasFitnessHabit = (state.habits ?? []).includes('fitness')
-  const hasSportAction = state.selected.includes('sport')
+  const hasSportAction =
+    state.selected.includes('sport') || slotActions.includes('sport')
   const studyBonus = habitApplied
     ? habits.reduce((sum, habit) => sum + (habit.studyBonus ?? 0), 0)
     : 0
