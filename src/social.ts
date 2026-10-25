@@ -214,7 +214,7 @@ export function unseenRelationCount(state: GameState): number {
   return state.relationships.filter((relation) => !seen.has(relation.id)).length
 }
 
-export const GAME_START_YEAR = 2025
+export const GAME_START_YEAR = 2021
 
 export function gameDate(state: GameState): { year: number; month: number } {
   const phase = state.seasonIndex % 4

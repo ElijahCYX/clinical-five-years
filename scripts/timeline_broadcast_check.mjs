@@ -1,0 +1,6 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage()
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+const out=await page.evaluate(async()=>{const b=await import('/src/campusBroadcast.ts');const s=await import('/src/social.ts');const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const rows=[];for(const idx of [0,3,7,19]){const st=g.newGameState(demo.demoPlayer);st.seasonIndex=idx;st.season=d.SEASONS[idx];st.week=idx===19?3:1;st.vacation=null;rows.push({idx,date:s.gameDate(st),season:st.season.seasonLabel})}return {weather:b.WEATHER_LINES.length,events:b.CAMPUS_EVENT_LINES.length,first:b.CAMPUS_EVENT_LINES[0],last:b.CAMPUS_EVENT_LINES[b.CAMPUS_EVENT_LINES.length-1],rows,holidays:[{y:2021,m:9,t:b.getHolidayBroadcast(2021,9)},{y:2021,m:10,t:b.getHolidayBroadcast(2021,10)},{y:2022,m:2,t:b.getHolidayBroadcast(2022,2)},{y:2023,m:1,t:b.getHolidayBroadcast(2023,1)},{y:2026,m:5,t:b.getHolidayBroadcast(2026,5)},{y:2026,m:6,t:b.getHolidayBroadcast(2026,6)}]}})
+console.log(JSON.stringify(out,null,2));await browser.close()
