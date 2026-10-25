@@ -229,7 +229,7 @@ export function ElectiveSelectionScreen({
                     <span>
                       {peSecondTerm
                         ? '本学期考试周结算，夏/冬学期不能退选。'
-                        : '本学期已选，第一周可以退选。'}
+                        : '本学期已选，成绩将在接下来的冬/夏考试周结算。'}
                     </span>
                   </p>
                   <p className="pe-picker-note">
@@ -256,7 +256,7 @@ export function ElectiveSelectionScreen({
                 </p>
                 <p className="pe-picker-note">
                   {peSecondTerm
-                    ? '体育课已退选，冬/夏学期必须补选一门，否则不能进入新学期。'
+                    ? '当前没有正在修读的体育课，需要补选一门，否则不能进入新学期。'
                     : '春/秋学期必须选择一门体育课，课程将在接下来的冬/夏考试周结算。'}
                 </p>
                 {peTurn && (

@@ -77,7 +77,15 @@ function ResearchNoticeModal({
           </div>
         )}
         <footer className="random-event-footer">
-          <p>{notice.kind === 'pe' ? '体测记录已归档。' : '这是科研系统的重要节点。'}</p>
+          <p>
+            {notice.kind === 'pe'
+              ? '体测记录已归档。'
+              : notice.kind === 'stress'
+                ? '这是一次状态提醒，与科研进度无关。'
+                : notice.kind === 'club'
+                  ? '组织事务记录已归档。'
+                  : '这是科研系统的重要节点。'}
+          </p>
           {notice.choices ? (
             <div className="research-notice-choices">
               {notice.choices.map((choice) => (

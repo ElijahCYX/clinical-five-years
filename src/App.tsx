@@ -5,7 +5,6 @@ import {
   ELECTIVE_COURSE_BY_ID,
   PE_COURSES,
   isPeResultSeason,
-  isPeFirstTerm,
   isPeSecondTerm,
   pePairKey,
   HABIT_BY_ID,
@@ -2773,22 +2772,6 @@ function RealApp() {
     persist(next)
   }
 
-  const withdrawPeCourse = () => {
-    if (!game || game.week !== 1) return
-    if (!isPeFirstTerm(game.seasonIndex)) return
-    if (!game.pendingPeCourseId) return
-    const next: GameState = {
-      ...game,
-      pendingPeCourseId: null,
-      pendingPePairKey: null,
-      peCourseHistory: game.peCourseHistory.filter(
-        (id) => id !== game.pendingPeCourseId,
-      ),
-    }
-    setGame(next)
-    persist(next)
-  }
-
   const abandonElective = (courseId: string) => {
     if (!game) return
     const target = game.results.find((result) => result.course.id === courseId)
@@ -4249,7 +4232,6 @@ function RealApp() {
           onEndWeek={endWeek}
           onChooseFocus={chooseWeekFocus}
           onWithdrawElective={withdrawElective}
-          onWithdrawPeCourse={withdrawPeCourse}
           onOpenWhoAmI={openWhoAmI}
           onOpenTA={openWhoIs}
           onArrangeDinner={arrangeDinner}

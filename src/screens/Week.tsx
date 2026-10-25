@@ -3,9 +3,7 @@ import {
   ACTIONS,
   ATTRS,
   BACKGROUND_BY_ID,
-  ELECTIVE_COURSE_BY_ID,
   TALENT_BY_ID,
-  isPeFirstTerm,
 } from '../data'
 import {
   effectiveEnergyCost,
@@ -59,7 +57,6 @@ interface WeekScreenProps {
   onEndWeek: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onWithdrawElective?: (courseId: string) => void
-  onWithdrawPeCourse?: () => void
   onOpenWhoAmI?: () => void
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
@@ -83,7 +80,6 @@ export function WeekScreen({
   onEndWeek,
   onChooseFocus,
   onWithdrawElective,
-  onWithdrawPeCourse,
   onOpenWhoAmI,
   onOpenTA,
   onArrangeDinner,
@@ -1005,22 +1001,6 @@ export function WeekScreen({
                   </div>
                 )}
 
-                {state.week === 1 &&
-                  isPeFirstTerm(state.seasonIndex) &&
-                  state.pendingPeCourseId && (
-                    <div className="withdraw-elective-panel">
-                      <span>体育课第一周退选</span>
-                      <div>
-                        <button
-                          type="button"
-                          className="withdraw-elective-btn"
-                          onClick={() => onWithdrawPeCourse?.()}
-                        >
-                          退选 {ELECTIVE_COURSE_BY_ID[state.pendingPeCourseId]?.name ?? '体育课'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                 {!state.habits.includes('fitness') && !state.selected.includes('sport') && (
                   <p className="constitution-decay-note">
