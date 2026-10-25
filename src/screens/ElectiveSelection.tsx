@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ELECTIVE_COURSE_BY_ID,
   ELECTIVE_COURSES,
   PE_COURSES,
-  isPeFirstTerm,
   isPeSecondTerm,
   isSeniorYear,
   pePairKey,
@@ -56,6 +55,15 @@ export function ElectiveSelectionScreen({
   const [peSelected, setPeSelected] = useState<string | null>(
     state.pendingPeCourseId,
   )
+  const [peTurn, setPeTurn] = useState<{ key: number; course: Course } | null>(null)
+  const peTimer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (peTimer.current !== null) window.clearTimeout(peTimer.current)
+    },
+    [],
+  )
 
   const courses = slots
     .map((id) => ELECTIVE_COURSE_BY_ID[id])
@@ -66,20 +74,20 @@ export function ElectiveSelectionScreen({
   }, 0)
   const politicsDone = state.politicsCompleted.length
   const pairKey = pePairKey(state.seasonIndex)
-  const peFirstTerm = isPeFirstTerm(state.seasonIndex)
   const peSecondTerm = isPeSecondTerm(state.seasonIndex)
   const peSenior = isSeniorYear(state.seasonIndex)
   const hasPairPe =
     Boolean(pairKey) &&
     Boolean(state.pendingPeCourseId) &&
     state.pendingPePairKey === pairKey
-  const peMandatory = Boolean(peSecondTerm && pairKey && !hasPairPe)
+  const peMandatory = Boolean(pairKey && !hasPairPe)
   const peDisabled = peSenior || !pairKey || hasPairPe
   const peCourse = PE_COURSES[peIndex]
   const [pePredictedMin, pePredictedMax] = peCoursePredictedRange(state)
-  const existingPeName = state.pendingPeCourseId
-    ? ELECTIVE_COURSE_BY_ID[state.pendingPeCourseId]?.name
+  const existingPeCourse = state.pendingPeCourseId
+    ? ELECTIVE_COURSE_BY_ID[state.pendingPeCourseId]
     : null
+  const existingPeName = existingPeCourse?.name ?? null
 
   const poolFor = (type: ElectiveType): string[] =>
     ELECTIVE_COURSES.filter((course) => {
@@ -133,8 +141,14 @@ export function ElectiveSelectionScreen({
 
   const refreshPe = () => {
     if (accepted !== null || peDisabled) return
-    setPeIndex((current) => (current + 1) % PE_COURSES.length)
+    const nextIndex = (peIndex + 1) % PE_COURSES.length
+    setPeTurn({ key: Date.now(), course: PE_COURSES[nextIndex] })
     setPeSelected(null)
+    if (peTimer.current !== null) window.clearTimeout(peTimer.current)
+    peTimer.current = window.setTimeout(() => {
+      setPeIndex(nextIndex)
+      setPeTurn(null)
+    }, 340)
   }
 
   const choosePe = () => {
@@ -171,7 +185,7 @@ export function ElectiveSelectionScreen({
           <h1 className="page-title">选修课程</h1>
           <p className="page-lede">
             这学期四类课程各向你展示一门，可以选 0–3 门。每张卡下方的刷新不限次数。
-            体育课是必修课，选中率 100%，只在春/秋学期可选；夏/冬学期会检查是否已经选过。
+            体育课是必修课，选中率 100%，只在春/秋学期选择；夏/冬学期显示正在修读的课程，并在考试周结算。
           </p>
           <p className="elective-exclusion-note">
             兴趣类课程不计入泡图书馆的计费课程数，不会增加图书馆的精力与压力消耗。
@@ -194,22 +208,42 @@ export function ElectiveSelectionScreen({
           </SectionLabel>
           {peDisabled ? (
             <div className="pe-disabled-state">
-              <strong>
-                {peSenior
-                  ? '大五不设体育课'
-                  : !pairKey
-                    ? '本学期无体育课'
-                    : existingPeName
-                      ? `本学期体育课已选：${existingPeName}`
-                      : '本学期无需选择体育课'}
-              </strong>
-              <p>
-                {peSenior
-                  ? '大一至大四的八次体育课已经结束，大五不再安排体育选课。'
-                  : hasPairPe
-                    ? '这门体育课会随本学年一起结算，夏/冬学期不能退选。'
-                    : '本学期没有需要选择的体育课。'}
-              </p>
+              {peSenior ? (
+                <>
+                  <strong>大五不设体育课</strong>
+                  <p>大一至大四的八次体育课已经结束，大五不再安排体育选课。</p>
+                </>
+              ) : !pairKey ? (
+                <>
+                  <strong>本学期无体育课</strong>
+                  <p>临床前学期不安排体育课选课。</p>
+                </>
+              ) : existingPeCourse ? (
+                <>
+                  <span className="pe-kind">
+                    正在修读 · 1 学分 · 无准备度
+                  </span>
+                  <h3>{existingPeCourse.name}</h3>
+                  <p className="pe-prediction">
+                    预测分数 {pePredictedMin}–{pePredictedMax}
+                    <span>
+                      {peSecondTerm
+                        ? '本学期考试周结算，夏/冬学期不能退选。'
+                        : '本学期已选，第一周可以退选。'}
+                    </span>
+                  </p>
+                  <p className="pe-picker-note">
+                    {peSecondTerm
+                      ? '体育课需要修读两个学期，成绩在本学期考试周结算。'
+                      : '体育课需要修读两个学期，成绩在接下来的冬/夏考试周结算。'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <strong>本学期无需选择体育课</strong>
+                  <p>当前没有正在修读的体育课。</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="pe-picker">
@@ -222,9 +256,20 @@ export function ElectiveSelectionScreen({
                 </p>
                 <p className="pe-picker-note">
                   {peSecondTerm
-                    ? '夏/冬学期必须完成一次体育选课，否则不能进入新学期。'
-                    : '春/秋学期可以先不选；如果这学期不选，夏/冬学期将变为必修。'}
+                    ? '体育课已退选，冬/夏学期必须补选一门，否则不能进入新学期。'
+                    : '春/秋学期必须选择一门体育课，课程将在接下来的冬/夏考试周结算。'}
                 </p>
+                {peTurn && (
+                  <div
+                    key={peTurn.key}
+                    className="pe-turn-overlay"
+                    aria-hidden="true"
+                  >
+                    <span className="pe-kind">体育课 · 正在翻页</span>
+                    <h3>{peTurn.course.name}</h3>
+                    <p>预测分数 {pePredictedMin}–{pePredictedMax}</p>
+                  </div>
+                )}
               </div>
               <div className="pe-picker-actions">
                 <button
@@ -314,7 +359,7 @@ export function ElectiveSelectionScreen({
             <div className="elective-footer">
               <p>
                 {peMandatory && !peSelected
-                  ? '本学期体育课必须选择后才能提交。'
+                  ? '春/秋学期必须选择一门体育课后才能提交。'
                   : '选上与否要提交后才知道；没选上不消耗学分，毕业最多计入 10 个选修学分。'}
               </p>
               <button
