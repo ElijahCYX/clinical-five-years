@@ -11637,3 +11637,175 @@ body.dinner-open {
 .bond-action-buttons .bond-break-btn {
   font-size: 10.5px;
 }
+
+/* ---------- paper address-book bond cards ---------- */
+
+.bond-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+}
+
+.bond-card {
+  flex: 0 0 calc((100% - 20px) / 3);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 13px 14px 12px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(247, 241, 229, 0.96));
+  box-shadow: 0 6px 14px -12px rgba(32, 59, 50, 0.36);
+  position: relative;
+}
+
+.bond-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  border-left: 1px dashed rgba(201, 192, 171, 0.45);
+  pointer-events: none;
+}
+
+.bond-card > * {
+  position: relative;
+}
+
+.bond-card-head {
+  display: block;
+  padding-bottom: 9px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.bond-card-head > div {
+  min-width: 0;
+}
+
+.bond-card-head .pill {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.bond-card-head h3 {
+  font-size: 24px;
+}
+
+.bond-card-head p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bond-intimacy {
+  margin-top: 10px;
+}
+
+.bond-meta {
+  grid-template-columns: 1fr;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 7px 0;
+}
+
+.bond-meta div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bond-meta span {
+  font-size: 8px;
+}
+
+.bond-meta strong {
+  margin-top: 0;
+  font-size: 10.5px;
+  text-align: right;
+}
+
+.bond-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.bond-actions p {
+  font-size: 8.5px;
+}
+
+.bond-action-buttons {
+  width: 100%;
+  justify-content: stretch;
+  gap: 6px;
+}
+
+.bond-action-buttons .btn,
+.bond-action-buttons .bond-break-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.bond-non-lover-note {
+  min-height: 28px;
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .bond-list {
+    flex-direction: column;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .bond-card {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  .bond-list {
+    height: 540px;
+    min-height: 540px;
+  }
+
+  .bond-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .bond-list {
+    height: auto;
+    min-height: 0;
+  }
+
+  .bond-card {
+    min-height: 0;
+  }
+}
+
+/* keep address-book cards portrait without trapping large empty gaps */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .bond-list {
+    height: auto;
+    min-height: 0;
+  }
+
+  .bond-card {
+    min-height: 400px;
+  }
+}
