@@ -239,10 +239,22 @@ export function gameDate(state: GameState): { year: number; month: number } {
   return { year: baseYear + 1, month: [6, 7, 8, 8][week - 1] }
 }
 
+export const PEER_BIRTH_YEAR_MIN = 2002
+export const PEER_BIRTH_YEAR_MAX = 2004
+
+function clampPeerBirthYear(kind: Relationship['kind'], year: number): number {
+  if (kind === 'mentor' || kind === 'counselor') return year
+  return Math.max(PEER_BIRTH_YEAR_MIN, Math.min(PEER_BIRTH_YEAR_MAX, year))
+}
+
 function randomBirthYear(kind: Relationship['kind']): number {
   if (kind === 'mentor') return GAME_START_YEAR - randInt(38, 58)
   if (kind === 'counselor') return GAME_START_YEAR - randInt(28, 42)
-  return GAME_START_YEAR - randInt(18, 21)
+  // 2021 年入学：2003 年为主，2002 年通常为延迟入学，2004 年为提早入学。
+  const roll = Math.random()
+  if (roll < 0.2) return 2002
+  if (roll < 0.8) return 2003
+  return 2004
 }
 
 export const PAT_LIMIT = 3
@@ -409,7 +421,10 @@ export function normalizeRelationships(
       ROOMMATE_ACTIONS[randInt(0, ROOMMATE_ACTIONS.length - 1)],
     lastPatKey: relation.lastPatKey ?? '',
     lastPatAbsWeek: relation.lastPatAbsWeek ?? 0,
-    birthYear: relation.birthYear ?? randomBirthYear(relation.kind),
+    birthYear: clampPeerBirthYear(
+      relation.kind,
+      relation.birthYear ?? randomBirthYear(relation.kind),
+    ),
     birthdayMonth: relation.birthdayMonth ?? randInt(1, 12),
     birthdayGiftYear: relation.birthdayGiftYear ?? 0,
     birthdayContactType: relation.birthdayContactType ?? null,
