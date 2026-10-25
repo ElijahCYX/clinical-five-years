@@ -22,6 +22,7 @@ import {
   backgroundAllowance,
   clamp,
   courseK,
+  focusAdjustedGains,
   cetScore,
   getReviewEffect,
   gpaFromScore,
@@ -3062,14 +3063,27 @@ function RealApp() {
       const costs = libraryCosts(base)
       energy += costs.energy
       stress += costs.stress
-      for (const course of base.season.courses) {
-        const gain =
+      const nominal = Object.fromEntries(
+        base.season.courses.map((course) => [
+          course.id,
           6 *
-          courseK(course, player.attrs) *
-          prepGainMultiplier(base) *
-          coursePrepTalentMultiplier(base, course) *
-          (base.energy < 40 ? 0.5 : 1)
-        prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
+            courseK(course, player.attrs) *
+            prepGainMultiplier(base) *
+            coursePrepTalentMultiplier(base, course) *
+            (base.energy < 40 ? 0.5 : 1),
+        ]),
+      )
+      const allocated = focusAdjustedGains(
+        nominal,
+        base.weekFocus,
+        base.season.courses,
+      )
+      for (const course of base.season.courses) {
+        prep[course.id] = clamp(
+          (prep[course.id] ?? 0) + (allocated[course.id] ?? 0),
+          0,
+          100,
+        )
       }
     } else if (action.id === 'research') {
       if (base.labEntered && !base.researchStarted) {
@@ -3257,6 +3271,112 @@ function RealApp() {
       title: '因故请假',
       text: `你向${activity.name}请了假。${pickClubLeaveText()}`,
     })
+  }
+
+  const performSlotLibrary = (focus: string) => {
+    if (!game) return
+    const next = applySlotAction({ ...game, weekFocus: focus }, 'library')
+    finishWeekSlot(next, 'library')
+  }
+
+  const performSlotDinner = (
+    acceptedIds: string[],
+    declinedIds: string[],
+    cost: number,
+  ) => {
+    if (!game || cost > game.money) return
+    const summary = acceptedIds
+      .map((id) => game.relationships.find((relation) => relation.id === id)?.name)
+      .filter(Boolean) as string[]
+    const intimacyGain =
+      acceptedIds.length > 0 ? Math.max(1, Math.floor(6 / acceptedIds.length)) : 0
+    const next: GameState = {
+      ...game,
+      energy: clamp(game.energy + 8, 0, 100),
+      stress: clamp(game.stress - 8, 0, 100),
+      money: Math.max(0, game.money - cost),
+      dinnerPlan: {
+        acceptedIds,
+        declinedIds,
+        cost,
+        summary,
+        committed: true,
+      },
+      dinnerInvites: null,
+      relationships: game.relationships.map((relation) =>
+        acceptedIds.includes(relation.id)
+          ? {
+              ...relation,
+              intimacy: Math.min(
+                100,
+                relation.intimacy +
+                  adjustIntimacyDelta(game, relation, intimacyGain),
+              ),
+            }
+          : relation,
+      ),
+    }
+    finishWeekSlot(next, 'social')
+  }
+
+  const performSlotClubActivity = (
+    orgId: string,
+    acceptedIds: string[],
+    declinedIds: string[],
+  ) => {
+    if (!game) return
+    const membership = game.clubMemberships.find((item) => item.orgId === orgId)
+    if (!membership) return
+    const roleMultiplier = roleBenefitMultiplier(membership.role)
+    const socialGain = Math.round(5 * roleMultiplier)
+    const intimacyGain = Math.round(5 * roleMultiplier)
+    let next: GameState = {
+      ...game,
+      energy: clamp(game.energy - 12, 0, 100),
+      stress: clamp(game.stress + 5, 0, 100),
+      money: Math.max(0, game.money - 20),
+      socialGrowth: game.socialGrowth + socialGain,
+      clubMemberships: game.clubMemberships.map((item) =>
+        item.orgId === orgId
+          ? {
+              ...item,
+              totalActivities: item.totalActivities + 1,
+              semesterActivities: item.semesterActivities + 1,
+            }
+          : item,
+      ),
+      clubActivityPlan: null,
+      clubInvites: null,
+      relationships: game.relationships.map((relation) =>
+        acceptedIds.includes(relation.id)
+          ? {
+              ...relation,
+              intimacy: Math.min(
+                100,
+                relation.intimacy +
+                  adjustIntimacyDelta(game, relation, intimacyGain),
+              ),
+            }
+          : relation,
+      ),
+    }
+    let notice: { title: string; text: string; lines: string[] } | null = null
+    if (Math.random() < CLUB_EVENT_CHANCE) {
+      const event = pickClubEvent(membership.category)
+      const applied = applyClubEvent(next, membership, event)
+      next = pushCampusNotice(applied.next, event.title, event.text)
+      notice = { title: event.title, text: event.text, lines: applied.lines }
+    }
+    finishWeekSlot(next, 'club')
+    if (notice) {
+      showResearchNotice({
+        kind: 'club',
+        title: notice.title,
+        text: notice.text,
+        ruleText: notice.lines.length > 0 ? notice.lines.join('；') : undefined,
+        ruleLabel: '事件结果',
+      })
+    }
   }
 
   const chooseReview = (choice: ReviewChoice) => {
@@ -4515,6 +4635,9 @@ function RealApp() {
           onSkipCourse={skipCurrentCourse}
           onSlotAction={performWeekSlotAction}
           onSleepIn={sleepInCurrentSlot}
+          onSlotLibraryFocus={performSlotLibrary}
+          onSlotDinner={performSlotDinner}
+          onSlotClubActivity={performSlotClubActivity}
           onAttendClubActivity={attendClubActivity}
           onLeaveClubActivity={leaveClubActivity}
           onChooseFocus={chooseWeekFocus}

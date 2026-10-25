@@ -47,6 +47,7 @@ const VISIBLE_ACTIONS = [
   'library',
   'electiveHomework',
   'research',
+  'club',
   'rest',
   'selfCare',
   'social',
@@ -74,6 +75,9 @@ interface WeekScreenProps {
   onSkipCourse?: () => void
   onSlotAction?: (actionId: string) => void
   onSleepIn?: () => void
+  onSlotLibraryFocus?: (focus: string) => void
+  onSlotDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
+  onSlotClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
   onAttendClubActivity?: () => void
   onLeaveClubActivity?: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
@@ -103,6 +107,9 @@ export function WeekScreen({
   onSkipCourse,
   onSlotAction,
   onSleepIn,
+  onSlotLibraryFocus,
+  onSlotDinner,
+  onSlotClubActivity,
   onAttendClubActivity,
   onLeaveClubActivity,
   onChooseFocus,
@@ -254,9 +261,40 @@ export function WeekScreen({
     onToggleAction(id)
   }
   const chooseFocus = (focus: string) => {
-    onChooseFocus(focus, focusPrompt === 'library')
+    if (focusPrompt === 'library') {
+      onSlotLibraryFocus?.(focus)
+    } else {
+      onChooseFocus(focus, false)
+    }
     setFocusPrompt(null)
   }
+  const handleSlotActionClick = (id: string) => {
+    if (
+      id === 'library' &&
+      focusableCourses.length > 1 &&
+      !state.weekFocus
+    ) {
+      setFocusPrompt('library')
+      return
+    }
+    if (id === 'social') {
+      setDinnerOpen(true)
+      return
+    }
+    if (id === 'club') {
+      if (clubMemberships.length === 1) {
+        setSelectedClubOrgId(clubMemberships[0].orgId)
+        setClubActivityOpen(true)
+        return
+      }
+      if (clubMemberships.length === 2) {
+        setClubPickerOpen(true)
+        return
+      }
+    }
+    onSlotAction?.(id)
+  }
+
   const researchActionName = state.researchPublished
     ? '论文已发表'
     : !state.labEntered
@@ -1306,14 +1344,14 @@ export function WeekScreen({
                         className={`action-card ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         } ${committed ? 'is-committed' : ''}`}
-                        onClick={() => !disabled && onSlotAction?.(action.id)}
+                        onClick={() => !disabled && handleSlotActionClick(action.id)}
                         onKeyDown={(event) => {
                           if (
                             (event.key === 'Enter' || event.key === ' ') &&
                             !disabled
                           ) {
                             event.preventDefault()
-                            onSlotAction?.(action.id)
+                            handleSlotActionClick(action.id)
                           }
                         }}
                       >
@@ -1622,11 +1660,19 @@ export function WeekScreen({
           onCancel={() => setClubActivityOpen(false)}
           onConfirm={(acceptedIds, declinedIds) => {
             setClubActivityOpen(false)
-            onArrangeClubActivity?.(
-              selectedMembership.orgId,
-              acceptedIds,
-              declinedIds,
-            )
+            if (onSlotClubActivity) {
+              onSlotClubActivity(
+                selectedMembership.orgId,
+                acceptedIds,
+                declinedIds,
+              )
+            } else {
+              onArrangeClubActivity?.(
+                selectedMembership.orgId,
+                acceptedIds,
+                declinedIds,
+              )
+            }
           }}
         />
       )}
@@ -1644,7 +1690,11 @@ export function WeekScreen({
           onCancel={() => setDinnerOpen(false)}
           onConfirm={(acceptedIds, declinedIds, cost) => {
             setDinnerOpen(false)
-            onArrangeDinner?.(acceptedIds, declinedIds, cost)
+            if (onSlotDinner) {
+              onSlotDinner(acceptedIds, declinedIds, cost)
+            } else {
+              onArrangeDinner?.(acceptedIds, declinedIds, cost)
+            }
           }}
         />
       )}
