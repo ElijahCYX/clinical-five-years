@@ -387,6 +387,8 @@ export function WeekScreen({
   const currentSlotDay = TIMETABLE_DAYS[Math.floor(weekSlot / 3)]
   const currentSlotPhase = TIMETABLE_SLOTS[weekSlot % 3]
   const currentSlotIsMorning = weekSlot % 3 === 0
+  const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
+  const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
 
   const lockReason = (action: ActionDef): string | null => {
     if (
@@ -1118,7 +1120,14 @@ export function WeekScreen({
           />
 
 
-          <section className="game-center">
+          <section className={`game-center time-${weekPhaseClass}`}>
+            <div
+              className={`time-phase-veil phase-${weekPhaseClass}`}
+              key={weekPhaseClass}
+              aria-hidden="true"
+            >
+              <span className="time-phase-orb" />
+            </div>
             <nav className="tabs">
               {(
                 [
@@ -1153,7 +1162,19 @@ export function WeekScreen({
                     <h2>这周，你想怎么过？</h2>
                     <p>21 个时间段，每次选择都会推进时间。当前：{currentSlotDay} · {currentSlotPhase}。</p>
                   </div>
-                  <Pill tone="green">第 {weekSlot + 1} / 21 段</Pill>
+                  <div
+                    className={`week-phase-badge phase-${weekPhaseClass}`}
+                    key={weekPhaseClass}
+                  >
+                    <span className="week-phase-symbol" aria-hidden="true">
+                      {weekPhaseSymbol}
+                    </span>
+                    <div>
+                      <small>{currentSlotDay}</small>
+                      <strong>{currentSlotPhase}</strong>
+                    </div>
+                    <em>{weekSlot + 1} / 21</em>
+                  </div>
                 </div>
 
                 <div className="week-slot-strip" aria-label="本周时间段进度">

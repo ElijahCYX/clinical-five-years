@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   ELECTIVE_COURSE_BY_ID,
   ELECTIVE_COURSES,
@@ -54,15 +54,6 @@ export function ElectiveSelectionScreen({
   )
   const [peSelected, setPeSelected] = useState<string | null>(
     state.pendingPeCourseId,
-  )
-  const [peTurn, setPeTurn] = useState<{ key: number; course: Course } | null>(null)
-  const peTimer = useRef<number | null>(null)
-
-  useEffect(
-    () => () => {
-      if (peTimer.current !== null) window.clearTimeout(peTimer.current)
-    },
-    [],
   )
 
   const courses = slots
@@ -141,14 +132,8 @@ export function ElectiveSelectionScreen({
 
   const refreshPe = () => {
     if (accepted !== null || peDisabled) return
-    const nextIndex = (peIndex + 1) % PE_COURSES.length
-    setPeTurn({ key: Date.now(), course: PE_COURSES[nextIndex] })
+    setPeIndex((current) => (current + 1) % PE_COURSES.length)
     setPeSelected(null)
-    if (peTimer.current !== null) window.clearTimeout(peTimer.current)
-    peTimer.current = window.setTimeout(() => {
-      setPeIndex(nextIndex)
-      setPeTurn(null)
-    }, 340)
   }
 
   const choosePe = () => {
@@ -259,17 +244,6 @@ export function ElectiveSelectionScreen({
                     ? '当前没有正在修读的体育课，需要补选一门，否则不能进入新学期。'
                     : '春/秋学期必须选择一门体育课，课程将在接下来的冬/夏考试周结算。'}
                 </p>
-                {peTurn && (
-                  <div
-                    key={peTurn.key}
-                    className="pe-turn-overlay"
-                    aria-hidden="true"
-                  >
-                    <span className="pe-kind">体育课 · 正在翻页</span>
-                    <h3>{peTurn.course.name}</h3>
-                    <p>预测分数 {pePredictedMin}–{pePredictedMax}</p>
-                  </div>
-                )}
               </div>
               <div className="pe-picker-actions">
                 <button
