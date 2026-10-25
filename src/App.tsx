@@ -1830,6 +1830,14 @@ function RealApp() {
     setView('whois')
   }
 
+  const returnToMain = () => {
+    if (game?.screen === 'plan') {
+      setView('plan')
+      return
+    }
+    setView('week')
+  }
+
   const markRelationSeen = (relationshipId: string) => {
     if (!game || game.seenRelationIds.includes(relationshipId)) return
     const next: GameState = {
@@ -4089,7 +4097,7 @@ function RealApp() {
     return (
       <WhoAmIScreen
         state={game}
-        onMain={() => setView('week')}
+        onMain={returnToMain}
         onTA={openWhoIs}
         onTitle={goTitle}
       />
@@ -4108,7 +4116,7 @@ function RealApp() {
         onMarkAllSeen={markAllRelationsSeen}
         onBirthdayGift={giveBirthdayGift}
         onBirthdayBlessing={giveBirthdayBlessing}
-        onMain={() => setView('week')}
+        onMain={returnToMain}
         onWho={() => setView('whoami')}
         onTitle={goTitle}
       />
