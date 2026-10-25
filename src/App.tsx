@@ -1164,6 +1164,7 @@ function RealApp() {
         relation = {
           ...createEventFriend(game.player!),
           identity: '校园偶遇认识的人',
+          metAbsWeek: progressWeek(game),
         }
         next = {
           ...game,
@@ -1563,7 +1564,7 @@ function RealApp() {
       roleLabel(org.category, 'member'),
     ]
     const newRelations = roles.map((role) =>
-      createClubRelationship(base.player!, org.id, org.name, role),
+      createClubRelationship(base.player!, org.id, org.name, role, progressWeek(base)),
     )
     return {
       ...base,

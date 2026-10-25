@@ -362,6 +362,7 @@ export interface Relationship {
   partnerSinceWeek?: number
   partnerSinceLabel?: string
   lastContactKey?: string
+  metAbsWeek?: number
   brokenBondType?: BondType
   bondBreakWeek?: number
   bondCalmUntilWeek?: number

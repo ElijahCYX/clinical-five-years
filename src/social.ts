@@ -120,6 +120,7 @@ function makeRelationship(
     partnerSinceWeek: undefined,
     partnerSinceLabel: undefined,
     lastContactKey: '',
+    metAbsWeek: 1,
     brokenBondType: undefined,
     bondBreakWeek: undefined,
     bondCalmUntilWeek: undefined,
@@ -192,10 +193,12 @@ export function createClubRelationship(
   orgId: string,
   orgName: string,
   roleLabel: string,
+  metAbsWeek = 1,
 ): Relationship {
   return {
     ...makeRelationship(player, 'club', `${orgName} · ${roleLabel}`, Math.random() < 0.5 ? '女' : '男', randInt(32, 46)),
     clubOrgId: orgId,
+    metAbsWeek,
   }
 }
 
@@ -459,6 +462,7 @@ export function normalizeRelationships(
     partnerSinceWeek: relation.partnerSinceWeek,
     partnerSinceLabel: relation.partnerSinceLabel,
     lastContactKey: relation.lastContactKey ?? '',
+    metAbsWeek: relation.metAbsWeek ?? 1,
     brokenBondType: relation.brokenBondType,
     bondBreakWeek: relation.bondBreakWeek,
     bondCalmUntilWeek: relation.bondCalmUntilWeek,

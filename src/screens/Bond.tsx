@@ -45,6 +45,18 @@ function durationLabel(state: GameState, relation: Relationship): string {
   return `${months} 个月左右`
 }
 
+function knownDurationLabel(
+  state: GameState,
+  relation: Relationship,
+): string {
+  const now = progressWeek(state)
+  const since = relation.metAbsWeek ?? 1
+  const weeks = Math.max(1, now - since + 1)
+  if (weeks < 5) return `${weeks} 周`
+  const months = Math.floor(weeks / 4)
+  return `${months} 个月左右`
+}
+
 function activeBondType(relation: Relationship): BondType | undefined {
   return relation.bondType ?? (relation.partner ? 'lover' : undefined)
 }
@@ -188,6 +200,10 @@ export function BondScreen({
                   <div>
                     <span>在一起</span>
                     <strong>{durationLabel(state, relation)}</strong>
+                  </div>
+                  <div>
+                    <span>相识</span>
+                    <strong>{knownDurationLabel(state, relation)}</strong>
                   </div>
                 </div>
 

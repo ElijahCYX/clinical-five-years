@@ -13,6 +13,7 @@ import {
   playerAllowsGender,
 
   adjustIntimacyDelta,
+  progressWeek,
 } from './social'
 import { unlockMentor } from './mentors'
 
@@ -481,7 +482,7 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   ) {
     next.relationships = [
       ...next.relationships,
-      createEventFriend(state.player),
+      { ...createEventFriend(state.player), metAbsWeek: progressWeek(state) },
     ]
   }
   return next
