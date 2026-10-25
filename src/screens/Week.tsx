@@ -149,7 +149,7 @@ export function WeekScreen({
     ...state.courseRecords,
     ...passedPe.map((item) => ({
       id: `pe-${item.year}`,
-      name: `体育（第 ${item.year} 年）`,
+      name: `体测（${['一', '二', '三', '四', '五'][item.year - 1] ?? item.year}）`,
       credits: 2,
       gpa: item.gpa,
       score: item.score,

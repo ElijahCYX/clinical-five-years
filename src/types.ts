@@ -605,6 +605,7 @@ export interface GameState {
   kaoyanResult: 'success' | 'fail' | null
   peMakeupPassed: boolean | null
   peMakeupScore: number | null
+  peGraduationExempt: boolean
   yearRecords: YearRecord[]
   everFailed: boolean
   yearFailed: boolean

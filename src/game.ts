@@ -323,6 +323,7 @@ export function newGameState(player: Player): GameState {
     kaoyanResult: null,
     peMakeupPassed: null,
     peMakeupScore: null,
+    peGraduationExempt: false,
     yearRecords: [],
     everFailed: false,
     yearFailed: false,
@@ -879,6 +880,12 @@ export function peScoreFor(constitution: number): number {
   return clamp(Math.round(50 + (constitution - 2) * 6.25), 0, 100)
 }
 
+export const PE_TEST_NAMES = ['体测（一）', '体测（二）', '体测（三）', '体测（四）', '体测（五）']
+
+export function peTestName(year: number): string {
+  return PE_TEST_NAMES[year - 1] ?? `体测（${year}）`
+}
+
 export function peGpaFor(score: number): number {
   if (score >= 90) return 5
   if (score >= 80) return 4
@@ -953,11 +960,11 @@ export function graduationReasons(state: GameState): string[] {
     reasons.push(`仍有 ${state.pendingMakeups.length} 门补考未通过`)
   }
   if (state.peMakeupPassed === false) {
-    reasons.push('毕业生体育素质补考未通过')
+    reasons.push('毕业生体测未通过')
   }
   const failedPe = state.peResults.filter((item) => !item.passed)
   if (failedPe.length > 0 && state.peMakeupPassed === null) {
-    reasons.push('仍有体育课未通过')
+    reasons.push('仍有体测未通过')
   }
   return reasons
 }

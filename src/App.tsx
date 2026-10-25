@@ -22,6 +22,7 @@ import {
   newGameState,
   peGpaFor,
   peScoreFor,
+  peTestName,
   postgradChanceFor,
   scholarshipFor,
   effectiveEnergyCost,
@@ -165,8 +166,9 @@ import {
   isYearFinalSeasonIndex,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v43'
+const SAVE_KEY = 'clinical-five-years-save-v44'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v43',
   'clinical-five-years-save-v42',
   'clinical-five-years-save-v41',
   'clinical-five-years-save-v40',
@@ -3230,7 +3232,8 @@ function RealApp() {
     let peMakeupPassed = base.peMakeupPassed
     let peMakeupScore = base.peMakeupScore
     let current = base
-    if (failedPe.length > 0) {
+    const peGraduationExempt = failedPe.length === 0
+    if (!peGraduationExempt) {
       peMakeupScore = peScoreFor(base.player!.attrs.constitution)
       peMakeupPassed = peMakeupScore >= 60
       if (peMakeupPassed) {
@@ -3243,7 +3246,13 @@ function RealApp() {
       }
     }
     commit(
-      { ...current, peMakeupPassed, peMakeupScore, screen: 'graduation' },
+      {
+        ...current,
+        peMakeupPassed,
+        peMakeupScore,
+        peGraduationExempt,
+        screen: 'graduation',
+      },
       'graduation',
     )
   }
@@ -3398,19 +3407,51 @@ function RealApp() {
         clubAnnualBonusSeason: current.season.id,
       }
     }
+    const previousPeCount = current.peResults.length
     if (isYearFinal(current.seasonIndex)) current = settlePe(current)
+    const newPe = current.peResults[previousPeCount]
     const index = current.seasonIndex
+
+    // 大五夏：先结算体测（五），再判断毕业生体测免修/补测
+    if (index === 20) {
+      const failedPe = current.peResults.filter((item) => !item.passed)
+      const graduateExempt = failedPe.length === 0
+      const graduateScore = graduateExempt
+        ? null
+        : peScoreFor(current.player!.attrs.constitution)
+      const graduatePassed =
+        graduateExempt || (graduateScore !== null && graduateScore >= 60)
+      const fifthLine = newPe
+        ? `${peTestName(newPe.year)}成绩 ${newPe.score} 分，${newPe.passed ? '通过' : '未通过'}。`
+        : ''
+      const graduationLine = graduateExempt
+        ? '五次体测全部通过，毕业生体测免修。'
+        : `此前有 ${failedPe.length} 次体测未通过，需要参加毕业生体测。毕业生体测成绩 ${graduateScore} 分，${graduatePassed ? '通过，达到毕业要求。' : '未通过，毕业要求尚未满足。'}`
+      showResearchNotice({
+        kind: 'pe',
+        title: '体测（五）与毕业生体测',
+        text: `${fifthLine}${graduationLine}`,
+      })
+      finalizeGraduation(current)
+      return
+    }
+
+    if (newPe) {
+      showResearchNotice({
+        kind: 'pe',
+        title: peTestName(newPe.year),
+        text: `${peTestName(newPe.year)}结束。你的成绩是 ${newPe.score} 分，${
+          newPe.passed
+            ? '达到 60 分合格线，体测通过。'
+            : '未达到 60 分，记录为未通过，毕业前需要参加毕业生体测。'
+        }`,
+      })
+    }
 
     // 大三临床前、大四夏：学年结算（大四无暑假）
     if (index === 12 || index === 16) {
       current = finalizeYear(current)
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
-      return
-    }
-
-    // 大五夏：毕业结算 + 毕业生体育补考
-    if (index === 20) {
-      finalizeGraduation(current)
       return
     }
 

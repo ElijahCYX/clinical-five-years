@@ -282,11 +282,14 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   <strong>{state.roommateBond ? '已加深' : '普通'}</strong>
                 </div>
                 <div>
-                  <span>体育成绩</span>
+                  <span>体测成绩</span>
                   <strong>
                     {state.peResults.length > 0
                       ? state.peResults
-                          .map((pe) => `${pe.score}${pe.passed ? '' : '（挂）'}`)
+                          .map(
+                            (pe) =>
+                              `${['体测一', '体测二', '体测三', '体测四', '体测五'][pe.year - 1] ?? `体测${pe.year}`} ${pe.score}${pe.passed ? '' : '（未通过）'}`,
+                          )
                           .join(' / ')
                       : '暂无'}
                   </strong>

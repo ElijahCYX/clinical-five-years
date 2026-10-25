@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
 export interface ResearchNotice {
-  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club'
+  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club' | 'pe'
   title: string
   text: string
   journal?: string
@@ -56,7 +56,9 @@ function ResearchNoticeModal({
                       ? 'HEART WARNING'
                       : notice.kind === 'club'
                         ? 'CLUB NOTICE'
-                        : 'LAB WARNING'}
+                        : notice.kind === 'pe'
+                          ? 'PHYSICAL TEST'
+                          : 'LAB WARNING'}
             </span>
           </div>
           <h2 className="random-event-title">{notice.title}</h2>
@@ -75,7 +77,7 @@ function ResearchNoticeModal({
           </div>
         )}
         <footer className="random-event-footer">
-          <p>这是科研系统的重要节点。</p>
+          <p>{notice.kind === 'pe' ? '体测记录已归档。' : '这是科研系统的重要节点。'}</p>
           {notice.choices ? (
             <div className="research-notice-choices">
               {notice.choices.map((choice) => (

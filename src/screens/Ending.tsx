@@ -88,7 +88,7 @@ export function EndingScreen({
                 <strong>{state.cumulativeCredits}</strong>
               </div>
               <div>
-                <span>体育</span>
+                <span>体测</span>
                 <strong>
                   {state.peResults.length === 0
                     ? '—'

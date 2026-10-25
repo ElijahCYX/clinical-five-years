@@ -1,0 +1,9 @@
+import { chromium } from 'playwright-core'
+const browser=await chromium.launch({executablePath:'/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',headless:true,args:['--no-sandbox']})
+const page=await browser.newPage({viewport:{width:1600,height:1000}})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+async function inject(index, peResults){await page.evaluate(async({index,peResults})=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const s=g.newGameState(demo.demoPlayer);s.screen='result';s.seasonIndex=index;s.season=d.SEASONS[index];s.week=1;s.plan='B';s.habits=[];s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.results=s.season.courses.map(c=>({course:c,score:70,gpa:2.5,expectedMin:60,expectedMax:80,stressRelief:0}));s.peResults=peResults;localStorage.setItem('clinical-five-years-save-v43',JSON.stringify({game:s,savedAt:Date.now()}))},{index,peResults});await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400)}
+await inject(3,[]);await page.locator('.result-actions .btn-primary').click();await page.waitForTimeout(500);console.log('pe popup',await page.locator('.research-notice-modal .random-event-title').innerText().catch(()=>''));console.log('pe text',(await page.locator('.research-notice-modal .random-event-text').innerText().catch(()=>'')).slice(0,120));
+const five=[1,2,3,4,5].map(y=>({year:y,score:80,gpa:4,passed:true}));
+await inject(20,five);await page.locator('.result-actions .btn-primary').click();await page.waitForTimeout(500);console.log('grad popup',await page.locator('.research-notice-modal .random-event-title').innerText().catch(()=>''));console.log('grad text',(await page.locator('.research-notice-modal .random-event-text').innerText().catch(()=>'')).slice(0,200));
+await browser.close()

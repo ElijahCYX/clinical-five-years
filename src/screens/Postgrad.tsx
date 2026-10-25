@@ -335,13 +335,15 @@ export function GraduationScreen({
                 <strong>{state.cet6Score ?? '未参加'}</strong>
               </div>
               <div>
-                <span>体育</span>
+                <span>体测</span>
                 <strong>
-                  {state.peMakeupPassed === false
-                    ? '毕业补考未通过'
-                    : state.peMakeupPassed
-                      ? '补考通过'
-                      : '全部通过'}
+                  {state.peGraduationExempt
+                    ? '毕业生体测免修'
+                    : state.peMakeupPassed === false
+                      ? '毕业生体测未通过'
+                      : state.peMakeupPassed
+                        ? '毕业生体测通过'
+                        : '五次体测全部通过'}
                 </strong>
               </div>
               <div>
