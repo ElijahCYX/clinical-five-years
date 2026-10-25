@@ -147,7 +147,7 @@ export interface ActionDef {
   lockedNote?: string
 }
 
-export type ElectiveType = 'water' | 'interest' | 'group' | 'politics'
+export type ElectiveType = 'water' | 'interest' | 'group' | 'politics' | 'pe'
 
 export interface Course {
   id: string
@@ -376,6 +376,14 @@ export interface Relationship {
   exPenalty: boolean
 }
 
+export interface PeCourseResult {
+  courseId: string
+  name: string
+  score: number
+  gpa: number
+  credits: number
+}
+
 export interface PendingConfession {
   relationshipId: string
   name: string
@@ -403,7 +411,7 @@ export interface DinnerInvites {
   results: DinnerInviteResult[]
 }
 
-export type CourseCategory = 'professional' | 'politics' | 'elective'
+export type CourseCategory = 'professional' | 'politics' | 'elective' | 'pe'
 
 export interface CourseRecord {
   id: string
@@ -622,6 +630,12 @@ export interface GameState {
   electiveHistory: string[]
   electiveCredits: number
   electiveOffers: string[]
+  pendingPeCourseId: string | null
+  pendingPePairKey: string | null
+  peCourseHistory: string[]
+  peCourseResults: PeCourseResult[]
+  peCourseCredits: number
+  peCourseCount: number
   electiveSelectionDone: boolean
   pendingElectiveRetakes: string[]
   politicsCompleted: string[]

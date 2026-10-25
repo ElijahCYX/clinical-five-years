@@ -3,6 +3,11 @@ import {
   ACTION_BY_ID,
   CET,
   ELECTIVE_COURSE_BY_ID,
+  PE_COURSES,
+  isPeResultSeason,
+  isPeFirstTerm,
+  isPeSecondTerm,
+  pePairKey,
   HABIT_BY_ID,
   SEASONS,
   VACATION_ACTION_BY_ID,
@@ -23,6 +28,9 @@ import {
   peGpaFor,
   peScoreFor,
   peTestName,
+  peCoursePredictedRange,
+  rollPeCourseScore,
+  PE_FLOOR_TEXT,
   postgradChanceFor,
   scholarshipFor,
   effectiveEnergyCost,
@@ -285,6 +293,13 @@ function readSave(): GameState | null {
       dinnerInvites: game.dinnerInvites ?? null,
       romanceUnlocked: game.romanceUnlocked ?? false,
       courseRecords: game.courseRecords ?? [],
+      pendingPeCourseId: game.pendingPeCourseId ?? null,
+      pendingPePairKey: game.pendingPePairKey ?? null,
+      peCourseHistory: game.peCourseHistory ?? [],
+      peCourseResults: game.peCourseResults ?? [],
+      peCourseCredits: game.peCourseCredits ?? 0,
+      peCourseCount: game.peCourseCount ?? 0,
+      peGraduationExempt: game.peGraduationExempt ?? false,
       romanceRisk: game.romanceRisk ?? 0,
       teacherScandalRisk: game.teacherScandalRisk ?? 0,
       pendingConfession: game.pendingConfession ?? null,
@@ -534,7 +549,7 @@ function prepareSeason(base: GameState, index: number): GameState {
             base.pendingElectiveRetakes ?? [],
           )
         : [],
-    electiveSelectionDone: index >= 12,
+    electiveSelectionDone: false,
     pendingElectiveRetakes: [],
     week: 1,
     money: base.money + (base.player ? backgroundAllowance(base.player) : 0),
@@ -1552,9 +1567,14 @@ function RealApp() {
 
   const confirmElectives = (acceptedIds: string[]) => {
     if (!game) return
-    const electiveCourses = acceptedIds
+    const allAccepted = acceptedIds
       .map((id) => ELECTIVE_COURSE_BY_ID[id])
       .filter(Boolean)
+    const peCourse = allAccepted.find((course) => course.electiveType === 'pe')
+    const electiveCourses = allAccepted.filter(
+      (course) => course.electiveType !== 'pe',
+    )
+    const pairKey = peCourse ? pePairKey(game.seasonIndex) : null
     const next: GameState = {
       ...game,
       screen: 'plan',
@@ -1570,6 +1590,11 @@ function RealApp() {
             .map((course) => course.id),
         ]),
       ],
+      pendingPeCourseId: peCourse?.id ?? game.pendingPeCourseId,
+      pendingPePairKey: pairKey ?? game.pendingPePairKey,
+      peCourseHistory: peCourse
+        ? [...new Set([...game.peCourseHistory, peCourse.id])]
+        : game.peCourseHistory,
       electiveOffers: [],
       electiveSelectionDone: true,
       relationships:
@@ -2740,6 +2765,22 @@ function RealApp() {
     persist(next)
   }
 
+  const withdrawPeCourse = () => {
+    if (!game || game.week !== 1) return
+    if (!isPeFirstTerm(game.seasonIndex)) return
+    if (!game.pendingPeCourseId) return
+    const next: GameState = {
+      ...game,
+      pendingPeCourseId: null,
+      pendingPePairKey: null,
+      peCourseHistory: game.peCourseHistory.filter(
+        (id) => id !== game.pendingPeCourseId,
+      ),
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const abandonElective = (courseId: string) => {
     if (!game) return
     const target = game.results.find((result) => result.course.id === courseId)
@@ -3013,6 +3054,27 @@ function RealApp() {
       if (eligible) rewardedCourses.push(rewardKey)
       return { course, score, gpa, expectedMin, expectedMax, stressRelief }
     })
+    let peNoticeText: string | null = null
+    if (
+      isPeResultSeason(game.seasonIndex) &&
+      game.pendingPeCourseId
+    ) {
+      const peCourse = ELECTIVE_COURSE_BY_ID[game.pendingPeCourseId]
+      if (peCourse) {
+        const roll = rollPeCourseScore(game, energy)
+        const [peMin, peMax] = peCoursePredictedRange(game)
+        results.push({
+          course: peCourse,
+          score: roll.score,
+          gpa: peGpaFor(roll.score),
+          expectedMin: Math.min(peMin, peMax),
+          expectedMax: Math.max(peMin, peMax),
+          stressRelief: 0,
+        })
+        if (roll.floored) peNoticeText = PE_FLOOR_TEXT
+      }
+    }
+
     const totalStressRelief = results.reduce(
       (sum, result) => sum + result.stressRelief,
       0,
@@ -3023,10 +3085,16 @@ function RealApp() {
     const failed = results.filter((result) => result.score < 60)
     const regularPassed = passed.filter((result) => !result.course.electiveType)
     const electivePassed = passed.filter(
-      (result) => result.course.electiveType && result.course.electiveType !== 'politics',
+      (result) =>
+        result.course.electiveType &&
+        result.course.electiveType !== 'politics' &&
+        result.course.electiveType !== 'pe',
     )
     const politicsPassed = passed.filter(
       (result) => result.course.electiveType === 'politics',
+    )
+    const pePassed = passed.filter(
+      (result) => result.course.electiveType === 'pe',
     )
     const regularCredits = regularPassed.reduce(
       (sum, result) => sum + result.course.credits,
@@ -3054,8 +3122,18 @@ function RealApp() {
       (sum, result) => sum + result.course.credits * result.gpa,
       0,
     )
-    const creditGain = regularCredits + electiveCreditsGain + politicsCreditsGain
-    const pointGain = regularPoints + electivePointsGain + politicsPointsGain
+    const peCreditsGain = pePassed.reduce(
+      (sum, result) => sum + result.course.credits,
+      0,
+    )
+    const pePointsGain = pePassed.reduce(
+      (sum, result) => sum + result.course.credits * result.gpa,
+      0,
+    )
+    const creditGain =
+      regularCredits + electiveCreditsGain + politicsCreditsGain + peCreditsGain
+    const pointGain =
+      regularPoints + electivePointsGain + politicsPointsGain + pePointsGain
     const pendingMakeups = failed
       .filter((result) => !result.course.electiveType)
       .map((result) =>
@@ -3091,6 +3169,20 @@ function RealApp() {
       yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
+      pendingPeCourseId: null,
+      pendingPePairKey: null,
+      peCourseCredits: game.peCourseCredits + peCreditsGain,
+      peCourseCount: game.peCourseCount + pePassed.length,
+      peCourseResults: [
+        ...game.peCourseResults,
+        ...pePassed.map((result) => ({
+          courseId: result.course.id,
+          name: result.course.name,
+          score: result.score,
+          gpa: result.gpa,
+          credits: result.course.credits,
+        })),
+      ],
       electiveCredits: Math.min(
         10,
         (game.electiveCredits ?? 0) + electiveCreditsGain,
@@ -3123,7 +3215,9 @@ function RealApp() {
             category: result.course.electiveType
               ? result.course.electiveType === 'politics'
                 ? ('politics' as const)
-                : ('elective' as const)
+                : result.course.electiveType === 'pe'
+                  ? ('pe' as const)
+                  : ('elective' as const)
               : ('professional' as const),
           })),
       ],
@@ -3136,6 +3230,13 @@ function RealApp() {
     }
 
     commit(next, 'result')
+    if (peNoticeText) {
+      showResearchNotice({
+        kind: 'pe',
+        title: '体育课成绩被捞了',
+        text: peNoticeText,
+      })
+    }
   }
 
   const handleCoffee = () => {
@@ -4132,6 +4233,7 @@ function RealApp() {
           onEndWeek={endWeek}
           onChooseFocus={chooseWeekFocus}
           onWithdrawElective={withdrawElective}
+          onWithdrawPeCourse={withdrawPeCourse}
           onOpenWhoAmI={openWhoAmI}
           onOpenTA={openWhoIs}
           onArrangeDinner={arrangeDinner}

@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import { ELECTIVE_COURSE_BY_ID, ELECTIVE_COURSES } from '../data'
-import { courseDifficulty } from '../game'
+import {
+  ELECTIVE_COURSE_BY_ID,
+  ELECTIVE_COURSES,
+  PE_COURSES,
+  isPeFirstTerm,
+  isPeSecondTerm,
+  isSeniorYear,
+  pePairKey,
+} from '../data'
+import { courseDifficulty, peCoursePredictedRange } from '../game'
 import { patRemainingThisWeek, unseenRelationCount } from '../social'
 import type { Course, ElectiveType, GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
@@ -18,6 +26,7 @@ const TYPE_LABELS: Record<ElectiveType, string> = {
   interest: '兴趣课',
   group: '小组作业课',
   politics: '思政课',
+  pe: '体育课',
 }
 
 const TYPE_HINTS: Record<ElectiveType, string> = {
@@ -25,6 +34,7 @@ const TYPE_HINTS: Record<ElectiveType, string> = {
   interest: '每周固定 -5 压力 / +5 精力，给分普遍较好。',
   group: '每周固定 -5 精力，增加人际；可能触发社交事件（后续开发）。',
   politics: '毕业必修，选中率 100%，共 11 学分。',
+  pe: '必修体育课，选中率 100%，共 8 次。',
 }
 
 const TOTAL_ELECTIVE_CREDITS = 10
@@ -40,6 +50,12 @@ export function ElectiveSelectionScreen({
   const [selected, setSelected] = useState<string[]>([])
   const [accepted, setAccepted] = useState<string[] | null>(null)
   const [rejected, setRejected] = useState<string[]>([])
+  const [peIndex, setPeIndex] = useState(() =>
+    Math.floor(Math.random() * PE_COURSES.length),
+  )
+  const [peSelected, setPeSelected] = useState<string | null>(
+    state.pendingPeCourseId,
+  )
 
   const courses = slots
     .map((id) => ELECTIVE_COURSE_BY_ID[id])
@@ -49,6 +65,21 @@ export function ElectiveSelectionScreen({
     return course?.electiveType === 'politics' ? sum : sum + (course?.credits ?? 0)
   }, 0)
   const politicsDone = state.politicsCompleted.length
+  const pairKey = pePairKey(state.seasonIndex)
+  const peFirstTerm = isPeFirstTerm(state.seasonIndex)
+  const peSecondTerm = isPeSecondTerm(state.seasonIndex)
+  const peSenior = isSeniorYear(state.seasonIndex)
+  const hasPairPe =
+    Boolean(pairKey) &&
+    Boolean(state.pendingPeCourseId) &&
+    state.pendingPePairKey === pairKey
+  const peMandatory = Boolean(peSecondTerm && pairKey && !hasPairPe)
+  const peDisabled = peSenior || !pairKey || hasPairPe
+  const peCourse = PE_COURSES[peIndex]
+  const [pePredictedMin, pePredictedMax] = peCoursePredictedRange(state)
+  const existingPeName = state.pendingPeCourseId
+    ? ELECTIVE_COURSE_BY_ID[state.pendingPeCourseId]?.name
+    : null
 
   const poolFor = (type: ElectiveType): string[] =>
     ELECTIVE_COURSES.filter((course) => {
@@ -86,6 +117,7 @@ export function ElectiveSelectionScreen({
 
   const submit = () => {
     if (accepted !== null) return
+    if (peMandatory && !peSelected) return
     const won: string[] = []
     const lost: string[] = []
     for (const id of selected) {
@@ -94,8 +126,20 @@ export function ElectiveSelectionScreen({
       if (Math.random() < (course.selectionChance ?? 0.5)) won.push(id)
       else lost.push(id)
     }
+    if (peSelected && !hasPairPe) won.push(peSelected)
     setAccepted(won)
     setRejected(lost)
+  }
+
+  const refreshPe = () => {
+    if (accepted !== null || peDisabled) return
+    setPeIndex((current) => (current + 1) % PE_COURSES.length)
+    setPeSelected(null)
+  }
+
+  const choosePe = () => {
+    if (accepted !== null || peDisabled) return
+    setPeSelected(peCourse.id)
   }
 
   return (
@@ -126,9 +170,8 @@ export function ElectiveSelectionScreen({
           <Eyebrow>ELECTIVE COURSES / BEFORE SEMESTER PLAN</Eyebrow>
           <h1 className="page-title">选修课程</h1>
           <p className="page-lede">
-            这学期四类课程各向你展示一门。可以选 0–3 门；每张卡下方的刷新不限次数，
-            可以翻看对应类型的完整备选库。水课 50%、兴趣课 25%、小组作业课 75%、
-            思政课 100%。
+            这学期四类课程各向你展示一门，可以选 0–3 门。每张卡下方的刷新不限次数。
+            体育课是必修课，选中率 100%，只在春/秋学期可选；夏/冬学期会检查是否已经选过。
           </p>
           <p className="elective-exclusion-note">
             兴趣类课程不计入泡图书馆的计费课程数，不会增加图书馆的精力与压力消耗。
@@ -139,8 +182,69 @@ export function ElectiveSelectionScreen({
             </Pill>
             <Pill>本次已选 {selected.length} / 3 门 · {selectedCredits} 学分</Pill>
             <Pill>思政进度 {politicsDone} / 5</Pill>
+            <Pill>体育课 {state.peCourseCount} / 8</Pill>
           </div>
         </header>
+
+        <section
+          className={`paper-card pe-select-sheet ${peDisabled ? 'is-disabled' : ''}`}
+        >
+          <SectionLabel right={`体育课 ${state.peCourseCount} / 8`}>
+            必修体育课
+          </SectionLabel>
+          {peDisabled ? (
+            <div className="pe-disabled-state">
+              <strong>
+                {peSenior
+                  ? '大五不设体育课'
+                  : !pairKey
+                    ? '本学期无体育课'
+                    : existingPeName
+                      ? `本学期体育课已选：${existingPeName}`
+                      : '本学期无需选择体育课'}
+              </strong>
+              <p>
+                {peSenior
+                  ? '大一至大四的八次体育课已经结束，大五不再安排体育选课。'
+                  : hasPairPe
+                    ? '这门体育课会随本学年一起结算，夏/冬学期不能退选。'
+                    : '本学期没有需要选择的体育课。'}
+              </p>
+            </div>
+          ) : (
+            <div className="pe-picker">
+              <div className="pe-picker-main">
+                <span className="pe-kind">体育课 · 1 学分 · 100% 选中 · 无准备度</span>
+                <h3>{peCourse.name}</h3>
+                <p className="pe-prediction">
+                  预测分数 {pePredictedMin}–{pePredictedMax}
+                  <span>按体质与当前精力估算，考试周结算时还会随机浮动 ±5%</span>
+                </p>
+                <p className="pe-picker-note">
+                  {peSecondTerm
+                    ? '夏/冬学期必须完成一次体育选课，否则不能进入新学期。'
+                    : '春/秋学期可以先不选；如果这学期不选，夏/冬学期将变为必修。'}
+                </p>
+              </div>
+              <div className="pe-picker-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={refreshPe}
+                >
+                  刷新体育课（不限次数）
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${peSelected === peCourse.id ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={choosePe}
+                >
+                  {peSelected === peCourse.id ? '已选择' : '选择这门体育课'}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
 
         <section className="paper-card elective-sheet">
           <SectionLabel right="每类一门 · 刷新可见全部备选">
@@ -208,9 +312,18 @@ export function ElectiveSelectionScreen({
 
           {accepted === null ? (
             <div className="elective-footer">
-              <p>选上与否要提交后才知道；没选上不消耗学分，毕业最多计入 10 个选修学分。</p>
-              <button type="button" className="btn btn-primary" onClick={submit}>
-                提交选课
+              <p>
+                {peMandatory && !peSelected
+                  ? '本学期体育课必须选择后才能提交。'
+                  : '选上与否要提交后才知道；没选上不消耗学分，毕业最多计入 10 个选修学分。'}
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={submit}
+                disabled={peMandatory && !peSelected}
+              >
+                {peMandatory && !peSelected ? '请先选择体育课' : '提交选课'}
                 <span className="btn-arrow">→</span>
               </button>
             </div>

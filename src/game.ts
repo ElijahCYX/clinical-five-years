@@ -342,6 +342,12 @@ export function newGameState(player: Player): GameState {
     electiveOffers: generateElectiveOffers([], [], []),
     electiveSelectionDone: false,
     pendingElectiveRetakes: [],
+    pendingPeCourseId: null,
+    pendingPePairKey: null,
+    peCourseHistory: [],
+    peCourseResults: [],
+    peCourseCredits: 0,
+    peCourseCount: 0,
     politicsCompleted: [],
     politicsCredits: 0,
     openingTalents: [],
@@ -886,6 +892,30 @@ export function peTestName(year: number): string {
   return PE_TEST_NAMES[year - 1] ?? `体测（${year}）`
 }
 
+export function peCoursePredictedRange(state: GameState): [number, number] {
+  const constitution = state.player?.attrs.constitution ?? 2
+  const center = 45 + constitution * 2.5 + state.energy * 0.15
+  const min = Math.max(0, Math.min(100, Math.round(center * 0.95)))
+  const max = Math.max(0, Math.min(100, Math.round(center * 1.05)))
+  return [Math.min(min, max), Math.max(min, max)]
+}
+
+export function rollPeCourseScore(
+  state: GameState,
+  energy: number,
+): { raw: number; score: number; floored: boolean } {
+  const constitution = state.player?.attrs.constitution ?? 2
+  const center = 45 + constitution * 2.5 + energy * 0.15
+  const raw = Math.max(
+    0,
+    Math.min(100, Math.round(center * (0.95 + Math.random() * 0.1))),
+  )
+  return { raw, score: Math.max(60, raw), floored: raw < 60 }
+}
+
+export const PE_FLOOR_TEXT =
+  '成绩单发下来时，你先看到了那个不太好看的数字。体育老师把你叫到一边，翻了翻考勤表，又看了看你这一学期的出勤，最后在成绩栏上停了几秒。“你这学期确实来了，”老师说，“期末这一下不算好看，但平时分还在。按体育课的规矩，总评不能让你挂。”TA在键盘上敲了几下，把分数拉回 60。你站在办公室门口，忽然不知道该说谢谢还是该羞愧。老师摆摆手：“别高兴太早，毕业前还有体测。下一次，自己把它跑过去。”你把成绩单折好，决定下次体育课不再只靠老师这一把。'
+
 export function peGpaFor(score: number): number {
   if (score >= 90) return 5
   if (score >= 80) return 4
@@ -937,8 +967,9 @@ export function kaoyanScoreFor(state: GameState): number {
   )
 }
 
-export const GRADUATION_CREDITS = 188
+export const GRADUATION_CREDITS = 196
 export const ELECTIVE_CREDITS_REQUIRED = 10
+export const PE_COURSE_REQUIRED = 8
 
 export function graduationReasons(state: GameState): string[] {
   const reasons: string[] = []
@@ -952,6 +983,9 @@ export function graduationReasons(state: GameState): string[] {
   }
   if ((state.politicsCompleted?.length ?? 0) < 5) {
     reasons.push(`思政课未修完：${state.politicsCompleted?.length ?? 0} / 5`)
+  }
+  if ((state.peCourseCount ?? 0) < PE_COURSE_REQUIRED) {
+    reasons.push(`体育课未修完：${state.peCourseCount ?? 0} / ${PE_COURSE_REQUIRED}`)
   }
   if ((state.cet6Score ?? 0) < 550) {
     reasons.push(`CET-6 未达到 550：${state.cet6Score ?? '未参加'}`)

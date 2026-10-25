@@ -3,7 +3,9 @@ import {
   ACTIONS,
   ATTRS,
   BACKGROUND_BY_ID,
+  ELECTIVE_COURSE_BY_ID,
   TALENT_BY_ID,
+  isPeFirstTerm,
 } from '../data'
 import {
   effectiveEnergyCost,
@@ -57,6 +59,7 @@ interface WeekScreenProps {
   onEndWeek: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onWithdrawElective?: (courseId: string) => void
+  onWithdrawPeCourse?: () => void
   onOpenWhoAmI?: () => void
   onOpenTA?: () => void
   onArrangeDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
@@ -80,6 +83,7 @@ export function WeekScreen({
   onEndWeek,
   onChooseFocus,
   onWithdrawElective,
+  onWithdrawPeCourse,
   onOpenWhoAmI,
   onOpenTA,
   onArrangeDinner,
@@ -144,6 +148,7 @@ export function WeekScreen({
     { key: 'professional', label: '专业课', earned: professionalEarned, target: 167 },
     { key: 'politics', label: '思政课', earned: politicsEarned, target: 11 },
     { key: 'elective', label: '选修课', earned: electiveEarned, target: 10 },
+    { key: 'pe', label: '体育课', earned: state.peCourseCredits, target: 8 },
   ]
   const passedRecords = [
     ...state.courseRecords,
@@ -156,11 +161,11 @@ export function WeekScreen({
       category: 'professional' as const,
     })),
   ].sort((a, b) => {
-    const order = { professional: 0, politics: 1, elective: 2 }
+    const order = { professional: 0, politics: 1, elective: 2, pe: 3 }
     return order[a.category] - order[b.category] || a.name.localeCompare(b.name)
   })
   const categoryLabel = (category: string) =>
-    category === 'professional' ? '专业课' : category === 'politics' ? '思政课' : '选修课'
+    category === 'professional' ? '专业课' : category === 'politics' ? '思政课' : category === 'pe' ? '体育课' : '选修课'
   const selectedGroups = Array.from(new Set(state.selected)).map((id) => ({
     id,
     count: state.selected.filter((item) => item === id).length,
@@ -441,7 +446,7 @@ export function WeekScreen({
         </div>
         <div>
           <span>毕业总要求</span>
-          <strong>188</strong>
+          <strong>196</strong>
         </div>
       </div>
 
@@ -999,6 +1004,23 @@ export function WeekScreen({
                     </div>
                   </div>
                 )}
+
+                {state.week === 1 &&
+                  isPeFirstTerm(state.seasonIndex) &&
+                  state.pendingPeCourseId && (
+                    <div className="withdraw-elective-panel">
+                      <span>体育课第一周退选</span>
+                      <div>
+                        <button
+                          type="button"
+                          className="withdraw-elective-btn"
+                          onClick={() => onWithdrawPeCourse?.()}
+                        >
+                          退选 {ELECTIVE_COURSE_BY_ID[state.pendingPeCourseId]?.name ?? '体育课'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                 {!state.habits.includes('fitness') && !state.selected.includes('sport') && (
                   <p className="constitution-decay-note">

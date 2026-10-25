@@ -623,9 +623,75 @@ export const ELECTIVE_COURSES: Course[] = [
   ...POLITICS_COURSES,
 ]
 
+export const PE_COURSES: Course[] = [
+  { id: 'pe-badminton', name: '羽毛球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-basketball', name: '篮球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-football', name: '足球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-tabletennis', name: '乒乓球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-volleyball', name: '排球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-tennis', name: '网球', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-paddle', name: '桨板', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-kayak', name: '皮划艇', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-swimming', name: '游泳', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-taichi', name: '太极拳', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-bridge', name: '桥牌', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-dragonboat', name: '龙舟', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-fitness', name: '健美', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-aerobics', name: '操舞', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-orienteering', name: '定向越野', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+  { id: 'pe-longrun', name: '长跑', examType: '小考', credits: 1, memory: '低', comprehension: '低', electiveType: 'pe', selectionChance: 1 },
+]
+
+export const PE_SELECTION_INDICES = [0, 2, 4, 6, 8, 10, 13, 15]
+export const PE_RESULT_INDICES = [1, 3, 5, 7, 9, 11, 14, 16]
+
+export function isPeSelectionSeason(index: number): boolean {
+  return PE_SELECTION_INDICES.includes(index)
+}
+
+export function isPeResultSeason(index: number): boolean {
+  return PE_RESULT_INDICES.includes(index)
+}
+
+const PE_PAIR_KEYS: Record<number, string> = {
+  0: 'y1-autumn-winter',
+  1: 'y1-autumn-winter',
+  2: 'y1-spring-summer',
+  3: 'y1-spring-summer',
+  4: 'y2-autumn-winter',
+  5: 'y2-autumn-winter',
+  6: 'y2-spring-summer',
+  7: 'y2-spring-summer',
+  8: 'y3-autumn-winter',
+  9: 'y3-autumn-winter',
+  10: 'y3-spring-summer',
+  11: 'y3-spring-summer',
+  13: 'y4-autumn-winter',
+  14: 'y4-autumn-winter',
+  15: 'y4-spring-summer',
+  16: 'y4-spring-summer',
+}
+
+export function pePairKey(index: number): string | null {
+  return PE_PAIR_KEYS[index] ?? null
+}
+
+export function isPeFirstTerm(index: number): boolean {
+  return [0, 2, 4, 6, 8, 10, 13, 15].includes(index)
+}
+
+export function isPeSecondTerm(index: number): boolean {
+  return [1, 3, 5, 7, 9, 11, 14, 16].includes(index)
+}
+
+export function isSeniorYear(index: number): boolean {
+  return index >= 17
+}
+
 export const ELECTIVE_COURSE_BY_ID = Object.fromEntries(
-  ELECTIVE_COURSES.map((course) => [course.id, course]),
+  [...ELECTIVE_COURSES, ...PE_COURSES].map((course) => [course.id, course]),
 )
+
 
 export const FIRST_SEASON: Season = {
   id: 'y1-autumn',

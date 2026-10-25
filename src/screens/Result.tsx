@@ -133,7 +133,9 @@ export function ResultScreen({
                         {result.course.makeup && <span className="makeup-tag">补考</span>}
                       </span>
                       <span className="course-sub">
-                        记忆力 {result.course.memory} · 悟性 {result.course.comprehension}{result.course.operation ? ` · 操作 ${result.course.operation}` : ''}
+                        {result.course.electiveType === 'pe'
+                          ? '体育课 · 无准备度 · 按体质与考试周精力评分'
+                          : `记忆力 ${result.course.memory} · 悟性 ${result.course.comprehension}${result.course.operation ? ` · 操作 ${result.course.operation}` : ''}`}
                         <span className="course-estimate">
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
