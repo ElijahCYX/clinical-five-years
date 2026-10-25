@@ -571,8 +571,6 @@ function RealApp() {
   const [hasSave, setHasSave] = useState(false)
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
-  const [whoamiReturn, setWhoamiReturn] = useState<View>('week')
-  const [whoisReturn, setWhoisReturn] = useState<View>('week')
   const [clubRecruitmentMode, setClubRecruitmentMode] = useState<'initial' | 'application'>('initial')
   const nextProjectPromptRef = useRef('')
   const publicationNoticeOpenRef = useRef(false)
@@ -1751,13 +1749,11 @@ function RealApp() {
 
   const openWhoAmI = () => {
     if (!game) return
-    setWhoamiReturn(view)
     setView('whoami')
   }
 
   const openWhoIs = () => {
     if (!game) return
-    setWhoisReturn(view)
     setView('whois')
   }
 
@@ -3905,7 +3901,7 @@ function RealApp() {
     return (
       <WhoAmIScreen
         state={game}
-        onMain={() => setView(whoamiReturn)}
+        onMain={() => setView('week')}
         onTA={openWhoIs}
         onTitle={goTitle}
       />
@@ -3924,7 +3920,7 @@ function RealApp() {
         onMarkAllSeen={markAllRelationsSeen}
         onBirthdayGift={giveBirthdayGift}
         onBirthdayBlessing={giveBirthdayBlessing}
-        onMain={() => setView(whoisReturn)}
+        onMain={() => setView('week')}
         onWho={() => setView('whoami')}
         onTitle={goTitle}
       />
