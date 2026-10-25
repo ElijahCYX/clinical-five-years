@@ -54,6 +54,7 @@ import type {
   PlanId,
   Player,
   BirthdayGiftResult,
+  BondType,
   ConfessionResult,
   DinnerInviteResult,
   LoverContactResult,
@@ -116,6 +117,7 @@ import { ClubRecruitment } from './screens/ClubRecruitment'
 import { pushCampusNotice } from './campusBroadcast'
 import { pickConfessionText } from './confessionOutcomes'
 import { pickLoverEvent } from './loverEvents'
+import { BROTHER_BOND_TEXT, SISTER_BOND_TEXT } from './bonds'
 import {
   CLUB_EVENT_CHANCE,
   pickClubEvent,
@@ -158,8 +160,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v40'
+const SAVE_KEY = 'clinical-five-years-save-v41'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v40',
   'clinical-five-years-save-v39',
   'clinical-five-years-save-v38',
   'clinical-five-years-save-v37',
@@ -2276,8 +2279,12 @@ function RealApp() {
     if (!relation) {
       return { success: false, name: '', text: '你找不到这个人。' }
     }
-    if (relation.partner) {
-      return { success: false, name: relation.name, text: '你们已经在恋爱了。' }
+    if (relation.partner || relation.bondType) {
+      return {
+        success: false,
+        name: relation.name,
+        text: '你们之间已经建立了羁绊。',
+      }
     }
     if (relation.confessRejected) {
       return {
@@ -2304,6 +2311,7 @@ function RealApp() {
       ? {
           ...relation,
           partner: true,
+          bondType: 'lover' as const,
           intimacy: Math.min(100, relation.intimacy + gain),
           partnerSinceSeasonIndex: game.seasonIndex,
           partnerSinceWeek: game.week,
@@ -2329,7 +2337,7 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
-    return { success, name: relation.name, text }
+    return { success, name: relation.name, text, bondType: 'lover' }
   }
 
   const contactLover = (id: string): LoverContactResult => {
@@ -2434,6 +2442,67 @@ function RealApp() {
       title: event.title,
       text: event.text,
       lines,
+    }
+  }
+
+  const establishFriendBond = (
+    id: string,
+    type: 'brother' | 'sister',
+  ): ConfessionResult => {
+    if (!game || !game.player) {
+      return { success: false, name: '', text: '现在还不能建立羁绊。' }
+    }
+    const relation = game.relationships.find((item) => item.id === id)
+    if (!relation) {
+      return { success: false, name: '', text: '你找不到这个人。' }
+    }
+    if (relation.intimacy < 60) {
+      return {
+        success: false,
+        name: relation.name,
+        text: '你们的亲密度还不足以建立这段羁绊。',
+      }
+    }
+    if (relation.partner || relation.bondType) {
+      return {
+        success: false,
+        name: relation.name,
+        text: '你们之间已经建立了羁绊。',
+      }
+    }
+    const sameGender =
+      type === 'brother'
+        ? game.player.gender === '男' && relation.gender === '男'
+        : game.player.gender === '女' && relation.gender === '女'
+    if (!sameGender) {
+      return {
+        success: false,
+        name: relation.name,
+        text: '你们不符合这条羁绊的建立条件。',
+      }
+    }
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id
+          ? {
+              ...item,
+              bondType: type,
+              partner: false,
+              partnerSinceSeasonIndex: game.seasonIndex,
+              partnerSinceWeek: game.week,
+              partnerSinceLabel: game.season.seasonLabel,
+            }
+          : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    return {
+      success: true,
+      name: relation.name,
+      text: type === 'brother' ? BROTHER_BOND_TEXT : SISTER_BOND_TEXT,
+      bondType: type,
     }
   }
 
@@ -3678,6 +3747,7 @@ function RealApp() {
         onPat={patRelation}
         onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
+        onEstablishBond={establishFriendBond}
         onViewRelation={markRelationSeen}
         onMarkAllSeen={markAllRelationsSeen}
         onBirthdayGift={giveBirthdayGift}

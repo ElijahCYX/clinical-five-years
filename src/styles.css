@@ -10273,3 +10273,134 @@ body.dinner-open {
     width: 100%;
   }
 }
+
+/* ---------- bond type picker ---------- */
+
+.bond-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.bond-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 30, 26, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.bond-picker-modal {
+  position: relative;
+  width: min(620px, 94vw);
+  padding: 26px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(30, 32, 27, 0.28);
+}
+
+.bond-picker-kicker {
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.bond-picker-head h2 {
+  margin: 6px 0 8px;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.bond-picker-head p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+.bond-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.bond-picker-option {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 3px 11px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.bond-picker-option:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.bond-picker-option.is-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.bond-picker-icon {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--gold);
+  font-family: var(--serif);
+  font-size: 23px;
+  text-align: center;
+}
+
+.bond-picker-option strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.bond-picker-option small {
+  display: block;
+  margin-top: 1px;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.bond-picker-option em {
+  display: block;
+  margin-top: 4px;
+  color: var(--red);
+  font-size: 9.5px;
+  font-style: normal;
+}
+
+.bond-picker-footer {
+  margin-top: 15px;
+  text-align: right;
+}
+
+.bond-non-lover-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .bond-picker-modal {
+    padding: 20px;
+  }
+
+  .bond-picker-head h2 {
+    font-size: 24px;
+  }
+}

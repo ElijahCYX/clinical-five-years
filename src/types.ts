@@ -315,6 +315,7 @@ export type OrganizationCategory =
   | 'union'
   | 'debate'
 export type OrganizationRole = 'member' | 'officer' | 'president' | 'honorary'
+export type BondType = 'lover' | 'brother' | 'sister'
 
 export type RelationshipKind =
   | 'roommate'
@@ -353,6 +354,7 @@ export interface Relationship {
   patBlockedUntilWeek: number
   clubOrgId?: string
   partner: boolean
+  bondType?: BondType
   confessRejected?: boolean
   intimacyFrozenSeason?: string
   frozenIntimacy?: number
@@ -461,6 +463,7 @@ export interface ConfessionResult {
   success: boolean
   name: string
   text: string
+  bondType?: BondType
 }
 
 export interface LoverContactResult {

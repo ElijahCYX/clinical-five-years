@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { GameState, LoverContactResult, Relationship } from '../types'
 import { currentWeekKey } from '../social'
+import { bondLabel } from '../bonds'
 import { Bar, Pill, SectionLabel } from '../ui'
 
 interface BondScreenProps {
@@ -34,30 +35,39 @@ export function BondScreen({ state, onContact }: BondScreenProps) {
   const [contactResult, setContactResult] = useState<LoverContactResult | null>(
     null,
   )
-  const partners = state.relationships.filter((relation) => relation.partner)
+  const bonds = state.relationships.filter(
+    (relation) => relation.partner || relation.bondType,
+  )
+  const partners = bonds.filter(
+    (relation) => relation.partner || relation.bondType === 'lover',
+  )
 
   return (
     <div className="tab-panel bond-panel">
-      <SectionLabel right={`${partners.length} 段羁绊`}>羁绊</SectionLabel>
+      <SectionLabel right={`${bonds.length} 段羁绊`}>羁绊</SectionLabel>
 
-      {partners.length === 0 ? (
+      {bonds.length === 0 ? (
         <div className="bond-empty">
           <span className="bond-empty-mark">◇</span>
           <h3>还没有恋人羁绊</h3>
           <p>
-            在「TA 是谁」里向足够熟悉的人表白。无论答案是什么，都会留在这段校园记忆里。
+            在「TA 是谁」里与足够熟悉的人建立羁绊。恋人、兄弟或闺蜜，都会留在这段校园记忆里。
           </p>
         </div>
       ) : (
         <div className="bond-list">
-          {partners.map((relation) => {
+          {bonds.map((relation) => {
+            const isLover =
+              relation.partner || relation.bondType === 'lover'
             const contactedThisWeek =
               relation.lastContactKey === currentWeekKey(state)
             return (
               <article className="bond-card" key={relation.id}>
                 <div className="bond-card-head">
                   <div>
-                    <span className="bond-kicker">LOVER / 恋人</span>
+                    <span className="bond-kicker">
+                      {bondLabel(relation.bondType)} / BOND
+                    </span>
                     <h3>
                       {relation.name}
                       <span
@@ -68,7 +78,7 @@ export function BondScreen({ state, onContact }: BondScreenProps) {
                     </h3>
                     <p>{relation.identity}</p>
                   </div>
-                  <Pill tone="gold">恋人</Pill>
+                  <Pill tone="gold">{bondLabel(relation.bondType)}</Pill>
                 </div>
 
                 <div className="bond-intimacy">
@@ -91,19 +101,27 @@ export function BondScreen({ state, onContact }: BondScreenProps) {
                 </div>
 
                 <div className="bond-actions">
-                  <p>
-                    电话是否接听，取决于你们的亲密度、你的建模与交际。
-                    每周可以联系一次。
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={contactedThisWeek}
-                    onClick={() => setContactResult(onContact(relation.id))}
-                  >
-                    {contactedThisWeek ? '本周已联系' : '联系 TA'}
-                    <span className="btn-arrow">→</span>
-                  </button>
+                  {isLover ? (
+                    <>
+                      <p>
+                        电话是否接听，取决于你们的亲密度、你的建模与交际。
+                        每周可以联系一次。
+                      </p>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={contactedThisWeek}
+                        onClick={() => setContactResult(onContact(relation.id))}
+                      >
+                        {contactedThisWeek ? '本周已联系' : '联系 TA'}
+                        <span className="btn-arrow">→</span>
+                      </button>
+                    </>
+                  ) : (
+                    <p className="bond-non-lover-note">
+                      你们已经建立了{bondLabel(relation.bondType)}羁绊。这份关系不需要每周联系来证明。
+                    </p>
+                  )}
                 </div>
               </article>
             )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type {
   AutoPatMode,
+  BondType,
   BirthdayGiftResult,
   ConfessionResult,
   GameState,
@@ -25,12 +26,14 @@ import {
 } from '../social'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { romanceRiskAfterWeek } from '../events'
+import { BOND_DEFS, bondTypeAvailable } from '../bonds'
 
 interface WhoIsTAScreenProps {
   state: GameState
   onPat: (id: string) => PatResult
   onAutoPat: (mode: AutoPatMode) => PatResult
   onConfess: (id: string) => ConfessionResult
+  onEstablishBond: (id: string, type: 'brother' | 'sister') => ConfessionResult
   onViewRelation?: (id: string) => void
   onMarkAllSeen?: () => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
@@ -75,6 +78,7 @@ export function WhoIsTAScreen({
   onPat,
   onAutoPat,
   onConfess,
+  onEstablishBond,
   onViewRelation,
   onMarkAllSeen,
   onBirthdayGift,
@@ -89,6 +93,8 @@ export function WhoIsTAScreen({
   const [patEvents, setPatEvents] = useState<PatEvent[]>([])
   const [confessionResult, setConfessionResult] =
     useState<ConfessionResult | null>(null)
+  const [bondPickerTarget, setBondPickerTarget] =
+    useState<typeof state.relationships[number] | null>(null)
   const [autoPatOpen, setAutoPatOpen] = useState(false)
   const [birthdayResult, setBirthdayResult] = useState<
     (BirthdayGiftResult & { name: string; reaction: string }) | null
@@ -241,9 +247,17 @@ export function WhoIsTAScreen({
                   relation.birthdayGiftYear === currentDate.year
                 const patBlocked = isPatBlocked(state, relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
-                const confessAvailable =
-                  !relation.confessRejected && canConfess(player, relation)
-                const chance = Math.round(confessionChance(player, relation) * 100)
+                const bondOptions = BOND_DEFS.filter((def) =>
+                  bondTypeAvailable(player, relation, def.type),
+                )
+                const bondButtonLabel =
+                  relation.partner || relation.bondType
+                    ? '已建立羁绊'
+                    : relation.intimacy < 60
+                      ? '亲密度不足'
+                      : bondOptions.length === 0
+                        ? '暂无可建立羁绊'
+                        : '建立羁绊'
                 return (
                   <article
                     className={`whois-row ${
@@ -386,18 +400,14 @@ export function WhoIsTAScreen({
                       <button
                         type="button"
                         className="whois-action whois-confess"
-                        disabled={!confessAvailable}
-                        onClick={() => {
-                          setConfessionResult(onConfess(relation.id))
-                        }}
+                        disabled={
+                          Boolean(relation.partner || relation.bondType) ||
+                          relation.intimacy < 60 ||
+                          bondOptions.length === 0
+                        }
+                        onClick={() => setBondPickerTarget(relation)}
                       >
-                        {relation.partner
-                          ? '已经是恋人'
-                          : relation.confessRejected
-                            ? '已被拒绝'
-                            : confessAvailable
-                              ? `表白 · ${chance}%`
-                              : '还不能表白'}
+                        {bondButtonLabel}
                       </button>
                     </div>
                   </article>
@@ -519,6 +529,83 @@ export function WhoIsTAScreen({
           </section>
         </div>
       )}
+      {bondPickerTarget && (
+        <div className="bond-picker-overlay" role="dialog" aria-modal="true">
+          <div
+            className="bond-picker-backdrop"
+            onClick={() => setBondPickerTarget(null)}
+          />
+          <section className="bond-picker-modal">
+            <header className="bond-picker-head">
+              <span className="bond-picker-kicker">BOND / 建立羁绊</span>
+              <h2>你和 {bondPickerTarget.name} 之间</h2>
+              <p>
+                亲密度 {bondPickerTarget.intimacy} / 100。选择一种你们愿意承认的关系。
+                灰色选项代表当前条件不满足。
+              </p>
+            </header>
+            <div className="bond-picker-list">
+              {BOND_DEFS.map((def) => {
+                const available = bondTypeAvailable(
+                  player,
+                  bondPickerTarget,
+                  def.type,
+                )
+                const reason =
+                  bondPickerTarget.partner || bondPickerTarget.bondType
+                    ? '已经建立了羁绊'
+                    : bondPickerTarget.intimacy < 60
+                      ? '亲密度不足 60'
+                      : def.type === 'lover' && bondPickerTarget.confessRejected
+                        ? '已经被拒绝'
+                        : !available
+                          ? '条件不满足'
+                          : ''
+                return (
+                  <button
+                    key={def.type}
+                    type="button"
+                    className={`bond-picker-option ${
+                      available ? '' : 'is-disabled'
+                    }`}
+                    disabled={!available}
+                    onClick={() => {
+                      const target = bondPickerTarget
+                      setBondPickerTarget(null)
+                      if (def.type === 'lover') {
+                        setConfessionResult(onConfess(target.id))
+                      } else {
+                        setConfessionResult(
+                          onEstablishBond(target.id, def.type),
+                        )
+                      }
+                    }}
+                  >
+                    <span className="bond-picker-icon">
+                      {def.type === 'lover' ? '♡' : def.type === 'brother' ? '兄' : '闺'}
+                    </span>
+                    <span>
+                      <strong>{def.label}</strong>
+                      <small>{def.description}</small>
+                      {reason && <em>{reason}</em>}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <footer className="bond-picker-footer">
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setBondPickerTarget(null)}
+              >
+                先不建立
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+
       {confessionResult && (
         <div className="confession-overlay" role="dialog" aria-modal="true">
           <div
@@ -531,14 +618,26 @@ export function WhoIsTAScreen({
             }`}
           >
             <span className="confession-kicker">
-              {confessionResult.success ? 'CONFESSION / ACCEPTED' : 'CONFESSION / REJECTED'}
+              {confessionResult.bondType === 'brother'
+                ? 'BOND / BROTHER'
+                : confessionResult.bondType === 'sister'
+                  ? 'BOND / SISTER'
+                  : confessionResult.success
+                    ? 'CONFESSION / ACCEPTED'
+                    : 'CONFESSION / REJECTED'}
             </span>
             <h2>
-              {confessionResult.success
-                ? 'TA 答应了'
-                : confessionResult.name
-                  ? `TA 没有答应`
-                  : '现在还不能表白'}
+              {confessionResult.success && confessionResult.bondType === 'brother'
+                ? '兄弟羁绊已建立'
+                : confessionResult.success && confessionResult.bondType === 'sister'
+                  ? '闺蜜羁绊已建立'
+                  : confessionResult.success
+                    ? 'TA 答应了'
+                    : confessionResult.bondType === 'lover'
+                      ? 'TA 没有答应'
+                      : confessionResult.name
+                        ? '未能建立羁绊'
+                        : '现在还不能建立羁绊'}
             </h2>
             <p>{confessionResult.text}</p>
             <button
@@ -546,7 +645,7 @@ export function WhoIsTAScreen({
               className="btn btn-primary"
               onClick={() => setConfessionResult(null)}
             >
-              {confessionResult.success ? '收下这个答案' : '我明白了'}
+              {confessionResult.success ? '收下这段关系' : '我明白了'}
               <span className="btn-arrow">→</span>
             </button>
           </section>

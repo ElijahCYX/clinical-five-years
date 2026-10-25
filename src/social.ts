@@ -112,6 +112,7 @@ function makeRelationship(
     birthdayNextYear: 0,
     patBlockedUntilWeek: 0,
     partner: false,
+    bondType: undefined,
     confessRejected: false,
     intimacyFrozenSeason: undefined,
     frozenIntimacy: undefined,
@@ -439,6 +440,7 @@ export function normalizeRelationships(
     birthdayNextYear: relation.birthdayNextYear ?? 0,
     patBlockedUntilWeek: relation.patBlockedUntilWeek ?? 0,
     partner: relation.partner ?? false,
+    bondType: relation.bondType ?? (relation.partner ? 'lover' : undefined),
     confessRejected: relation.confessRejected ?? false,
     intimacyFrozenSeason: relation.intimacyFrozenSeason,
     frozenIntimacy: relation.frozenIntimacy,
@@ -481,7 +483,7 @@ export function isStaffRelation(relation: Relationship): boolean {
 
 export function canConfess(player: Player, relation: Relationship): boolean {
   return (
-    relation.intimacy > 60 &&
+    relation.intimacy >= 60 &&
     !relation.partner &&
     playerAllowsGender(player, relation.gender)
   )
