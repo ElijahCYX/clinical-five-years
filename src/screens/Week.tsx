@@ -26,6 +26,11 @@ import { BondScreen } from './Bond'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
+  buildTimetable,
+  TIMETABLE_DAYS,
+  TIMETABLE_SLOTS,
+} from '../timetable'
+import {
   currentWeekKey,
   academicYearForSeason,
   isDinnerFriend,
@@ -49,7 +54,16 @@ const VISIBLE_ACTIONS = [
   'english',
 ]
 
-type GameTab = 'week' | 'people' | 'grades' | 'research' | 'club' | 'bond' | 'roommates' | 'diary'
+type GameTab =
+  | 'timetable'
+  | 'week'
+  | 'people'
+  | 'grades'
+  | 'research'
+  | 'club'
+  | 'bond'
+  | 'roommates'
+  | 'diary'
 
 interface WeekScreenProps {
   state: GameState
@@ -428,6 +442,93 @@ export function WeekScreen({
       <p className="placeholder-note">人物关系与好感系统将在后续模块展开。</p>
     </div>
   )
+
+  const renderTimetable = () => {
+    const timetable = buildTimetable(state)
+    const kindOf = (electiveType?: string) => {
+      if (!electiveType) return 'professional'
+      if (electiveType === 'pe') return 'pe'
+      if (electiveType === 'politics') return 'politics'
+      return 'elective'
+    }
+    return (
+      <div className="tab-panel timetable-panel">
+        <div className="week-title-row">
+          <div>
+            <h2>本周课表</h2>
+            <p>按学分换算占格。先排专业课，再排选修课；优先工作日白天。</p>
+          </div>
+          <Pill tone={timetable.placedSlots === 21 ? 'green' : 'plain'}>
+            已排 {timetable.placedSlots} / 21 格
+          </Pill>
+        </div>
+
+        <section className="paper-card timetable-sheet">
+          <div className="timetable-head">
+            <div>
+              <Eyebrow>WEEKLY TIMETABLE / 21 SLOTS</Eyebrow>
+              <h3>七天 · 三个时段</h3>
+            </div>
+            <div className="timetable-legend">
+              <span><i className="legend-dot professional" />专业课</span>
+              <span><i className="legend-dot elective" />选修课</span>
+              <span><i className="legend-dot pe" />体育课</span>
+              <span><i className="legend-dot politics" />思政课</span>
+            </div>
+          </div>
+
+          <div className="timetable-scroll">
+            <div className="timetable-grid">
+              <div className="timetable-cell timetable-corner">时段</div>
+              {TIMETABLE_DAYS.map((day) => (
+                <div className="timetable-cell timetable-day" key={day}>
+                  {day}
+                </div>
+              ))}
+              {TIMETABLE_SLOTS.flatMap((slot, slotIndex) => [
+                <div className="timetable-cell timetable-slot-label" key={slot}>
+                  {slot}
+                </div>,
+                ...TIMETABLE_DAYS.map((day, dayIndex) => {
+                  const cell = timetable.cells[dayIndex * 3 + slotIndex]
+                  const course = cell.course
+                  return (
+                    <div
+                      className={`timetable-cell timetable-slot ${
+                        course ? `has-course kind-${kindOf(course.electiveType)}` : 'is-empty'
+                      }`}
+                      key={`${day}-${slot}`}
+                    >
+                      {course ? (
+                        <>
+                          <strong>{course.name}</strong>
+                          <small>{course.credits} 学分</small>
+                        </>
+                      ) : (
+                        <span>空</span>
+                      )}
+                    </div>
+                  )
+                }),
+              ])}
+            </div>
+          </div>
+
+          <div className="timetable-footer">
+            <p>
+              1 学分占 1 格，2–3 学分占 2 格，4–5 学分占 3 格。
+              临床前课程占满周一至周五的早上和下午。
+            </p>
+            <span>
+              {timetable.blocks.filter((block) => block.course.credits >= 10).length > 0
+                ? '临床前周 · 白天满课'
+                : '工作日白天优先 · 晚上与周末作为补充'}
+            </span>
+          </div>
+        </section>
+      </div>
+    )
+  }
 
   const renderGrades = () => (
     <div className="tab-panel">
@@ -949,6 +1050,7 @@ export function WeekScreen({
             <nav className="tabs">
               {(
                 [
+                  ['timetable', '课表'],
                   ['week', '本周安排'],
                   ['people', '档案'],
                   ['grades', '成绩'],
@@ -969,6 +1071,8 @@ export function WeekScreen({
                 </button>
               ))}
             </nav>
+
+            {tab === 'timetable' && renderTimetable()}
 
             {tab === 'week' && (
               <>

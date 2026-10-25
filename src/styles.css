@@ -12163,3 +12163,218 @@ body.dinner-open {
   transform: none;
   box-shadow: none;
 }
+
+/* ---------- weekly timetable ---------- */
+
+.timetable-panel {
+  padding-bottom: 10px;
+}
+
+.timetable-sheet {
+  padding: 16px 16px 13px;
+}
+
+.timetable-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.timetable-head h3 {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.timetable-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px 12px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.timetable-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.professional { background: #315d4d; }
+.legend-dot.elective { background: #b99b5c; }
+.legend-dot.pe { background: #7e9a63; }
+.legend-dot.politics { background: #a97058; }
+
+.timetable-scroll {
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+}
+
+.timetable-grid {
+  display: grid;
+  grid-template-columns: 54px repeat(7, minmax(94px, 1fr));
+  min-width: 770px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.timetable-cell {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 7px;
+}
+
+.timetable-corner,
+.timetable-day {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(235, 231, 218, 0.58);
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.timetable-day {
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: 12px;
+}
+
+.timetable-slot-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 244, 233, 0.7);
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: 11px;
+  writing-mode: horizontal-tb;
+}
+
+.timetable-slot {
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.timetable-slot strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.timetable-slot small {
+  color: var(--muted);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+}
+
+.timetable-slot.is-empty {
+  background: rgba(255, 252, 245, 0.35);
+}
+
+.timetable-slot.is-empty span {
+  color: rgba(93, 99, 89, 0.32);
+  font-size: 8px;
+  text-align: center;
+}
+
+.timetable-slot.kind-professional {
+  background: rgba(231, 240, 231, 0.72);
+  border-left: 3px solid #315d4d;
+}
+
+.timetable-slot.kind-elective {
+  background: rgba(247, 239, 218, 0.8);
+  border-left: 3px solid #b99b5c;
+}
+
+.timetable-slot.kind-pe {
+  background: rgba(241, 244, 229, 0.9);
+  border-left: 3px solid #7e9a63;
+}
+
+.timetable-slot.kind-politics {
+  background: rgba(247, 233, 226, 0.82);
+  border-left: 3px solid #a97058;
+}
+
+.timetable-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 9px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.timetable-footer p {
+  margin: 0;
+}
+
+.timetable-footer span {
+  flex: 0 0 auto;
+  font-style: italic;
+}
+
+@media (max-width: 820px) {
+  .timetable-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .timetable-legend {
+    justify-content: flex-start;
+  }
+
+  .timetable-grid {
+    min-width: 700px;
+  }
+
+  .timetable-slot {
+    min-height: 76px;
+  }
+
+  .timetable-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .game-screen .game-center > .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 17px;
+    scrollbar-width: none;
+  }
+
+  .game-screen .game-center > .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .game-screen .game-center > .tabs button {
+    flex: 0 0 auto;
+  }
+}
