@@ -11934,3 +11934,13 @@ body.dinner-open {
     user-select: none;
   }
 }
+
+/* Keep the weekly tab row visible while the active page scrolls. */
+.game-screen .game-center > .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin-top: 0;
+  padding-top: 2px;
+  background: var(--paper);
+}
