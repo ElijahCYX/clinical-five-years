@@ -11451,12 +11451,12 @@ body.dinner-open {
 
 /* mobile HUD predicted deltas */
 .mobile-hud-delta {
-  display: block;
-  margin-top: 1px;
-  font-family: var(--sans);
-  font-size: 7.5px;
+  display: inline;
+  margin-left: 3px;
+  font-family: var(--serif);
+  font-size: 12px;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0;
   white-space: nowrap;

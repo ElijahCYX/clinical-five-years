@@ -276,23 +276,25 @@ export function WeekScreen({
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
   const preview = state.selected.length > 0 ? simulateWeek(state) : null
-  const energyPreviewDelta = preview ? preview.energy - state.energy : null
-  const stressPreviewDelta = preview ? preview.stress - state.stress : null
-  const previewDeltaText = (delta: number | null, goodWhenPositive: boolean) => {
-    if (delta === null) return null
+  const previewTransition = (
+    current: number,
+    target: number | null,
+    goodWhenHigher: boolean,
+  ) => {
+    if (target === null) return null
     const tone =
-      delta === 0
+      target === current
         ? 'is-flat'
-        : goodWhenPositive
-          ? delta > 0
+        : goodWhenHigher
+          ? target > current
             ? 'is-good'
             : 'is-bad'
-          : delta < 0
+          : target < current
             ? 'is-good'
             : 'is-bad'
     return (
       <em className={`mobile-hud-delta ${tone}`}>
-        {delta > 0 ? `预计 +${delta}` : delta < 0 ? `预计 ${delta}` : '预计 ±0'}
+        →{target}
       </em>
     )
   }
@@ -870,14 +872,14 @@ export function WeekScreen({
             <span>精力</span>
             <strong>
               {state.energy}
-              {previewDeltaText(energyPreviewDelta, true)}
+              {previewTransition(state.energy, preview?.energy ?? null, true)}
             </strong>
           </div>
           <div>
             <span>压力</span>
             <strong>
               {state.stress}
-              {previewDeltaText(stressPreviewDelta, false)}
+              {previewTransition(state.stress, preview?.stress ?? null, false)}
             </strong>
           </div>
           <div>
