@@ -10404,3 +10404,393 @@ body.dinner-open {
     font-size: 24px;
   }
 }
+
+/* ============================================================
+   FIXED GAME CANVAS
+   Desktop: 16:10 landscape, locked, inner panels scroll
+   Phone: 9:16 portrait, swipeable pages, inner panels scroll
+   ============================================================ */
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    overscroll-behavior: none;
+  }
+
+  .screen {
+    min-height: 0;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .screen > .shell {
+    width: min(calc(100vw - 24px), calc((100dvh - 24px) * 1.6));
+    max-width: 1920px;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    max-height: calc(100dvh - 24px);
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0 28px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .game-screen .shell {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 22px;
+  }
+
+  .game-screen .game-head {
+    flex: 0 0 auto;
+    padding: 8px 0 6px;
+    align-items: center;
+  }
+
+  .game-screen .game-head-left h1 {
+    margin: 4px 0 3px;
+    font-size: clamp(25px, 1.9vw, 31px);
+  }
+
+  .game-screen .game-head-left p {
+    font-size: 9.5px;
+  }
+
+  .game-screen .week-big {
+    font-size: clamp(34px, 2.8vw, 44px);
+  }
+
+  .game-screen .mobile-hud,
+  .game-screen .mobile-course-strip,
+  .game-screen .mobile-page-tabs {
+    display: none;
+  }
+
+  .game-screen .game-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    grid-template-columns: 232px minmax(0, 1fr) 258px;
+    gap: 14px;
+    align-items: stretch;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .game-screen .game-left,
+  .game-screen .game-center {
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-right: 2px;
+  }
+
+  .game-screen .game-right {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    gap: 9px;
+  }
+
+  .game-screen .memo-card {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+  }
+
+  .game-screen .memo-card h3 {
+    margin: 4px 0 3px;
+    font-size: 17px;
+  }
+
+  .game-screen .memo-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.6;
+  }
+
+  .game-screen .memo-quote,
+  .game-screen .memo-deltas {
+    display: none;
+  }
+
+  .game-screen .identity-card {
+    flex: 0 0 auto;
+    padding: 9px 12px;
+  }
+
+  .game-screen .identity-art {
+    display: none;
+  }
+
+  .game-screen .identity-line {
+    padding: 3px 0;
+  }
+
+  .game-screen .right-links {
+    display: none;
+  }
+
+  .game-screen .campus-notice-board {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 190px;
+    margin-top: 0;
+  }
+
+  .game-screen .campus-broadcast {
+    flex: 1 1 34%;
+  }
+
+  .game-screen .campus-player-notices {
+    flex: 1 1 66%;
+  }
+
+  .game-screen .game-footer {
+    flex: 0 0 auto;
+    padding: 5px 0 2px;
+    font-size: 8.5px;
+  }
+
+  .game-screen .game-center .exam-banner {
+    margin-bottom: 10px;
+  }
+
+  .game-screen .game-center .week-title-row {
+    margin-top: 8px;
+  }
+
+  .game-screen .game-footer span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    overscroll-behavior: none;
+  }
+
+  .screen {
+    min-height: 0;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .screen > .shell {
+    width: min(100vw, calc(100dvh * 9 / 16));
+    max-height: 100dvh;
+    aspect-ratio: 9 / 16;
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0 11px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .game-screen .shell {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 10px;
+  }
+
+  .game-screen .game-head {
+    flex: 0 0 auto;
+    padding: 2px 0 1px;
+  }
+
+  .game-screen .game-head-left h1 {
+    margin: 2px 0;
+    font-size: 27px;
+  }
+
+  .game-screen .game-head-left p {
+    font-size: 9px;
+  }
+
+  .game-screen .week-big {
+    font-size: 32px;
+  }
+
+  .game-screen .mobile-hud {
+    flex: 0 0 auto;
+    margin: 4px 0;
+  }
+
+  .game-screen .mobile-course-strip {
+    flex: 0 0 auto;
+    margin-bottom: 4px;
+  }
+
+  .mobile-page-tabs {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 5px;
+    margin: 2px 0 4px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mobile-page-tabs button {
+    flex: 1;
+    padding: 5px 4px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .mobile-page-tabs button.is-active {
+    border-bottom-color: var(--green);
+    color: var(--green);
+  }
+
+  .game-screen .game-grid {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .game-screen .game-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .game-screen .game-left,
+  .game-screen .game-center,
+  .game-screen .game-right {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding-right: 2px;
+    scrollbar-width: thin;
+  }
+
+  .game-screen .game-right {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .game-screen .right-links {
+    display: none;
+  }
+
+  .game-screen .game-footer {
+    display: none;
+  }
+
+  .game-screen .campus-notice-board {
+    flex: 0 0 auto;
+    height: 420px;
+    min-height: 420px;
+  }
+
+  .game-screen .game-center .exam-banner {
+    margin-bottom: 8px;
+  }
+
+  .game-screen .game-center .week-title-row {
+    margin-top: 6px;
+  }
+
+  .game-screen .actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .game-screen .action-card {
+    min-height: 0;
+    padding: 7px 8px;
+  }
+
+  .game-screen .action-flavor {
+    font-size: 8.8px;
+  }
+
+  .game-screen .action-effect {
+    font-size: 8.4px;
+  }
+}
+
+/* Keep the mobile page tabs hidden on all non-mobile layouts. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .mobile-page-tabs {
+    display: none !important;
+  }
+}
+
+/* mobile canvas corrections */
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-left {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .game-screen .mobile-course-strip {
+    display: none;
+  }
+
+  .game-screen .interface-nav {
+    margin: 4px 0 6px;
+  }
+
+  .game-screen .interface-btn {
+    padding: 7px 5px;
+  }
+
+  .game-screen .game-head {
+    padding-bottom: 0;
+  }
+
+  .game-screen .game-head-left p {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   ACTIONS,
   ATTRS,
@@ -96,6 +96,8 @@ export function WeekScreen({
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const [clubPickerOpen, setClubPickerOpen] = useState(false)
+  const [mobilePage, setMobilePage] = useState(0)
+  const gameGridRef = useRef<HTMLElement | null>(null)
   const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
   const player = state.player
   if (!player) return null
@@ -845,7 +847,36 @@ export function WeekScreen({
           ))}
         </div>
 
-        <main className="game-grid">
+        <nav className="mobile-page-tabs" aria-label="手机页面切换">
+          {['状态', '本周', '通知'].map((label, index) => (
+            <button
+              key={label}
+              type="button"
+              className={mobilePage === index ? 'is-active' : ''}
+              onClick={() => {
+                const grid = gameGridRef.current
+                if (!grid) return
+                grid.scrollTo({
+                  left: grid.clientWidth * index,
+                  behavior: 'smooth',
+                })
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        <main
+          ref={gameGridRef}
+          className="game-grid"
+          onScroll={() => {
+            const grid = gameGridRef.current
+            if (!grid) return
+            const page = Math.round(grid.scrollLeft / Math.max(1, grid.clientWidth))
+            setMobilePage(Math.max(0, Math.min(2, page)))
+          }}
+        >
           <PlayerRail
             state={state}
             title="WEEKLY STATUS"
