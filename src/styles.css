@@ -11612,3 +11612,28 @@ body.dinner-open {
     font-size: 23px;
   }
 }
+
+/* keep bond action buttons the same height */
+.bond-action-buttons {
+  align-items: stretch;
+}
+
+.bond-action-buttons .btn,
+.bond-action-buttons .bond-break-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.bond-action-buttons .btn {
+  gap: 8px;
+  font-size: 11px;
+}
+
+.bond-action-buttons .bond-break-btn {
+  font-size: 10.5px;
+}
