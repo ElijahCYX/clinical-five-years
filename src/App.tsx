@@ -3160,8 +3160,12 @@ function RealApp() {
       yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
       cumulativePoints: game.cumulativePoints + pointGain,
-      pendingPeCourseId: null,
-      pendingPePairKey: null,
+      pendingPeCourseId: isPeResultSeason(game.seasonIndex)
+        ? null
+        : game.pendingPeCourseId,
+      pendingPePairKey: isPeResultSeason(game.seasonIndex)
+        ? null
+        : game.pendingPePairKey,
       peCourseCredits: game.peCourseCredits + peCreditsGain,
       peCourseCount: game.peCourseCount + pePassed.length,
       peCourseResults: [
