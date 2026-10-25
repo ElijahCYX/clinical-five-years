@@ -31,6 +31,7 @@ interface WhoIsTAScreenProps {
   onAutoPat: (mode: AutoPatMode) => PatResult
   onConfess: (id: string) => string
   onViewRelation?: (id: string) => void
+  onMarkAllSeen?: () => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
   onBirthdayBlessing?: (id: string) => BirthdayGiftResult
   onMain: () => void
@@ -74,6 +75,7 @@ export function WhoIsTAScreen({
   onAutoPat,
   onConfess,
   onViewRelation,
+  onMarkAllSeen,
   onBirthdayGift,
   onBirthdayBlessing,
   onMain,
@@ -148,6 +150,16 @@ export function WhoIsTAScreen({
           </div>
           <div className="whois-summary">
             <Pill tone="green">{relations.length} 段关系</Pill>
+            <button
+              type="button"
+              className="whois-read-all"
+              disabled={unseenRelationCount(state) === 0}
+              onClick={onMarkAllSeen}
+            >
+              {unseenRelationCount(state) > 0
+                ? `全部标为已读 · ${unseenRelationCount(state)}`
+                : '全部已读'}
+            </button>
             <button
               type="button"
               className="whois-bulk-pat"

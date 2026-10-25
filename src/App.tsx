@@ -1692,6 +1692,16 @@ function RealApp() {
     persist(next)
   }
 
+  const markAllRelationsSeen = () => {
+    if (!game) return
+    const next: GameState = {
+      ...game,
+      seenRelationIds: game.relationships.map((relation) => relation.id),
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const giveBirthdayGift = (
     relationshipId: string,
   ): BirthdayGiftResult => {
@@ -3495,6 +3505,7 @@ function RealApp() {
         onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
         onViewRelation={markRelationSeen}
+        onMarkAllSeen={markAllRelationsSeen}
         onBirthdayGift={giveBirthdayGift}
         onBirthdayBlessing={giveBirthdayBlessing}
         onMain={() => setView(whoisReturn)}

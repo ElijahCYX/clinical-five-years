@@ -9798,3 +9798,29 @@ body.dinner-open {
     font-size: 9px;
   }
 }
+
+/* ---------- mark all relations seen ---------- */
+
+.whois-read-all {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease,
+    background 0.18s ease;
+}
+
+.whois-read-all:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.whois-read-all:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
