@@ -116,14 +116,19 @@ export function PlanScreen({
                 {courses.map((course) => {
                   const difficulty = courseDifficulty(course)
                   return (
-                    <div className="plan-course-card" key={course.id}>
+                    <div
+                      className={`plan-course-card ${course.electiveType === 'pe' ? 'is-pe-course' : ''}`}
+                      key={course.id}
+                    >
                       <div className="plan-course-meta">
-                        <span>{course.examType}</span>
+                        <span>{course.electiveType === 'pe' ? '体育课' : course.examType}</span>
                         <span>{course.credits} 学分</span>
                       </div>
                       <h3>{course.name}</h3>
                       <p>
-                        记忆力 {course.memory} · 悟性 {course.comprehension}{course.operation ? ` · 操作 ${course.operation}` : ''}
+                        {course.electiveType === 'pe'
+                          ? '无准备度 · 按体质与考试周精力评分'
+                          : `记忆力 ${course.memory} · 悟性 ${course.comprehension}${course.operation ? ` · 操作 ${course.operation}` : ''}`}
                       </p>
                       <div className="plan-course-difficulty">
                         <span aria-label={`难度 ${difficulty.stars} 星`}>

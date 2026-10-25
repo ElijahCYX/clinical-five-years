@@ -4215,13 +4215,21 @@ function RealApp() {
   }
 
   if (view === 'plan') {
+    const pendingPeCourse = game.pendingPeCourseId
+      ? ELECTIVE_COURSE_BY_ID[game.pendingPeCourseId]
+      : undefined
+    const planCourses =
+      pendingPeCourse &&
+      !game.season.courses.some((course) => course.id === pendingPeCourse.id)
+        ? [...game.season.courses, pendingPeCourse]
+        : game.season.courses
     return (
       <PlanScreen
         player={game.player}
         seasonLabel={game.season.seasonLabel}
         initialPlan={game.plan}
         initialHabits={game.habits}
-        courses={game.season.courses}
+        courses={planCourses}
         state={game}
         onConfirmElectives={confirmElectives}
         onBack={() => setView('create')}

@@ -12131,3 +12131,8 @@ body.dinner-open {
     inset: -4px -4px;
   }
 }
+
+.plan-course-card.is-pe-course {
+  border-left: 3px solid var(--green);
+  background: rgba(239, 242, 232, 0.64);
+}
