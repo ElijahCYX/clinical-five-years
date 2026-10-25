@@ -9824,3 +9824,94 @@ body.dinner-open {
   opacity: 0.45;
   cursor: default;
 }
+
+/* ---------- compact four-column weekly actions ---------- */
+
+.game-grid {
+  grid-template-columns: 270px minmax(0, 1fr) 270px;
+}
+
+.actions-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.action-card {
+  min-height: 88px;
+  padding: 7px 9px 6px;
+}
+
+.action-card h3 {
+  margin: 3px 0 1px;
+  font-size: 14px;
+}
+
+.action-meta {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.action-flavor {
+  margin-bottom: 2px;
+  font-size: 8.2px;
+  line-height: 1.35;
+}
+
+.action-effect {
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.action-bottom {
+  gap: 5px;
+  padding-top: 4px;
+  font-size: 6.5px;
+  letter-spacing: 0.06em;
+}
+
+.action-en,
+.action-repeat {
+  font-size: 6.5px;
+}
+
+.action-selected {
+  font-size: 7.5px;
+}
+
+.action-locked {
+  font-size: 7px;
+}
+
+@media (max-width: 1180px) {
+  .actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .action-card {
+    min-height: 0;
+    padding: 9px 11px;
+  }
+
+  .action-card h3 {
+    font-size: 16px;
+  }
+
+  .action-flavor {
+    font-size: 9.5px;
+  }
+
+  .action-effect {
+    font-size: 9px;
+  }
+}

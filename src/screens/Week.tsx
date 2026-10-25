@@ -1104,36 +1104,6 @@ export function WeekScreen({
               </blockquote>
             </div>
 
-            <div className="paper-card course-card">
-              <div className="card-head">
-                <span>THIS SEMESTER</span>
-                <span>考核课程</span>
-              </div>
-              {state.season.courses.map((item) => {
-                const prep = state.prep[item.id] ?? 0
-                const previewPrep = preview?.prep[item.id] ?? prep
-                return (
-                  <div className="course-line" key={item.id}>
-                    <div className="course-line-top">
-                      <span>
-                        {item.name}
-                        {item.makeup && <span className="makeup-tag">补考</span>}
-                      </span>
-                      <span className="course-credit">{item.credits} 学分</span>
-                    </div>
-                    <div className="course-tags">
-                      <span>记忆力 {item.memory}</span>
-                      <span>悟性 {item.comprehension}</span>
-                    </div>
-                    <Bar value={prep} thin previewValue={previewPrep} />
-                  </div>
-                )
-              })}
-              <p className="course-note">
-                预计分数按当前准备度估算，最终成绩以考试结算为准。
-              </p>
-            </div>
-
             <div className="paper-card identity-card">
               <div className="card-head">
                 <span>IDENTITY</span>
