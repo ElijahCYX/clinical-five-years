@@ -1,0 +1,7 @@
+import { chromium } from 'playwright-core'
+const browser=await chromium.launch({executablePath:'/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',headless:true,args:['--no-sandbox']})
+const page=await browser.newPage({viewport:{width:1600,height:1000}})
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const s=g.newGameState(demo.demoPlayer);s.screen='scholarship';s.seasonIndex=4;s.season=d.SEASONS[4];s.week=1;s.plan='B';s.habits=[];s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;const score={grade:16,composite:14,research:8,interview:12,legacy:6,total:56,award:'school',awards:['school'],reward:1000};s.yearRecords=[{year:1,gpa:3.4,compositeGain:50,researchGain:10,papers:1,failed:false,cumulativeCredits:24,cumulativePoints:81,cumulativeComposite:50,cumulativeResearch:10,evaluated:true,award:'school',awards:['school'],score}] ;localStorage.setItem('clinical-five-years-save-v41',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(500)
+const m=await page.evaluate(()=>{const shell=document.querySelector('.screen .shell');return {label:document.querySelector('.screen')?.className,shellH:shell?.clientHeight,scroll:shell?.scrollHeight}});console.log(m);await page.screenshot({path:'/tmp/scholarship.png',fullPage:false});await browser.close()

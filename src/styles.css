@@ -10940,3 +10940,418 @@ body.dinner-open {
     padding: 6px 0 4px;
   }
 }
+
+/* ============================================================
+   DESKTOP PAGE COMPACTION (16:10, no page scroll)
+   ============================================================ */
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  /* Plan */
+  .plan-screen .shell {
+    overflow: hidden;
+  }
+
+  .plan-screen .plan-head {
+    padding: 4px 0 6px;
+  }
+
+  .plan-screen .plan-head .page-title {
+    margin-top: 3px;
+    margin-bottom: 2px;
+  }
+
+  .plan-screen .plan-head .page-lede {
+    line-height: 1.5;
+  }
+
+  .plan-screen .plan-sheet {
+    padding: 14px 20px 12px;
+    overflow: hidden;
+  }
+
+  .plan-screen .plan-courses-section {
+    margin-bottom: 10px;
+  }
+
+  .plan-screen .plan-course-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .plan-screen .plan-course-card {
+    padding: 7px 10px;
+  }
+
+  .plan-screen .plan-course-card h3 {
+    margin: 3px 0 2px;
+  }
+
+  .plan-screen .plan-course-note {
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .plan-screen .section-label {
+    margin-bottom: 7px;
+  }
+
+  .plan-screen .plan-grid {
+    gap: 8px;
+  }
+
+  .plan-screen .plan-card {
+    padding: 9px 11px 8px;
+  }
+
+  .plan-screen .plan-card h3 {
+    margin: 5px 0 1px;
+  }
+
+  .plan-screen .plan-card-top {
+    min-height: 18px;
+  }
+
+  .plan-screen .plan-desc {
+    margin: 3px 0 4px;
+    line-height: 1.4;
+  }
+
+  .plan-screen .plan-effects {
+    padding-top: 4px;
+    line-height: 1.4;
+  }
+
+  .plan-screen .habit-section {
+    margin-top: 9px;
+  }
+
+  .plan-screen .habit-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .plan-screen .habit-card {
+    min-height: 0;
+    padding: 6px 7px 5px;
+  }
+
+  .plan-screen .habit-desc {
+    line-height: 1.35;
+  }
+
+  .plan-screen .habit-decay-note {
+    margin-top: 5px;
+    line-height: 1.35;
+  }
+
+  .plan-screen .plan-footer {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .plan-screen .footer {
+    margin-top: 4px;
+    padding: 6px 0 4px;
+  }
+
+  /* Prep: columns scroll internally, page itself locked */
+  .prep-screen .shell {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .prep-screen .prep-head {
+    flex: 0 0 auto;
+    padding: 4px 0 5px;
+  }
+
+  .prep-screen .prep-head .page-title {
+    margin-top: 3px;
+    margin-bottom: 2px;
+  }
+
+  .prep-screen .prep-head .page-lede {
+    line-height: 1.5;
+  }
+
+  .prep-screen .prep-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    grid-template-columns: 232px minmax(0, 1fr) 258px;
+    gap: 14px;
+    align-items: stretch;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .prep-screen .prep-grid > .game-left,
+  .prep-screen .prep-grid > main,
+  .prep-screen .prep-grid > .prep-aside {
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-right: 2px;
+  }
+
+  .prep-screen .prep-course-block {
+    padding: 6px 0 5px;
+  }
+
+  .prep-screen .review-card {
+    min-height: 0;
+    padding: 10px 11px 9px;
+  }
+
+  .prep-screen .review-options-many .review-card {
+    min-height: 0;
+  }
+
+  .prep-screen .review-card h3 {
+    margin: 4px 0 2px;
+  }
+
+  .prep-screen .review-card p {
+    margin-bottom: 5px;
+    line-height: 1.5;
+  }
+
+  .prep-screen .prep-confirm {
+    margin-top: 8px;
+    padding-top: 7px;
+  }
+
+  /* Result */
+  .result-screen .shell {
+    overflow: hidden;
+  }
+
+  .result-screen .result-wrap {
+    padding: 8px 0 8px;
+  }
+
+  .result-screen .result-sheet {
+    padding: 18px 28px 14px;
+  }
+
+  .result-screen .result-head .page-title {
+    margin-top: 2px;
+    margin-bottom: 1px;
+  }
+
+  .result-screen .result-hero {
+    margin: 10px 0 9px;
+    padding: 9px 0;
+  }
+
+  .result-screen .report-table td {
+    padding: 6px;
+  }
+
+  .result-screen .result-stats {
+    margin-top: 9px;
+    padding-top: 8px;
+  }
+
+  .result-screen .result-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .result-screen .result-note p {
+    line-height: 1.6;
+  }
+
+  /* WhoAmI: resume becomes two balanced columns */
+  .whoami-screen .shell {
+    overflow: hidden;
+  }
+
+  .whoami-screen .whoami-head {
+    margin: 8px 0 9px;
+  }
+
+  .whoami-screen .whoami-head .page-title {
+    margin-top: 2px;
+    margin-bottom: 1px;
+  }
+
+  .whoami-screen .whoami-wrap {
+    display: block;
+    column-count: 2;
+    column-gap: 12px;
+    padding-bottom: 0;
+  }
+
+  .whoami-screen .dossier-cover {
+    column-span: all;
+    break-inside: avoid;
+    margin-bottom: 10px;
+    padding: 13px 18px;
+  }
+
+  .whoami-screen .dossier-cover-main {
+    gap: 14px;
+  }
+
+  .whoami-screen .dossier-avatar {
+    flex-basis: 58px;
+    height: 58px;
+    font-size: 20px;
+  }
+
+  .whoami-screen .dossier-cover-main h2 {
+    margin: 2px 0;
+    font-size: 26px;
+  }
+
+  .whoami-screen .dossier-grid {
+    display: block;
+  }
+
+  .whoami-screen .dossier-block {
+    break-inside: avoid;
+    margin: 0 0 10px;
+    padding: 12px 14px;
+  }
+
+  .whoami-screen .dossier-block .section-label {
+    margin-bottom: 7px;
+  }
+
+  .whoami-screen .dossier-attrs {
+    gap: 6px 14px;
+  }
+
+  .whoami-screen .dossier-list {
+    gap: 7px 14px;
+  }
+
+  .whoami-screen .dossier-year-row {
+    padding: 4px 0;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  .whoami-screen .whoami-head {
+    margin: 2px 0 5px;
+  }
+
+  .whoami-screen .dossier-cover {
+    margin-bottom: 7px;
+    padding: 9px 14px;
+  }
+
+  .whoami-screen .dossier-cover-main h2 {
+    margin: 1px 0;
+    font-size: 24px;
+  }
+
+  .whoami-screen .dossier-cover-main p {
+    margin-bottom: 4px;
+  }
+
+  .whoami-screen .dossier-avatar {
+    flex-basis: 50px;
+    height: 50px;
+    font-size: 18px;
+  }
+
+  .whoami-screen .dossier-cover-side {
+    gap: 6px;
+    padding-left: 14px;
+  }
+
+  .whoami-screen .dossier-block {
+    margin-bottom: 7px;
+    padding: 9px 12px;
+  }
+
+  .whoami-screen .dossier-block .section-label {
+    margin-bottom: 5px;
+  }
+
+  .whoami-screen .dossier-attr {
+    padding: 2px 0;
+  }
+
+  .whoami-screen .dossier-stats {
+    gap: 7px;
+  }
+
+  .whoami-screen .dossier-year-row {
+    padding: 3px 0;
+  }
+
+  .whoami-screen .dossier-empty,
+  .whoami-screen .dossier-muted,
+  .whoami-screen .dossier-warning {
+    margin-top: 5px;
+  }
+}
+
+/* extra plan compaction to keep the footer inside the sheet */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .plan-screen .plan-sheet {
+    padding: 8px 18px 8px;
+  }
+
+  .plan-screen .plan-course-card {
+    padding: 5px 8px;
+  }
+
+  .plan-screen .plan-card {
+    padding: 7px 9px;
+  }
+
+  .plan-screen .plan-card h3 {
+    margin: 3px 0 0;
+  }
+
+  .plan-screen .plan-tagline {
+    line-height: 1.3;
+  }
+
+  .plan-screen .plan-desc {
+    margin: 2px 0 3px;
+    line-height: 1.3;
+  }
+
+  .plan-screen .plan-effects {
+    padding-top: 3px;
+    line-height: 1.3;
+  }
+
+  .plan-screen .habit-grid {
+    gap: 4px;
+  }
+
+  .plan-screen .habit-card {
+    padding: 5px 6px;
+  }
+
+  .plan-screen .habit-desc {
+    line-height: 1.25;
+  }
+
+  .plan-screen .habit-effect {
+    line-height: 1.3;
+  }
+
+  .plan-screen .habit-decay-note {
+    margin-top: 3px;
+    line-height: 1.25;
+  }
+
+  .plan-screen .plan-footer {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .plan-screen .plan-course-note {
+    line-height: 1.25;
+  }
+}
