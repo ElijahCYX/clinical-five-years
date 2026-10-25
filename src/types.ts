@@ -545,6 +545,7 @@ export interface ClubMembership {
   joinedSeasonIndex: number
   totalActivities: number
   semesterActivities: number
+  semesterLeaves: number
   roleSinceSeasonIndex: number
   presidentStartSeasonIndex: number | null
   memberIds: string[]

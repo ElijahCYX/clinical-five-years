@@ -12610,3 +12610,20 @@ body.dinner-open {
     gap: 2px;
   }
 }
+
+.legend-dot.club { background: #7c6f9d; }
+.timetable-slot.kind-club {
+  background: rgba(239, 235, 247, 0.86);
+  border-left: 3px solid #7c6f9d;
+}
+.slot-club-panel {
+  border-left-color: #7c6f9d;
+}
+
+.slot-club-apply-btn {
+  margin-left: auto;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 9px;
+}

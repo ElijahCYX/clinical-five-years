@@ -28,6 +28,7 @@ import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
   buildTimetable,
   timetableCourseAt,
+  timetableActivityAt,
   TIMETABLE_DAYS,
   TIMETABLE_SLOTS,
 } from '../timetable'
@@ -46,7 +47,6 @@ const VISIBLE_ACTIONS = [
   'library',
   'electiveHomework',
   'research',
-  'club',
   'rest',
   'selfCare',
   'social',
@@ -74,6 +74,8 @@ interface WeekScreenProps {
   onSkipCourse?: () => void
   onSlotAction?: (actionId: string) => void
   onSleepIn?: () => void
+  onAttendClubActivity?: () => void
+  onLeaveClubActivity?: () => void
   onChooseFocus: (focus: string, addLibrary?: boolean) => void
   onWithdrawElective?: (courseId: string) => void
   onOpenWhoAmI?: () => void
@@ -101,6 +103,8 @@ export function WeekScreen({
   onSkipCourse,
   onSlotAction,
   onSleepIn,
+  onAttendClubActivity,
+  onLeaveClubActivity,
   onChooseFocus,
   onWithdrawElective,
   onOpenWhoAmI,
@@ -337,8 +341,11 @@ export function WeekScreen({
     : VISIBLE_ACTIONS
   const weekTimetable = buildTimetable(state)
   const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
+  const currentSlotActivity = timetableActivityAt(state, weekSlot)
   const currentSlotCourse =
-    !state.weekSlotSkipped && timetableCourseAt(state, weekSlot)
+    !currentSlotActivity &&
+    !state.weekSlotSkipped &&
+    timetableCourseAt(state, weekSlot)
   const currentSlotDay = TIMETABLE_DAYS[Math.floor(weekSlot / 3)]
   const currentSlotPhase = TIMETABLE_SLOTS[weekSlot % 3]
   const currentSlotIsMorning = weekSlot % 3 === 0
@@ -490,6 +497,7 @@ export function WeekScreen({
               <span><i className="legend-dot elective" />选修课</span>
               <span><i className="legend-dot pe" />体育课</span>
               <span><i className="legend-dot politics" />思政课</span>
+              <span><i className="legend-dot club" />组织活动</span>
             </div>
           </div>
 
@@ -508,14 +516,24 @@ export function WeekScreen({
                 ...TIMETABLE_DAYS.map((day, dayIndex) => {
                   const cell = timetable.cells[dayIndex * 3 + slotIndex]
                   const course = cell.course
+                  const activity = cell.activity
                   return (
                     <div
                       className={`timetable-cell timetable-slot ${
-                        course ? `has-course kind-${kindOf(course.electiveType)}` : 'is-empty'
+                        activity
+                          ? 'has-course kind-club'
+                          : course
+                            ? `has-course kind-${kindOf(course.electiveType)}`
+                            : 'is-empty'
                       }`}
                       key={`${day}-${slot}`}
                     >
-                      {course ? (
+                      {activity ? (
+                        <>
+                          <strong>{activity.name}</strong>
+                          <small>组织活动 · 强制占格</small>
+                        </>
+                      ) : course ? (
                         <>
                           <strong>{course.name}</strong>
                           <small>{course.credits} 学分</small>
@@ -1124,28 +1142,59 @@ export function WeekScreen({
                   })}
                 </div>
 
-                {currentSlotCourse ? (
+                {currentSlotActivity ? (
+                  <section className="paper-card slot-course-panel slot-club-panel">
+                    <div className="slot-course-meta">
+                      <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                      <Pill tone="gold">组织活动</Pill>
+                    </div>
+                    <h3>{currentSlotActivity.name} · 活动</h3>
+                    <p>
+                      这格时间被组织活动占住了。参加活动会消耗 5 点精力，并可能遇到一点组织里的事；
+                      因故请假会把时间还给你，但请假记录会留在期末。
+                    </p>
+                    <div className="slot-course-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={onAttendClubActivity}
+                      >
+                        参加活动 <small>精力 -5</small>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={onLeaveClubActivity}
+                      >
+                        因故请假 <small>本学期已请假 {state.clubMemberships.find((m) => m.orgId === currentSlotActivity.orgId)?.semesterLeaves ?? 0} 次</small>
+                      </button>
+                    </div>
+                  </section>
+                ) : currentSlotCourse ? (
                   <section className="paper-card slot-course-panel">
                     <div className="slot-course-meta">
                       <span>当前时间段有课 · {currentSlotDay} {currentSlotPhase}</span>
                       <Pill>{currentSlotCourse.credits} 学分</Pill>
                     </div>
                     <h3>{currentSlotCourse.name}</h3>
-                    <p>这个时间段已被课程占用。听课会消耗 5 点精力；翘课会把它变成可自由支配的时间。</p>
+                    <p>
+                      这节课把你按在了座位上。听课要花掉 5 点精力，但至少人还在教室；
+                      翘课能换回一格自由时间，至于老师会不会记住那个空座位，就交给缘分了。
+                    </p>
                     <div className="slot-course-actions">
                       <button
                         type="button"
                         className="btn btn-primary"
                         onClick={onAttendCourse}
                       >
-                        听课 <small>精力 -5</small>
+                        听课 <small>精力 -5 · 至少人在教室</small>
                       </button>
                       <button
                         type="button"
                         className="btn btn-ghost"
                         onClick={onSkipCourse}
                       >
-                        翘课 <small>转为自由时间</small>
+                        翘课 <small>把时间抢回来 · 后果待定</small>
                       </button>
                     </div>
                   </section>
@@ -1159,6 +1208,15 @@ export function WeekScreen({
                       ? '你翘掉了这节课，这个时间段现在归你自己安排。'
                       : '当前时间段没有课程，可以自由安排。'}
                   </p>
+                  {canApplyClub && clubMemberships.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost slot-club-apply-btn"
+                      onClick={onApplyClub}
+                    >
+                      申请第二个社团
+                    </button>
+                  )}
                 </div>
 
                 {state.week === 1 && courses.some((course) => course.electiveType) && (

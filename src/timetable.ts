@@ -1,13 +1,21 @@
 import { ELECTIVE_COURSE_BY_ID } from './data'
+import { ORG_BY_ID } from './organizations'
 import type { Course, GameState } from './types'
 
 export const TIMETABLE_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 export const TIMETABLE_SLOTS = ['早上', '下午', '晚上'] as const
 
+export interface TimetableActivity {
+  orgId: string
+  name: string
+  category: string
+}
+
 export interface TimetableCell {
   day: number
   slot: number
   course: Course | null
+  activity?: TimetableActivity
 }
 
 export interface TimetableCourseBlock {
@@ -69,6 +77,14 @@ export function timetableCourseAt(state: GameState, slotIndex: number): Course |
   return buildTimetable(state).cells[slotIndex].course
 }
 
+export function timetableActivityAt(
+  state: GameState,
+  slotIndex: number,
+): TimetableActivity | null {
+  if (slotIndex < 0 || slotIndex > 20) return null
+  return buildTimetable(state).cells[slotIndex].activity ?? null
+}
+
 export function buildTimetable(state: GameState): TimetableData {
   const cells: TimetableCell[] = Array.from({ length: 21 }, (_, index) => ({
     day: Math.floor(index / 3),
@@ -98,7 +114,23 @@ export function buildTimetable(state: GameState): TimetableData {
   const random = randomSource(hashSeed(seedText))
   const blocks: TimetableCourseBlock[] = []
 
-  const free = (index: number) => cells[index].course === null
+  // 社团/学生会/辩论队活动强制占格：优先周五、周六、周日的晚上。
+  const clubSlotPriority = [14, 17, 20]
+  for (let i = 0; i < (state.clubMemberships ?? []).length; i += 1) {
+    const membership = state.clubMemberships[i]
+    const org = ORG_BY_ID[membership.orgId]
+    const slot = clubSlotPriority[i]
+    if (org && slot !== undefined) {
+      cells[slot].activity = {
+        orgId: org.id,
+        name: org.name,
+        category: org.category,
+      }
+    }
+  }
+
+  const free = (index: number) =>
+    cells[index].course === null && !cells[index].activity
 
   const takeFrom = (course: Course, pool: number[], count: number) => {
     let remaining = count
@@ -144,6 +176,7 @@ export function buildTimetable(state: GameState): TimetableData {
     cells,
     blocks,
     totalSlots: blocks.reduce((sum, block) => sum + block.slots, 0),
-    placedSlots: cells.filter((cell) => cell.course !== null).length,
+    placedSlots: cells.filter((cell) => cell.course !== null || cell.activity)
+      .length,
   }
 }

@@ -13,7 +13,11 @@ import {
   VACATIONS,
 } from './data'
 import { buildDemoState, demoPlayer } from './demo'
-import { buildTimetable, timetableCourseAt } from './timetable'
+import {
+  buildTimetable,
+  timetableActivityAt,
+  timetableCourseAt,
+} from './timetable'
 import {
   backgroundAllowance,
   clamp,
@@ -139,8 +143,11 @@ import {
   type ClubEvent,
 } from './clubEvents'
 import {
-  CLUB_INACTIVITY_REMOVAL_TEXT,
-  CLUB_INACTIVITY_WARNING_TEXT,
+  CLUB_LEAVE_EXPEL_TEXT,
+  CLUB_LEAVE_WARNING_TEXT,
+  pickClubLeaveText,
+} from './clubLeaveTexts'
+import {
   CLUB_REJECTIONS,
   ORGANIZATIONS,
   ORG_BY_ID,
@@ -276,6 +283,7 @@ function readSave(): GameState | null {
     ).map((membership) => ({
       ...membership,
       inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
+      semesterLeaves: membership.semesterLeaves ?? 0,
     }))
     return ensureMentor({
       ...game,
@@ -763,34 +771,32 @@ function RealApp() {
       )
       if (pendingIndex >= 0) {
         const membership = memberships[pendingIndex]
-        const wouldBeRemoved =
-          membership.role !== 'honorary' &&
-          membership.semesterActivities === 0 &&
-          game.seasonIndex > membership.joinedSeasonIndex
-        if (wouldBeRemoved && !(membership.inactivityWarningIssued ?? false)) {
-          const next: GameState = {
-            ...game,
-            clubMemberships: memberships.map((item, index) =>
-              index === pendingIndex
-                ? {
-                    ...item,
-                    semesterActivities: 0,
-                    activitySeasonIndex: game.seasonIndex,
-                    inactivityWarningIssued: true,
-                  }
-                : item,
-            ),
+        const leaves = membership.semesterLeaves ?? 0
+        if (leaves >= 2) {
+          if (!(membership.inactivityWarningIssued ?? false)) {
+            const next: GameState = {
+              ...game,
+              clubMemberships: memberships.map((item, index) =>
+                index === pendingIndex
+                  ? {
+                      ...item,
+                      semesterActivities: 0,
+                      semesterLeaves: 0,
+                      activitySeasonIndex: game.seasonIndex,
+                      inactivityWarningIssued: true,
+                    }
+                  : item,
+              ),
+            }
+            setGame(next)
+            persist(next)
+            showResearchNotice({
+              kind: 'club',
+              title: '组织考勤警告',
+              text: CLUB_LEAVE_WARNING_TEXT,
+            })
+            return
           }
-          setGame(next)
-          persist(next)
-          showResearchNotice({
-            kind: 'club',
-            title: '组织警告',
-            text: CLUB_INACTIVITY_WARNING_TEXT,
-          })
-          return
-        }
-        if (wouldBeRemoved) {
           const next: GameState = {
             ...game,
             clubMemberships: memberships.filter((_, index) => index !== pendingIndex),
@@ -811,7 +817,7 @@ function RealApp() {
           showResearchNotice({
             kind: 'club',
             title: '移出组织通知',
-            text: CLUB_INACTIVITY_REMOVAL_TEXT,
+            text: CLUB_LEAVE_EXPEL_TEXT,
           })
           return
         }
@@ -822,6 +828,7 @@ function RealApp() {
               ? {
                   ...item,
                   semesterActivities: 0,
+                  semesterLeaves: 0,
                   activitySeasonIndex: game.seasonIndex,
                 }
               : item,
@@ -1657,6 +1664,7 @@ function RealApp() {
           joinedSeasonIndex: base.seasonIndex,
           totalActivities: 0,
           semesterActivities: 0,
+          semesterLeaves: 0,
           roleSinceSeasonIndex: base.seasonIndex,
           presidentStartSeasonIndex: null,
           memberIds: newRelations.map((relation) => relation.id),
@@ -3194,6 +3202,63 @@ function RealApp() {
     finishWeekSlot(next, 'sleepIn')
   }
 
+  const attendClubActivity = () => {
+    if (!game) return
+    const activity = timetableActivityAt(game, game.weekSlot)
+    if (!activity) return
+    const membership = game.clubMemberships.find(
+      (item) => item.orgId === activity.orgId,
+    )
+    if (!membership) return
+    const updatedMembership = {
+      ...membership,
+      totalActivities: membership.totalActivities + 1,
+      semesterActivities: membership.semesterActivities + 1,
+    }
+    const base: GameState = {
+      ...game,
+      energy: clamp(game.energy - 5, 0, 100),
+      clubMemberships: game.clubMemberships.map((item) =>
+        item.orgId === activity.orgId ? updatedMembership : item,
+      ),
+    }
+    const event = pickClubEvent(membership.category)
+    const applied = applyClubEvent(base, updatedMembership, event)
+    const next = pushCampusNotice(applied.next, event.title, event.text)
+    finishWeekSlot(next, `clubAttend:${activity.orgId}`)
+    showResearchNotice({
+      kind: 'club',
+      title: event.title,
+      text: event.text,
+      ruleText: applied.lines.length > 0 ? applied.lines.join('；') : undefined,
+      ruleLabel: '活动结果',
+    })
+  }
+
+  const leaveClubActivity = () => {
+    if (!game) return
+    const activity = timetableActivityAt(game, game.weekSlot)
+    if (!activity) return
+    const membership = game.clubMemberships.find(
+      (item) => item.orgId === activity.orgId,
+    )
+    if (!membership) return
+    const next: GameState = {
+      ...game,
+      clubMemberships: game.clubMemberships.map((item) =>
+        item.orgId === activity.orgId
+          ? { ...item, semesterLeaves: (item.semesterLeaves ?? 0) + 1 }
+          : item,
+      ),
+    }
+    finishWeekSlot(next, `clubLeave:${activity.orgId}`)
+    showResearchNotice({
+      kind: 'club',
+      title: '因故请假',
+      text: `你向${activity.name}请了假。${pickClubLeaveText()}`,
+    })
+  }
+
   const chooseReview = (choice: ReviewChoice) => {
     if (!game || !game.plan || !game.player) return
     const effect = getReviewEffect(choice, game.season.courses, game.player.attrs, game.plan)
@@ -4450,6 +4515,8 @@ function RealApp() {
           onSkipCourse={skipCurrentCourse}
           onSlotAction={performWeekSlotAction}
           onSleepIn={sleepInCurrentSlot}
+          onAttendClubActivity={attendClubActivity}
+          onLeaveClubActivity={leaveClubActivity}
           onChooseFocus={chooseWeekFocus}
           onWithdrawElective={withdrawElective}
           onOpenWhoAmI={openWhoAmI}
