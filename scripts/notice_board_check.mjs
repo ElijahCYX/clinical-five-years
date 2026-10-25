@@ -1,0 +1,13 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args:['--no-sandbox'] })
+const page = await browser.newPage({ viewport:{width:1600,height:1100} })
+const errors=[]; page.on('pageerror',e=>errors.push(e.message))
+await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
+const libs=await page.evaluate(async()=>{const b=await import('/src/campusBroadcast.ts');const s=await import('/src/social.ts');const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const st=g.newGameState(demo.demoPlayer);st.seasonIndex=6;st.season=d.SEASONS[6];st.week=3;st.screen='week';st.plan='B';st.habits=[];st.weekFocus='balanced';st.eventWeek=0;const date=s.gameDate(st);return {weather:b.WEATHER_LINES.length,events:b.CAMPUS_EVENT_LINES.length,broadcast:b.getCampusBroadcast(st),date}})
+console.log(JSON.stringify(libs,null,2))
+await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const social=await import('/src/social.ts');const s=g.newGameState(demo.demoPlayer);s.screen='week';s.seasonIndex=0;s.season=d.SEASONS[0];s.week=1;s.plan='B';s.habits=[];s.weekFocus='balanced';s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.money=3000;s.relationships=social.createInitialRelationships(demo.demoPlayer);s.seenRelationIds=s.relationships.map(r=>r.id);s.noticeFeed=[{id:'n1',time:'2025 年 9 月 · 大一 · 秋 第 1 周',title:'开学第一周',text:'你第一次走进医学楼，在门口遇见了一位问路的新生。'},{id:'n2',time:'2025 年 9 月 · 大一 · 秋 第 1 周',title:'社团摆摊',text:'学生活动中心门口，有人在发社团招新的传单。'}];localStorage.setItem('clinical-five-years-save-v38',JSON.stringify({game:s,savedAt:Date.now()}))})
+await page.reload({waitUntil:'networkidle'});await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(600)
+const ui=await page.evaluate(()=>{const b=document.querySelector('.campus-notice-board');const r=b?.getBoundingClientRect();return {board:!!b,rect:r?{w:r.width,h:r.height,y:r.y}:null,broadcast:document.querySelector('.campus-broadcast-copy')?.innerText,notices:document.querySelectorAll('.campus-notice-item').length,scrollH:document.querySelector('.campus-notice-scroll')?.scrollHeight}})
+console.log(ui)
+await page.screenshot({path:'/tmp/notice-board.png',fullPage:true})
+console.log('errors',errors.slice(0,5));await browser.close()

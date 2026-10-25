@@ -21,6 +21,7 @@ import { DinnerModal } from './Dinner'
 import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
+import { CampusNoticeBoard } from './CampusNotice'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
@@ -1127,6 +1128,8 @@ export function WeekScreen({
                 <span>✦</span>
               </div>
             </div>
+
+            <CampusNoticeBoard state={state} />
 
             <div className="right-links">
               <button className="text-btn" type="button" onClick={onTitle}>

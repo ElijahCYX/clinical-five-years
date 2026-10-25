@@ -111,6 +111,7 @@ import {
 import { ENCOUNTER_CHATS } from './encounters'
 import { MENTOR_BY_ID, ensureMentor } from './mentors'
 import { ClubRecruitment } from './screens/ClubRecruitment'
+import { pushCampusNotice } from './campusBroadcast'
 import {
   CLUB_EVENT_CHANCE,
   pickClubEvent,
@@ -153,8 +154,9 @@ import {
   vacationTravelInviteKey,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v38'
+const SAVE_KEY = 'clinical-five-years-save-v39'
 const LEGACY_SAVE_KEYS = [
+  'clinical-five-years-save-v38',
   'clinical-five-years-save-v37',
   'clinical-five-years-save-v36',
   'clinical-five-years-save-v35',
@@ -255,6 +257,7 @@ function readSave(): GameState | null {
       clubLastBenefitSeason: game.clubLastBenefitSeason ?? null,
       clubLastPromotionSeason: game.clubLastPromotionSeason ?? null,
       clubAnnualBonusSeason: game.clubAnnualBonusSeason ?? null,
+      noticeFeed: game.noticeFeed ?? [],
       highPressureDebuff: game.highPressureDebuff ?? false,
       stressHearts: game.stressHearts ?? 3,
       stressHeartBreakWeek: game.stressHeartBreakWeek ?? 0,
@@ -1373,7 +1376,12 @@ function RealApp() {
 
   const handleRandomEventContinue = () => {
     if (!game || !game.pendingEvent) return
-    const next = applyEvent(game, game.pendingEvent)
+    const withNotice = pushCampusNotice(
+      game,
+      game.pendingEvent.title,
+      game.pendingEvent.text,
+    )
+    const next = applyEvent(withNotice, game.pendingEvent)
     commit(next, 'week')
   }
 
@@ -1968,6 +1976,13 @@ function RealApp() {
       const applied = applyClubEvent(finalNext, membership, event)
       finalNext = applied.next
       clubEventNotice = { event, lines: applied.lines }
+    }
+    if (clubEventNotice) {
+      finalNext = pushCampusNotice(
+        finalNext,
+        clubEventNotice.event.title,
+        clubEventNotice.event.text,
+      )
     }
     setGame(finalNext)
     persist(finalNext)

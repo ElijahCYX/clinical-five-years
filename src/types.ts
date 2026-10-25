@@ -251,6 +251,13 @@ export interface Player {
   archiveTitle: string
 }
 
+export interface NoticeItem {
+  id: string
+  time: string
+  title: string
+  text: string
+}
+
 export interface WeekLog {
   week: number
   title: string
@@ -629,6 +636,7 @@ export interface GameState {
   clubLastBenefitSeason: string | null
   clubLastPromotionSeason: string | null
   clubAnnualBonusSeason: string | null
+  noticeFeed: NoticeItem[]
   pendingConsumption: ConsumptionEvent | null
   consumptionEventWeek: number
 }

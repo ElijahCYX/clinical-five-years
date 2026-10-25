@@ -389,6 +389,7 @@ export function newGameState(player: Player): GameState {
     clubLastBenefitSeason: null,
     clubLastPromotionSeason: null,
     clubAnnualBonusSeason: null,
+    noticeFeed: [],
     pendingConsumption: null,
     consumptionEventWeek: 0,
   }
