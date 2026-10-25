@@ -799,7 +799,7 @@ export const SEASONS: Season[] = [
   {
     id: 'y3-preclinical',
     yearLabel: '第 3 年',
-    seasonLabel: '大三 · 临床前',
+    seasonLabel: '大三 · 夏（临床前）',
     chapterNo: '12',
     chapterTitle: '临床前学期 · 第十二学期',
     chapterEn: 'PRECLINICAL',

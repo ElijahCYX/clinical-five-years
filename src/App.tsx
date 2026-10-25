@@ -3356,7 +3356,7 @@ function RealApp() {
     if (isYearFinal(current.seasonIndex)) current = settlePe(current)
     const index = current.seasonIndex
 
-    // 大三临床前、大四夏：学年结算（大四无暑假）
+    // 大三夏（临床前）、大四夏：学年结算（大四无暑假）
     if (index === 11 || index === 15) {
       current = finalizeYear(current)
       commit({ ...current, screen: 'yearend', vacation: null }, 'yearend')
