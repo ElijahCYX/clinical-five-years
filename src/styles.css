@@ -16385,3 +16385,112 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 .focus-backdrop {
   z-index: 2600;
 }
+
+/* Solo chat: all text except the main title is twice its previous size. */
+.solo-messages.is-frozen .solo-message {
+  animation: none;
+}
+
+.solo-window .solo-window-head span {
+  font-size: 15px;
+}
+
+.solo-window .solo-window-head h2 {
+  font-size: 23px;
+}
+
+.solo-window .solo-close {
+  width: 42px;
+  height: 42px;
+  font-size: 36px;
+}
+
+.solo-window .solo-contacts-head {
+  font-size: 16px;
+}
+
+.solo-window .solo-empty {
+  font-size: 20px;
+}
+
+.solo-window .solo-avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 26px;
+}
+
+.solo-window .solo-contact-copy strong {
+  font-size: 26px;
+}
+
+.solo-window .solo-contact-copy small,
+.solo-window .solo-contact-copy em {
+  font-size: 15px;
+}
+
+.solo-window .solo-chat-empty span {
+  font-size: 16px;
+}
+
+.solo-window .solo-chat-empty h3 {
+  font-size: 40px;
+}
+
+.solo-window .solo-chat-empty p {
+  font-size: 19px;
+}
+
+.solo-window .solo-chat-head strong {
+  font-size: 30px;
+}
+
+.solo-window .solo-chat-head small,
+.solo-window .solo-chat-status {
+  font-size: 16px;
+}
+
+.solo-window .solo-message-avatar {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+}
+
+.solo-window .solo-message p {
+  font-size: 21px;
+}
+
+.solo-window .solo-message.is-system p {
+  font-size: 17px;
+}
+
+.solo-window .solo-options-head {
+  font-size: 16px;
+}
+
+.solo-window .solo-refresh {
+  font-size: 16px;
+}
+
+.solo-window .solo-option strong {
+  font-size: 24px;
+}
+
+.solo-window .solo-option small {
+  font-size: 14px;
+}
+
+.solo-window .solo-option em {
+  font-size: 15px;
+}
+
+.solo-window .solo-result span {
+  font-size: 16px;
+}
+
+.solo-window .solo-result strong {
+  font-size: 22px;
+}
+
+.solo-window .solo-result .btn {
+  font-size: 24px;
+}

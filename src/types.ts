@@ -580,6 +580,11 @@ export interface ClubActivityPlan {
   committed: boolean
 }
 
+export interface SoloChatLine {
+  from: 'me' | 'them' | 'system'
+  text: string
+}
+
 export interface SoloInvite {
   id: string
   relationshipId: string
@@ -590,6 +595,8 @@ export interface SoloInvite {
   slot: number
   weekKey: string
   resolved: boolean
+  attemptSlot?: number
+  chat?: SoloChatLine[]
 }
 
 export interface GameState {

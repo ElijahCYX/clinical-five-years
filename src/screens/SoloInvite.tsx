@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   SOLO_DECLINES,
+  SOLO_EVENT_BY_ID,
   SOLO_PARTNER_REPLIES,
   SOLO_PARTNER_STATES,
   type SoloEventDef,
@@ -19,8 +20,9 @@ import {
   soloSlotLabel,
   soloSuccessChance,
   soloSuccessCount,
+  soloWeekKey,
 } from '../solo'
-import type { GameState, Relationship, SoloInvite } from '../types'
+import type { GameState, Relationship, SoloChatLine, SoloInvite } from '../types'
 
 type ChatMessage = {
   id: number
@@ -64,6 +66,7 @@ export function SoloInviteModal({
   const [refreshed, setRefreshed] = useState(false)
   const [phase, setPhase] = useState<'idle' | 'hello' | 'options' | 'inviting' | 'result'>('idle')
   const [result, setResult] = useState<SoloResult | null>(null)
+  const [frozenChat, setFrozenChat] = useState(false)
   const messageId = useRef(0)
   const timers = useRef<number[]>([])
   const chatRef = useRef<HTMLDivElement | null>(null)
@@ -101,6 +104,34 @@ export function SoloInviteModal({
     setRefreshed(false)
     setResult(null)
     setTyping(false)
+    setFrozenChat(false)
+
+    const frozenInvite = (state.soloInvites ?? []).find(
+      (invite) =>
+        invite.weekKey === soloWeekKey(state) &&
+        invite.attemptSlot === state.weekSlot &&
+        invite.relationshipId === relation.id &&
+        (invite.chat?.length ?? 0) > 0,
+    )
+    if (frozenInvite?.chat) {
+      const frozenEvent = SOLO_EVENT_BY_ID[frozenInvite.eventId]
+      setFrozenChat(true)
+      setMessages(
+        frozenInvite.chat.map((line, index) => ({
+          id: index + 1,
+          from: line.from,
+          text: line.text,
+        })),
+      )
+      setResult(
+        frozenEvent
+          ? { kind: 'accepted', event: frozenEvent, slot: frozenInvite.slot }
+          : { kind: 'accepted', event: { id: frozenInvite.eventId, name: frozenInvite.eventName, invite: '', description: '', timing: undefined } as SoloEventDef, slot: frozenInvite.slot },
+      )
+      setPhase('result')
+      return
+    }
+
     setPhase('hello')
     const bond = bondOf(relation)
     const reply = randomOf(SOLO_PARTNER_REPLIES[bond])
@@ -163,11 +194,22 @@ export function SoloInviteModal({
       return
     }
 
-    const invite = createSoloInvite(state, selected, event, slot)
+    const acceptedText = soloAcceptanceText(slot)
+    const systemText = `已约定：${soloSlotLabel(slot)} · ${event.name}`
+    const chatSnapshot: SoloChatLine[] = [
+      ...messages.map((message) => ({
+        from: message.from,
+        text: message.text,
+      })),
+      { from: 'me', text: event.invite },
+      { from: 'them', text: acceptedText },
+      { from: 'system', text: systemText },
+    ]
+    const invite = createSoloInvite(state, selected, event, slot, chatSnapshot)
     timers.current.push(
       window.setTimeout(() => {
-        push('them', soloAcceptanceText(slot))
-        push('system', `已约定：${soloSlotLabel(slot)} · ${event.name}`)
+        push('them', acceptedText)
+        push('system', systemText)
         onSchedule(invite)
         setResult({ kind: 'accepted', event, slot })
         setPhase('result')
@@ -259,7 +301,7 @@ export function SoloInviteModal({
                   </span>
                 </header>
 
-                <div className="solo-messages">
+                <div className={`solo-messages ${frozenChat ? 'is-frozen' : ''}`}>
                   {messages.map((message) => (
                     <div
                       key={message.id}

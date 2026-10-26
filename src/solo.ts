@@ -1,6 +1,6 @@
 import { SOLO_EVENTS, SOLO_EVENT_BY_ID, type SoloEventDef, type SoloSeasonKind } from './soloData'
 import { buildTimetable, TIMETABLE_DAYS, TIMETABLE_SLOTS } from './timetable'
-import type { BondType, GameState, Relationship, SoloInvite } from './types'
+import type { BondType, GameState, Relationship, SoloChatLine, SoloInvite } from './types'
 
 export const SOLO_MAX_WEEKLY_SUCCESS = 2
 export const SOLO_EFFECTS = {
@@ -142,6 +142,7 @@ export function createSoloInvite(
   relation: Relationship,
   event: SoloEventDef,
   slot: number,
+  chat: SoloChatLine[] = [],
 ): SoloInvite {
   return {
     id: `solo-${soloWeekKey(state)}-${relation.id}-${event.id}-${slot}-${Date.now()}`,
@@ -153,6 +154,8 @@ export function createSoloInvite(
     slot,
     weekKey: soloWeekKey(state),
     resolved: false,
+    attemptSlot: state.weekSlot,
+    chat,
   }
 }
 
