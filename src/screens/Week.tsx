@@ -14,7 +14,7 @@ import {
   courseDifficulty,
   simulateWeek,
 } from '../game'
-import type { ActionDef, DinnerInviteResult, GameState, SoloInvite } from '../types'
+import type { ActionDef, DinnerInviteResult, GameState, SoloChatRecord, SoloInvite } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
@@ -84,8 +84,7 @@ interface WeekScreenProps {
   onDrinkCoffee?: () => void
   onCampusRun?: () => void
   onDailySelfCare?: () => void
-  onScheduleSoloInvite?: (invite: SoloInvite) => void
-  onSoloRefusal?: (relationshipId: string) => void
+  onSoloAttempt?: (record: SoloChatRecord, invite?: SoloInvite) => void
   onResolveSoloDate?: (inviteId: string) => void
   onSlotLibraryFocus?: (focus: string) => void
   onSlotDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
@@ -123,8 +122,7 @@ export function WeekScreen({
   onDrinkCoffee,
   onCampusRun,
   onDailySelfCare,
-  onScheduleSoloInvite,
-  onSoloRefusal,
+  onSoloAttempt,
   onResolveSoloDate,
   onSlotLibraryFocus,
   onSlotDinner,
@@ -2105,8 +2103,7 @@ export function WeekScreen({
         <SoloInviteModal
           state={state}
           onClose={() => setSoloInviteOpen(false)}
-          onSchedule={(invite) => onScheduleSoloInvite?.(invite)}
-          onRefuse={(relationshipId) => onSoloRefusal?.(relationshipId)}
+          onAttempt={(record, invite) => onSoloAttempt?.(record, invite)}
         />
       )}
 

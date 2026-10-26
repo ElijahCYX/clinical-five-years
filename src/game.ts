@@ -465,6 +465,7 @@ export function newGameState(player: Player): GameState {
     familyAffection: 0,
     familyCrisisRescued: false,
     soloInvites: [],
+    soloChatRecords: [],
     soloRefusals: {},
     mentorRecognition: 0,
     walkEncounterWeekKey: null,

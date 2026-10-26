@@ -48,10 +48,7 @@ export function soloRefusedToday(state: GameState, relationshipId: string): bool
 }
 
 export function soloContactBlocked(state: GameState, relation: Relationship): boolean {
-  return (
-    soloRefusedToday(state, relation.id) ||
-    soloSuccessCount(state, relation.id) >= SOLO_MAX_WEEKLY_SUCCESS
-  )
+  return soloSuccessCount(state, relation.id) >= SOLO_MAX_WEEKLY_SUCCESS
 }
 
 export function soloSuccessChance(intimacy: number): number {

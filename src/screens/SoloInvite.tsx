@@ -22,7 +22,7 @@ import {
   soloSuccessCount,
   soloWeekKey,
 } from '../solo'
-import type { GameState, Relationship, SoloChatLine, SoloInvite } from '../types'
+import type { GameState, Relationship, SoloChatLine, SoloChatRecord, SoloInvite } from '../types'
 
 type ChatMessage = {
   id: number
@@ -38,8 +38,7 @@ type SoloResult =
 interface SoloInviteProps {
   state: GameState
   onClose: () => void
-  onSchedule: (invite: SoloInvite) => void
-  onRefuse: (relationshipId: string) => void
+  onAttempt: (record: SoloChatRecord, invite?: SoloInvite) => void
 }
 
 const BOND_LABEL = {
@@ -55,8 +54,7 @@ function randomOf<T>(items: T[]): T {
 export function SoloInviteModal({
   state,
   onClose,
-  onSchedule,
-  onRefuse,
+  onAttempt,
 }: SoloInviteProps) {
   const contacts = soloContacts(state)
   const [selected, setSelected] = useState<Relationship | null>(null)
@@ -106,6 +104,12 @@ export function SoloInviteModal({
     setTyping(false)
     setFrozenChat(false)
 
+    const frozenRecord = (state.soloChatRecords ?? []).find(
+      (record) =>
+        record.weekKey === soloWeekKey(state) &&
+        record.attemptSlot === state.weekSlot &&
+        record.relationshipId === relation.id,
+    )
     const frozenInvite = (state.soloInvites ?? []).find(
       (invite) =>
         invite.weekKey === soloWeekKey(state) &&
@@ -113,21 +117,29 @@ export function SoloInviteModal({
         invite.relationshipId === relation.id &&
         (invite.chat?.length ?? 0) > 0,
     )
-    if (frozenInvite?.chat) {
-      const frozenEvent = SOLO_EVENT_BY_ID[frozenInvite.eventId]
+    const frozenChatLines = frozenRecord?.chat ?? frozenInvite?.chat
+    if (frozenChatLines) {
+      const frozenEventId = frozenRecord?.eventId ?? frozenInvite?.eventId
+      const frozenEvent = frozenEventId ? SOLO_EVENT_BY_ID[frozenEventId] : null
       setFrozenChat(true)
       setMessages(
-        frozenInvite.chat.map((line, index) => ({
+        frozenChatLines.map((line, index) => ({
           id: index + 1,
           from: line.from,
           text: line.text,
         })),
       )
-      setResult(
-        frozenEvent
-          ? { kind: 'accepted', event: frozenEvent, slot: frozenInvite.slot }
-          : { kind: 'accepted', event: { id: frozenInvite.eventId, name: frozenInvite.eventName, invite: '', description: '', timing: undefined } as SoloEventDef, slot: frozenInvite.slot },
-      )
+      if (frozenRecord?.outcome === 'declined') {
+        setResult({ kind: 'declined' })
+      } else if (frozenRecord?.outcome === 'no-slot') {
+        setResult({ kind: 'no-slot' })
+      } else if (frozenEvent) {
+        setResult({
+          kind: 'accepted',
+          event: frozenEvent,
+          slot: frozenRecord?.inviteSlot ?? frozenInvite?.slot ?? state.weekSlot,
+        })
+      }
       setPhase('result')
       return
     }
@@ -174,7 +186,26 @@ export function SoloInviteModal({
       timers.current.push(
         window.setTimeout(() => {
           push('them', decline)
-          onRefuse(selected.id)
+          const declineChat: SoloChatLine[] = [
+            ...messages.map((message) => ({
+              from: message.from,
+              text: message.text,
+            })),
+            { from: 'me', text: event.invite },
+            { from: 'them', text: decline },
+          ]
+          onAttempt({
+            id: `solo-chat-${soloWeekKey(state)}-${selected.id}-${state.weekSlot}`,
+            relationshipId: selected.id,
+            partnerName: selected.name,
+            bondType: bond,
+            eventId: event.id,
+            eventName: event.name,
+            weekKey: soloWeekKey(state),
+            attemptSlot: state.weekSlot,
+            outcome: 'declined',
+            chat: declineChat,
+          })
           setResult({ kind: 'declined' })
           setPhase('result')
         }, 900),
@@ -186,7 +217,26 @@ export function SoloInviteModal({
       timers.current.push(
         window.setTimeout(() => {
           push('them', '这周时间好像对不上，我们下周再约吧。')
-          onRefuse(selected.id)
+          const noSlotChat: SoloChatLine[] = [
+            ...messages.map((message) => ({
+              from: message.from,
+              text: message.text,
+            })),
+            { from: 'me', text: event.invite },
+            { from: 'them', text: '这周时间好像对不上，我们下周再约吧。' },
+          ]
+          onAttempt({
+            id: `solo-chat-${soloWeekKey(state)}-${selected.id}-${state.weekSlot}`,
+            relationshipId: selected.id,
+            partnerName: selected.name,
+            bondType: bond,
+            eventId: event.id,
+            eventName: event.name,
+            weekKey: soloWeekKey(state),
+            attemptSlot: state.weekSlot,
+            outcome: 'no-slot',
+            chat: noSlotChat,
+          })
           setResult({ kind: 'no-slot' })
           setPhase('result')
         }, 900),
@@ -210,7 +260,22 @@ export function SoloInviteModal({
       window.setTimeout(() => {
         push('them', acceptedText)
         push('system', systemText)
-        onSchedule(invite)
+        onAttempt(
+          {
+            id: `solo-chat-${soloWeekKey(state)}-${selected.id}-${state.weekSlot}`,
+            relationshipId: selected.id,
+            partnerName: selected.name,
+            bondType: bond,
+            eventId: event.id,
+            eventName: event.name,
+            weekKey: soloWeekKey(state),
+            attemptSlot: state.weekSlot,
+            outcome: 'accepted',
+            inviteSlot: slot,
+            chat: chatSnapshot,
+          },
+          invite,
+        )
         setResult({ kind: 'accepted', event, slot })
         setPhase('result')
       }, 900),
@@ -248,6 +313,12 @@ export function SoloInviteModal({
               {contacts.map((relation) => {
                 const blocked = soloContactBlocked(state, relation)
                 const count = soloSuccessCount(state, relation.id)
+                const frozenRecord = (state.soloChatRecords ?? []).find(
+                  (record) =>
+                    record.weekKey === soloWeekKey(state) &&
+                    record.attemptSlot === state.weekSlot &&
+                    record.relationshipId === relation.id,
+                )
                 return (
                   <button
                     key={relation.id}
@@ -266,12 +337,14 @@ export function SoloInviteModal({
                       </small>
                       <em>
                         {blocked
-                          ? count >= SOLO_MAX_WEEKLY_SUCCESS
-                            ? '本周已约满'
-                            : '今天已婉拒'
-                          : count > 0
-                            ? `本周已约 ${count} / ${SOLO_MAX_WEEKLY_SUCCESS}`
-                            : '可邀约'}
+                          ? '本周已约满'
+                          : frozenRecord
+                            ? frozenRecord.outcome === 'accepted'
+                              ? '本时段已邀约'
+                              : '本时段已婉拒'
+                            : count > 0
+                              ? `本周已约 ${count} / ${SOLO_MAX_WEEKLY_SUCCESS}`
+                              : '可邀约'}
                       </em>
                     </span>
                   </button>

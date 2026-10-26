@@ -18,7 +18,6 @@ import {
   timetableActivityAt,
   timetableCourseAt,
 } from './timetable'
-import { soloDayKey } from './solo'
 import {
   backgroundAllowance,
   clamp,
@@ -92,6 +91,7 @@ import type {
   VacationKind,
   WeekLog,
   SoloInvite,
+  SoloChatRecord,
 } from './types'
 import { CetEventScreen } from './screens/CetEvent'
 import { CetResultScreen } from './screens/CetResult'
@@ -359,6 +359,7 @@ function readSave(): GameState | null {
       familyAffection: game.familyAffection ?? 0,
       familyCrisisRescued: game.familyCrisisRescued ?? false,
       soloInvites: game.soloInvites ?? [],
+      soloChatRecords: game.soloChatRecords ?? [],
       soloRefusals: game.soloRefusals ?? {},
       mentorRecognition: game.mentorRecognition ?? 0,
       walkEncounterWeekKey: game.walkEncounterWeekKey ?? null,
@@ -3404,28 +3405,32 @@ function RealApp() {
     announceSleep(sleep, advanced.stress)
   }
 
-  const scheduleSoloInvite = (invite: SoloInvite) => {
-    if (!game) return
-    if (game.soloInvites.some((item) => item.id === invite.id)) return
-    const next: GameState = {
-      ...game,
-      soloInvites: [...game.soloInvites, invite],
-    }
-    setGame(next)
-    persist(next)
-  }
-
-  const markSoloRefusal = (relationshipId: string) => {
-    if (!game) return
-    const next: GameState = {
-      ...game,
-      soloRefusals: {
-        ...game.soloRefusals,
-        [relationshipId]: soloDayKey(game),
-      },
-    }
-    setGame(next)
-    persist(next)
+  const recordSoloAttempt = (
+    record: SoloChatRecord,
+    invite?: SoloInvite,
+  ) => {
+    setGame((previous) => {
+      if (!previous) return previous
+      const next: GameState = {
+        ...previous,
+        soloChatRecords: [
+          ...(previous.soloChatRecords ?? []).filter(
+            (item) =>
+              !(
+                item.weekKey === record.weekKey &&
+                item.attemptSlot === record.attemptSlot &&
+                item.relationshipId === record.relationshipId
+              ),
+          ),
+          record,
+        ],
+        soloInvites: invite
+          ? [...(previous.soloInvites ?? []), invite]
+          : previous.soloInvites,
+      }
+      persist(next)
+      return next
+    })
   }
 
   const resolveSoloDate = (inviteId: string) => {
@@ -5066,8 +5071,7 @@ function RealApp() {
           onDrinkCoffee={drinkCoffee}
           onCampusRun={doCampusRun}
           onDailySelfCare={dailySelfCare}
-          onScheduleSoloInvite={scheduleSoloInvite}
-          onSoloRefusal={markSoloRefusal}
+          onSoloAttempt={recordSoloAttempt}
           onResolveSoloDate={resolveSoloDate}
           onSlotLibraryFocus={performSlotLibrary}
           onSlotDinner={performSlotDinner}

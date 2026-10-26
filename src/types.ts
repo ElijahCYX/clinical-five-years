@@ -585,6 +585,20 @@ export interface SoloChatLine {
   text: string
 }
 
+export interface SoloChatRecord {
+  id: string
+  relationshipId: string
+  partnerName: string
+  bondType: BondType
+  eventId: string
+  eventName: string
+  weekKey: string
+  attemptSlot: number
+  outcome: 'accepted' | 'declined' | 'no-slot'
+  inviteSlot?: number
+  chat: SoloChatLine[]
+}
+
 export interface SoloInvite {
   id: string
   relationshipId: string
@@ -713,6 +727,7 @@ export interface GameState {
   familyAffection: number
   familyCrisisRescued: boolean
   soloInvites: SoloInvite[]
+  soloChatRecords: SoloChatRecord[]
   soloRefusals: Record<string, string>
   mentorRecognition: number
   walkEncounterWeekKey: string | null
