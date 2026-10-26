@@ -441,7 +441,7 @@ function applySmallTextScale() {
   candidates.forEach(({ element, size }) => {
     const delta = deltas.get(size)
     if (!delta) return
-    const target = Math.round((size + delta) * 10) / 10
+    const target = Math.max(9, Math.round((size + delta) * 10) / 10)
     if (target <= size + 0.05) return
     smallTextOriginal.set(element, {
       value: element.style.getPropertyValue('font-size'),
