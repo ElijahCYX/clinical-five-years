@@ -13738,3 +13738,85 @@ body.dinner-open {
     min-width: 0;
   }
 }
+
+/* Vertical drum reel: names slide up through the window while the roll decelerates. */
+.skip-reel-window {
+  position: relative;
+  width: 100%;
+  height: 92px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+.skip-reel-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 231, 0.1), transparent 42%, rgba(0, 0, 0, 0.16) 100%);
+}
+
+.skip-reel-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(100%);
+  transition-property: transform, opacity, filter;
+  transition-timing-function: cubic-bezier(0.18, 0.72, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+.skip-reel-item strong {
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+.skip-reel-item small {
+  max-width: 72%;
+  text-align: center;
+}
+
+.skip-reel-item.is-current {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skip-reel-item.is-next {
+  opacity: 0.16;
+  transform: translateY(100%);
+}
+
+.skip-reel-item.is-prev {
+  opacity: 0.16;
+  transform: translateY(-100%);
+}
+
+.skip-reel-item.is-hidden {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.skip-reel.is-rolling .skip-reel-item.is-current strong {
+  filter: blur(0.25px);
+}
+
+.skip-reel.is-rolling .skip-reel-window {
+  box-shadow: inset 0 12px 18px -20px rgba(0, 0, 0, 0.85), inset 0 -12px 18px -20px rgba(0, 0, 0, 0.85);
+}
+
+@media (max-width: 820px) {
+  .skip-reel-window {
+    height: 78px;
+  }
+
+  .skip-reel-item strong {
+    font-size: 32px;
+  }
+}

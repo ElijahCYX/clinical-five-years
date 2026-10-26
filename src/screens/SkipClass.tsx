@@ -150,6 +150,7 @@ export function SkipClassModal({
   const method = useMemo(() => drawMethod(course), [course])
   const [rolling, setRolling] = useState(true)
   const [reelIndex, setReelIndex] = useState(0)
+  const [reelInterval, setReelInterval] = useState(55)
   const [suspenseIndex, setSuspenseIndex] = useState(0)
   const [stage, setStage] = useState<'roll' | 'choose' | 'result'>('roll')
   const [result, setResult] = useState<{ success: boolean; text: string } | null>(null)
@@ -206,6 +207,7 @@ export function SkipClassModal({
                   : elapsed < 3800
                     ? 340
                     : 420
+      setReelInterval(interval)
       tickTimer = window.setTimeout(tick, interval)
     }
 
@@ -261,8 +263,30 @@ export function SkipClassModal({
             <div className={`skip-reel ${rolling ? 'is-rolling' : ''}`}>
               <span className="skip-reel-scan" aria-hidden="true" />
               <span className="skip-reel-label">本次抽查方式</span>
-              <strong>{METHODS[reelIndex].label}</strong>
-              <small>{METHODS[reelIndex].hint}</small>
+              <div className="skip-reel-window">
+                {METHODS.map((item, index) => {
+                  const offset =
+                    (index - reelIndex + METHODS.length) % METHODS.length
+                  const position =
+                    offset === 0
+                      ? 'is-current'
+                      : offset === 1
+                        ? 'is-next'
+                        : offset === METHODS.length - 1
+                          ? 'is-prev'
+                          : 'is-hidden'
+                  return (
+                    <div
+                      key={item.key}
+                      className={`skip-reel-item ${position}`}
+                      style={{ transitionDuration: `${reelInterval}ms` }}
+                    >
+                      <strong>{item.label}</strong>
+                      {offset === 0 && <small>{item.hint}</small>}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
             <div className="skip-progress">
               <i />
