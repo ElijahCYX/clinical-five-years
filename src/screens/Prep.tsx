@@ -322,7 +322,7 @@ export function PrepScreen({
               <div className="prep-k-row prep-plan-row">
                 <span>计划倍率 ×{multiplier.toFixed(2)}</span>
                 <span>
-                  习惯：{habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'} {habits.length > 0 && state.stress <= 60 ? '生效中' : '失效'}
+                  习惯：{habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'} {habits.length > 0 ? '考试周不触发' : ''}
                 </span>
               </div>
             </div>

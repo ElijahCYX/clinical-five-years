@@ -463,6 +463,11 @@ export function newGameState(player: Player): GameState {
     lastResearchWarningWeek: 0,
     lastHypothesisOfferSeason: null,
     familyAffection: 0,
+    familyCrisisRescued: false,
+    mentorRecognition: 0,
+    walkEncounterWeekKey: null,
+    walkEncounterDayKey: null,
+    walkEncounterCount: 0,
     familyReliefWeek: 0,
     seenRelationIds: [],
     vacationTravel: null,
@@ -712,6 +717,7 @@ export interface WeekSimulation {
   researchProgressGain: number
   mentorIntimacyGain: number
   familyAffectionGain: number
+  mentorRecognitionGain: number
   prep: Record<string, number>
   kaoyanPrep: number
   constitutionGrowth: number
@@ -772,6 +778,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   let researchProgressGain = 0
   let mentorIntimacyGain = 0
   let familyAffectionGain = 0
+  let mentorRecognitionGain = 0
   let kaoyanPrep = state.kaoyanPrep
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
@@ -783,6 +790,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   for (const id of state.selected) {
     const action = ACTION_BY_ID[id]
     if (!action) continue
+    const sportGainsHalved = action.id === 'sport' && hasFitnessHabit
     if (action.id === 'club' && state.clubActivityPlan?.committed) {
       // 社团活动/申请在确认时已立即结算。
       continue
@@ -803,7 +811,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
       stress += action.stress
     } else {
       energy += effectiveEnergyCost(action.energy, state.energy)
-      stress += action.stress
+      stress += sportGainsHalved ? action.stress * 0.5 : action.stress
     }
     money += action.money
     if (action.id === 'social' && !state.dinnerPlan?.committed) {
@@ -861,7 +869,8 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
       }
     }
     if (action.growth === 'constitution') {
-      constitutionGrowth += action.growthAmount ?? 0
+      constitutionGrowth +=
+        (action.growthAmount ?? 0) * (sportGainsHalved ? 0.5 : 1)
     }
   }
 
@@ -889,29 +898,38 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     }
   }
 
+  const workdayFactor = 5
   if (habitApplied) {
     for (const habit of habits) {
-      energy += habit.energy ?? 0
-      stress += habit.stress ?? 0
-      money += habit.money ?? 0
-      englishGrowth += habit.english ?? 0
-      if (habit.id === 'reading' && !state.labEntered) {
-        if (state.relationships.some((relation) => relation.kind === 'mentor')) {
-          mentorIntimacyGain += 2
+      if (habit.id === 'earlySleep' || habit.id === 'familyCall') continue
+      energy += (habit.energy ?? 0) * workdayFactor
+      stress += (habit.stress ?? 0) * workdayFactor
+      money += (habit.money ?? 0) * workdayFactor
+      englishGrowth += (habit.english ?? 0) * workdayFactor
+      if (habit.id === 'reading') {
+        if (!state.labEntered) {
+          if (state.relationships.some((relation) => relation.kind === 'mentor')) {
+            mentorRecognitionGain += (habit.mentorRecognition ?? 2) * workdayFactor
+          }
+        } else {
+          const progress = 0.4 * workdayFactor
+          research += progress
+          researchProgressGain += progress
         }
-      } else {
-        research += habit.research ?? 0
-      }
-      if (habit.id === 'familyCall') {
-        familyAffectionGain += 5
       }
       if (habit.growth === 'constitution') {
-        constitutionGrowth += habit.growthAmount ?? 0
+        constitutionGrowth += (habit.growthAmount ?? 0) * workdayFactor
       }
       if (habit.growth === 'appearance') {
-        appearanceGrowth += habit.growthAmount ?? 0
+        appearanceGrowth += (habit.growthAmount ?? 0) * workdayFactor
       }
     }
+  }
+
+  // 家人电话只在周日结算一次，不参与工作日叠加。
+  if (habits.some((habit) => habit.id === 'familyCall')) {
+    stress -= 15
+    familyAffectionGain += 5
   }
 
   if (!hasFitnessHabit && !hasSportAction) {
@@ -951,6 +969,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     researchProgressGain,
     mentorIntimacyGain,
     familyAffectionGain,
+    mentorRecognitionGain,
     prep,
     kaoyanPrep,
     constitutionGrowth: grown.constitutionGrowth,
@@ -1110,13 +1129,16 @@ export function libraryCosts(state: GameState): {
   const costCount = Math.min(3, count)
   // 固定基础值 -15，保留多课程成本与低精力减半。
   const baseEnergy = -(10 + costCount * 5)
+  const rawEnergy =
+    state.energy < 40
+      ? Math.round(effectiveEnergyCost(baseEnergy, state.energy) / 2)
+      : effectiveEnergyCost(baseEnergy, state.energy)
   return {
     count,
     costCount,
-    energy:
-      state.energy < 40
-        ? Math.round(effectiveEnergyCost(baseEnergy, state.energy) / 2)
-        : effectiveEnergyCost(baseEnergy, state.energy),
+    energy: (state.habits ?? []).includes('timeManagement')
+      ? Math.round(rawEnergy * 0.9)
+      : rawEnergy,
     stress: 5,
   }
 }

@@ -27,7 +27,6 @@ export type HabitId =
   | 'familyCall'
   | 'timeManagement'
   | 'appearanceCare'
-  | 'coffee'
 
 export type BackgroundId = 'ordinary' | 'comfortable' | 'middle' | 'affluent'
 
@@ -122,6 +121,7 @@ export interface HabitDef {
   money?: number
   english?: number
   research?: number
+  mentorRecognition?: number
   studyBonus?: number
 }
 
@@ -692,6 +692,11 @@ export interface GameState {
   lastResearchWarningWeek: number
   lastHypothesisOfferSeason: string | null
   familyAffection: number
+  familyCrisisRescued: boolean
+  mentorRecognition: number
+  walkEncounterWeekKey: string | null
+  walkEncounterDayKey: string | null
+  walkEncounterCount: number
   familyReliefWeek: number
   seenRelationIds: string[]
   vacationTravel: VacationTravelPlan | null

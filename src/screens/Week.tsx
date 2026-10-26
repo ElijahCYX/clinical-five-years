@@ -339,9 +339,12 @@ export function WeekScreen({
     if (action.id === 'english') {
       return '英语成长值 +100% · 精力 -6 · 压力 +2'
     }
+    if (action.id === 'sport' && state.habits.includes('fitness')) {
+      return '健身习惯生效：正向收益减半 · 体质成长值 +5% · 精力 -5 · 压力 -5'
+    }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
-      return `所有课程：准备度 +K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
+      return `所有课程：准备度 +K${state.habits.includes('timeManagement') ? '（时间管理 +10%）' : ''}${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
     }
     if (action.id === 'club') {
       if (canApplyClub && clubMemberships.length === 0) {
@@ -416,8 +419,15 @@ export function WeekScreen({
   const coffeeUsedToday = state.coffeeDayKey === dailyKey
   const runUsedToday = state.campusRunDayKey === dailyKey
   const selfCareUsedToday = state.selfCareDayKey === dailyKey
+  const coffeeCost = state.habits.includes('ledger') ? 5 : 10
+  const selfCareCost = state.habits.includes('ledger') ? 15 : 30
+  const earlyRiseBlocked =
+    currentSlotIsMorning &&
+    Math.floor(weekSlot / 3) <= 4 &&
+    state.habits.includes('earlyRise')
   const morningActivityDone =
     currentSlotIsMorning && (coffeeUsedToday || runUsedToday)
+  const sleepInDisabled = morningActivityDone || earlyRiseBlocked
   const hasPeCourse = Boolean(state.pendingPeCourseId)
   const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
@@ -794,7 +804,7 @@ export function WeekScreen({
             {mentorRelation && (
               <div className="research-mentor-line">
                 <span>{mentorRelation.name}</span>
-                <strong>亲密度 {mentorRelation.intimacy} / 40</strong>
+                <strong>亲密度 {mentorRelation.intimacy} / 40 · 认可度 {state.mentorRecognition}</strong>
               </div>
             )}
             {profile && (
@@ -821,7 +831,7 @@ export function WeekScreen({
             {mentorRelation && (
               <div className="research-mentor-line">
                 <span>{mentorRelation.name}</span>
-                <strong>亲密度 {mentorRelation.intimacy} / 60</strong>
+                <strong>亲密度 {mentorRelation.intimacy} / 60 · 认可度 {state.mentorRecognition}</strong>
               </div>
             )}
             <p className="research-mentor-meta">
@@ -869,6 +879,10 @@ export function WeekScreen({
             <div>
               <span>科研进度</span>
               <strong>{state.researchProgress} / 100</strong>
+            </div>
+            <div>
+              <span>导师认可度</span>
+              <strong>{state.mentorRecognition}</strong>
             </div>
             <Bar value={state.researchProgress} max={100} />
             <p>{stage.description}</p>
@@ -1374,11 +1388,11 @@ export function WeekScreen({
                   <button
                     type="button"
                     className={`daily-action-btn ${coffeeUsedToday ? 'is-used' : ''}`}
-                    disabled={coffeeUsedToday || state.money < 10 || state.energy >= 100}
+                    disabled={coffeeUsedToday || state.money < coffeeCost || state.energy >= 100}
                     onClick={onDrinkCoffee}
                   >
                     <strong>喝咖啡</strong>
-                    <small>精力 +10 · 生活费 -10</small>
+                    <small>精力 +10 · 生活费 -{coffeeCost}</small>
                     <em>{coffeeUsedToday ? '今日已喝' : '今日可执行'}</em>
                   </button>
                   {hasPeCourse && (
@@ -1400,11 +1414,11 @@ export function WeekScreen({
                   <button
                     type="button"
                     className={`daily-action-btn ${selfCareUsedToday ? 'is-used' : ''}`}
-                    disabled={selfCareUsedToday || state.money < 30}
+                    disabled={selfCareUsedToday || state.money < selfCareCost}
                     onClick={onDailySelfCare}
                   >
                     <strong>爱你老己</strong>
-                    <small>精力 +10 · 压力 -15 · 生活费 -30 · 体质成长值 -5%</small>
+                    <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长值 -5%</small>
                     <em>{selfCareUsedToday ? '今日已做' : '今日可执行'}</em>
                   </button>
                 </div>
@@ -1455,7 +1469,7 @@ export function WeekScreen({
                         className="btn btn-primary"
                         onClick={onAttendCourse}
                       >
-                        去上课 <small>精力 -{currentCourseEnergyCost} · 课程准备度 +5</small>
+                        去上课 <small>精力 -{currentCourseEnergyCost} · 课程准备度 +{currentSlotIsMorning && Math.floor(weekSlot / 3) <= 4 && state.habits.includes('earlyRise') ? 6 : 5}</small>
                       </button>
                       <div className="skip-action-group">
                         <button
@@ -1541,15 +1555,15 @@ export function WeekScreen({
                   {currentSlotIsMorning ? (
                     <div
                       className={`action-card sleep-in-card ${
-                        morningActivityDone ? 'is-locked' : ''
+                        sleepInDisabled ? 'is-locked' : ''
                       }`}
                       role="button"
-                      tabIndex={morningActivityDone ? -1 : 0}
-                      aria-disabled={morningActivityDone}
-                      onClick={() => !morningActivityDone && onSleepIn?.()}
+                      tabIndex={sleepInDisabled ? -1 : 0}
+                      aria-disabled={sleepInDisabled}
+                      onClick={() => !sleepInDisabled && onSleepIn?.()}
                       onKeyDown={(event) => {
                         if (
-                          !morningActivityDone &&
+                          !sleepInDisabled &&
                           (event.key === 'Enter' || event.key === ' ')
                         ) {
                           event.preventDefault()
@@ -1563,28 +1577,32 @@ export function WeekScreen({
                       </div>
                       <h3>睡懒觉</h3>
                       <p className="action-flavor">
-                        {morningActivityDone
-                          ? coffeeUsedToday && runUsedToday
-                            ? '早上已经喝过咖啡、也跑完步了，现在躺下大概只会睁着眼。'
-                            : coffeeUsedToday
-                              ? '早上那杯咖啡还在起作用，回笼觉已经睡不回去了。'
-                              : '早上已经跑过步，身体醒过来了，回笼觉接不上。'
+                        {sleepInDisabled
+                          ? earlyRiseBlocked
+                            ? '早起习惯已经把身体叫醒了，工作日的早上不再适合回笼觉。'
+                            : coffeeUsedToday && runUsedToday
+                              ? '早上已经喝过咖啡、也跑完步了，现在躺下大概只会睁着眼。'
+                              : coffeeUsedToday
+                                ? '早上那杯咖啡还在起作用，回笼觉已经睡不回去了。'
+                                : '早上已经跑过步，身体醒过来了，回笼觉接不上。'
                           : '把闹钟按掉，再睡一个回笼觉。'}
                       </p>
                       <p className="action-effect">
-                        {morningActivityDone
+                        {sleepInDisabled
                           ? '当前不可用'
                           : '精力 +20 · 压力 -10'}
                       </p>
                       <div className="action-bottom">
                         <span className="action-en">SLEEP IN</span>
-                        {morningActivityDone ? (
+                        {sleepInDisabled ? (
                           <span className="action-locked">
-                            {coffeeUsedToday && runUsedToday
-                              ? '早上已喝咖啡并跑完步'
-                              : coffeeUsedToday
-                                ? '早上已喝咖啡'
-                                : '早上已校园跑'}
+                            {earlyRiseBlocked
+                              ? '早起习惯生效'
+                              : coffeeUsedToday && runUsedToday
+                                ? '早上已喝咖啡并跑完步'
+                                : coffeeUsedToday
+                                  ? '早上已喝咖啡'
+                                  : '早上已校园跑'}
                           </span>
                         ) : (
                           <span className="action-repeat">消耗 1 个时间段</span>

@@ -66,6 +66,7 @@ import {
 } from './game'
 import { applyGrowthCarry } from './growth'
 import { pickSleepText } from './sleepTexts'
+import { FAMILY_CRISIS_TALK } from './familyTexts'
 import type {
   AttrKey,
   DemoName,
@@ -270,6 +271,15 @@ function migrateLegacySeasonLayout(game: GameState): GameState {
   }
 }
 
+function earlySleepApplies(state: GameState, nextSlot: number): boolean {
+  if (!state.habits.includes('earlySleep')) return false
+  if (state.week > 3) return false
+  if (state.weekSlot % 3 !== 2) return false
+  if (nextSlot >= 21) return state.week < 3
+  const nextDay = Math.floor(nextSlot / 3)
+  return nextDay <= 4
+}
+
 function readSave(): GameState | null {
   try {
     const currentRaw = localStorage.getItem(SAVE_KEY)
@@ -345,6 +355,12 @@ function readSave(): GameState | null {
       lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
       familyAffection: game.familyAffection ?? 0,
+      familyCrisisRescued: game.familyCrisisRescued ?? false,
+      mentorRecognition: game.mentorRecognition ?? 0,
+      walkEncounterWeekKey: game.walkEncounterWeekKey ?? null,
+      walkEncounterDayKey: game.walkEncounterDayKey ?? null,
+      walkEncounterCount: game.walkEncounterCount ?? 0,
+      habits: (game.habits ?? []).filter((id) => Boolean(HABIT_BY_ID[id])),
       familyReliefWeek: game.familyReliefWeek ?? 0,
       seenRelationIds:
         game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
@@ -693,6 +709,7 @@ function RealApp() {
   const [clubRecruitmentMode, setClubRecruitmentMode] = useState<'initial' | 'application'>('initial')
   const nextProjectPromptRef = useRef('')
   const publicationNoticeOpenRef = useRef(false)
+  const walkAttemptDayRef = useRef('')
   const [noticeTick, setNoticeTick] = useState(0)
 
   const openPublicationNotice = (
@@ -965,6 +982,23 @@ function RealApp() {
       game.selected.length === 0 &&
       progressWeek(game) > game.stressHeartBreakWeek
     ) {
+      if (game.familyAffection > 50 && !game.familyCrisisRescued) {
+        const next: GameState = {
+          ...game,
+          stress: 0,
+          familyCrisisRescued: true,
+        }
+        setGame(next)
+        persist(next)
+        showResearchNotice({
+          kind: 'family',
+          title: '家里的电话',
+          text: FAMILY_CRISIS_TALK,
+          ruleText: '家人好感 > 50 · 压力已清零 · 这一次，家里人把你从悬崖边拉了回来。',
+          ruleLabel: '家人的支持',
+        })
+        return
+      }
       const ending = pickStressEnding()
       commit(
         {
@@ -1257,7 +1291,7 @@ function RealApp() {
         ...game,
         eventWeek: game.week,
         familyReliefWeek: absoluteWeek(game),
-        pendingEvent: createFamilyReliefEvent(),
+        pendingEvent: createFamilyReliefEvent(game.familyAffection),
         pendingConfession: null,
         screen: 'week',
       }
@@ -1265,75 +1299,6 @@ function RealApp() {
       persist(next)
       return
     }
-    if (
-      game.habits.includes('meditation') &&
-      Math.random() < 0.25 &&
-      view === 'week'
-    ) {
-      const known = game.relationships.filter(
-        (relation) =>
-          relation.kind !== 'mentor' && relation.kind !== 'counselor',
-      )
-      let next = game
-      let relation = known.length > 0
-        ? known[Math.floor(Math.random() * known.length)]
-        : null
-      if (!relation || Math.random() < 0.32) {
-        relation = {
-          ...createEventFriend(game.player!),
-          identity: '校园偶遇认识的人',
-          metAbsWeek: progressWeek(game),
-        }
-        next = {
-          ...game,
-          relationships: [...game.relationships, relation],
-        }
-      }
-      const chat =
-        ENCOUNTER_CHATS[Math.floor(Math.random() * ENCOUNTER_CHATS.length)]
-      const nextWithWeek: GameState = {
-        ...next,
-        eventWeek: game.week,
-        pendingEvent: null,
-        pendingConfession: null,
-        screen: 'week',
-      }
-      setGame(nextWithWeek)
-      persist(nextWithWeek)
-      showEncounter({
-        name: relation.name,
-        identity: relation.identity,
-        chat,
-        intimacyMultiplier: intimacyMultiplier(nextWithWeek, relation),
-        onResolve: (intimacy) => {
-          setGame((previous) => {
-            if (!previous) return previous
-            const updated: GameState = {
-              ...previous,
-              relationships: previous.relationships.map((item) =>
-                item.id === relation!.id
-                  ? {
-                      ...item,
-                      intimacy: Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          item.intimacy +
-                            adjustIntimacyDelta(previous, item, intimacy),
-                        ),
-                      ),
-                    }
-                  : item,
-              ),
-            }
-            persist(updated)
-            return updated
-          })
-        },
-      })
-      return
-    }
-
     if (!game.mentorContactUnlocked && Math.random() < 0.28) {
       const next: GameState = {
         ...game,
@@ -1369,6 +1334,95 @@ function RealApp() {
     }
     setGame(next)
     persist(next)
+
+  }, [game, view, noticeTick])
+
+  useEffect(() => {
+    if (!game || !game.player || view !== 'week') return
+    if (!game.habits.includes('meditation') || game.stress > 60) return
+    if (game.week < 1 || game.week > 3) return
+    if (
+      game.pendingEvent ||
+      game.pendingConfession ||
+      game.pendingConsumption
+    ) {
+      return
+    }
+    const dayIndex = Math.floor(game.weekSlot / 3)
+    if (dayIndex > 4) return
+    const weekKey = `${game.season.id}-${game.week}`
+    const dayKey = `${weekKey}-${dayIndex}`
+    if (walkAttemptDayRef.current === dayKey) return
+    walkAttemptDayRef.current = dayKey
+    const count =
+      game.walkEncounterWeekKey === weekKey ? game.walkEncounterCount : 0
+    if (count >= 2) return
+    if (Math.random() >= 0.25) return
+
+    const known = game.relationships.filter(
+      (relation) =>
+        relation.kind !== 'mentor' && relation.kind !== 'counselor',
+    )
+    let next = game
+    let relation = known.length > 0
+      ? known[Math.floor(Math.random() * known.length)]
+      : null
+    if (!relation || Math.random() < 0.32) {
+      relation = {
+        ...createEventFriend(game.player),
+        identity: '校园偶遇认识的人',
+        metAbsWeek: progressWeek(game),
+      }
+      next = {
+        ...game,
+        relationships: [...game.relationships, relation],
+      }
+    }
+    const chat =
+      ENCOUNTER_CHATS[Math.floor(Math.random() * ENCOUNTER_CHATS.length)]
+    const nextWithWeek: GameState = {
+      ...next,
+      eventWeek: game.week,
+      walkEncounterWeekKey: weekKey,
+      walkEncounterDayKey: dayKey,
+      walkEncounterCount: count + 1,
+      pendingEvent: null,
+      pendingConfession: null,
+      screen: 'week',
+    }
+    setGame(nextWithWeek)
+    persist(nextWithWeek)
+    showEncounter({
+      name: relation.name,
+      identity: relation.identity,
+      chat,
+      intimacyMultiplier: intimacyMultiplier(nextWithWeek, relation),
+      onResolve: (intimacy) => {
+        setGame((previous) => {
+          if (!previous) return previous
+          const updated: GameState = {
+            ...previous,
+            relationships: previous.relationships.map((item) =>
+              item.id === relation!.id
+                ? {
+                    ...item,
+                    intimacy: Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        item.intimacy +
+                          adjustIntimacyDelta(previous, item, intimacy),
+                      ),
+                    ),
+                  }
+                : item,
+            ),
+          }
+          persist(updated)
+          return updated
+        })
+      },
+    })
   }, [game, view, noticeTick])
 
   useEffect(() => {
@@ -1831,9 +1885,15 @@ function RealApp() {
       const dayKey = `${state.seasonIndex}-${state.week}-${finishedDay}`
       const coffeeBoosted =
         state.weekSlot % 3 === 2 && state.eveningCoffeeDayKey === dayKey
+      const earlySleep = earlySleepApplies(state, nextSlot)
+      const sleepStress = clamp(
+        stressAfterDay - (earlySleep ? 10 : 0),
+        0,
+        100,
+      )
       const sleep =
         state.weekSlot % 3 === 2
-          ? sleepRecoveryFor(stressAfterDay, coffeeBoosted ? 1 : 0)
+          ? sleepRecoveryFor(sleepStress, coffeeBoosted ? 1 : 0)
           : {
               base: 0,
               tier: 0 as const,
@@ -1841,6 +1901,7 @@ function RealApp() {
               gain: 0,
               coffeeBoosted: false,
             }
+      if (earlySleep) sleep.gain += 5
       const advanced: GameState = {
         ...state,
         screen: 'week',
@@ -3107,6 +3168,7 @@ function RealApp() {
         100,
         base.familyAffection + sim.familyAffectionGain,
       ),
+      mentorRecognition: base.mentorRecognition + sim.mentorRecognitionGain,
       researchProgress,
       researchPublished: base.researchPublished || publishedNow,
       researchJournal: publishedJournal,
@@ -3169,16 +3231,20 @@ function RealApp() {
     let socialGrowth = base.socialGrowth
     let prep = { ...base.prep }
     let researchProgress = base.researchProgress
+    const sportGainsHalved =
+      action.id === 'sport' && (base.habits ?? []).includes('fitness')
 
     if (action.id === 'library') {
       const costs = libraryCosts(base)
       energy += costs.energy
       stress += costs.stress
+      const timeBonus = base.habits.includes('timeManagement') ? 0.1 : 0
       const nominal = Object.fromEntries(
         base.season.courses.map((course) => [
           course.id,
           1 *
             courseK(course, player.attrs) *
+            (1 + timeBonus) *
             prepGainMultiplier(base) *
             coursePrepTalentMultiplier(base, course) *
             (base.energy < 40 ? 0.5 : 1),
@@ -3226,14 +3292,15 @@ function RealApp() {
       socialGrowth += 5
     } else {
       energy += effectiveEnergyCost(action.energy, base.energy)
-      stress += action.stress
+      stress += sportGainsHalved ? action.stress * 0.5 : action.stress
       money += action.money
       englishGrowth += action.english ?? 0
       composite += action.composite ?? 0
       research += action.research ?? 0
       kaoyanPrep += action.kaoyanPrep ?? 0
       if (action.growth === 'constitution') {
-        constitutionGrowth += action.growthAmount ?? 0
+        constitutionGrowth +=
+          (action.growthAmount ?? 0) * (sportGainsHalved ? 0.5 : 1)
       }
     }
 
@@ -3282,9 +3349,15 @@ function RealApp() {
     const dayKey = `${base.seasonIndex}-${base.week}-${finishedDay}`
     const coffeeBoosted =
       base.weekSlot % 3 === 2 && base.eveningCoffeeDayKey === dayKey
+    const earlySleep = earlySleepApplies(base, nextSlot)
+    const sleepStress = clamp(
+      stressAfterDay - (earlySleep ? 10 : 0),
+      0,
+      100,
+    )
     const sleep =
       base.weekSlot % 3 === 2
-        ? sleepRecoveryFor(stressAfterDay, coffeeBoosted ? 1 : 0)
+        ? sleepRecoveryFor(sleepStress, coffeeBoosted ? 1 : 0)
         : {
             base: 0,
             tier: 0 as const,
@@ -3292,6 +3365,7 @@ function RealApp() {
             gain: 0,
             coffeeBoosted: false,
           }
+    if (earlySleep) sleep.gain += 5
     return {
       state: {
         ...base,
@@ -3333,13 +3407,21 @@ function RealApp() {
     const stars = courseDifficulty(course).stars
     const energyCost =
       10 + (stars >= 4 ? 2 : stars <= 2 ? -2 : 0)
+    const earlyRiseBonus =
+      game.habits.includes('earlyRise') &&
+      game.weekSlot % 3 === 0 &&
+      Math.floor(game.weekSlot / 3) <= 4
     finishWeekSlot(
       {
         ...game,
         energy: clamp(game.energy - energyCost, 0, 100),
         prep: {
           ...game.prep,
-          [course.id]: clamp((game.prep[course.id] ?? 0) + 5, 0, 100),
+          [course.id]: clamp(
+            (game.prep[course.id] ?? 0) + 5 + (earlyRiseBonus ? 1 : 0),
+            0,
+            100,
+          ),
         },
       },
       `attend:${course.id}`,
@@ -3369,13 +3451,14 @@ function RealApp() {
     `${game?.seasonIndex ?? 0}-${game?.week ?? 1}-${Math.floor((game?.weekSlot ?? 0) / 3)}`
 
   const drinkCoffee = () => {
-    if (!game || game.money < 10 || game.energy >= 100) return
+    const coffeeCost = game?.habits.includes('ledger') ? 5 : 10
+    if (!game || game.money < coffeeCost || game.energy >= 100) return
     const key = dailyActionKey()
     if (game.coffeeDayKey === key) return
     const next: GameState = {
       ...game,
       energy: clamp(game.energy + 10, 0, 100),
-      money: Math.max(0, game.money - 10),
+      money: Math.max(0, game.money - coffeeCost),
       coffeeDayKey: key,
       eveningCoffeeDayKey:
         game.weekSlot % 3 === 2 ? key : game.eveningCoffeeDayKey,
@@ -3421,6 +3504,9 @@ function RealApp() {
       game.coffeeDayKey === dayKey ||
       game.campusRunDayKey === dayKey
     ) {
+      return
+    }
+    if (game.habits.includes('earlyRise') && Math.floor(game.weekSlot / 3) <= 4) {
       return
     }
     const next = {
@@ -3920,12 +4006,13 @@ function RealApp() {
   }
 
   const dailySelfCare = () => {
-    if (!game || game.money < 30) return
+    const selfCareCost = game?.habits.includes('ledger') ? 15 : 30
+    if (!game || game.money < selfCareCost) return
     const key = dailyActionKey()
     if (game.selfCareDayKey === key) return
     const next = carryGrowthState({
       ...game,
-      money: Math.max(0, game.money - 30),
+      money: Math.max(0, game.money - selfCareCost),
       energy: clamp(game.energy + 10, 0, 100),
       stress: clamp(game.stress - 15, 0, 100),
       constitutionGrowth: game.constitutionGrowth - 5,
@@ -4542,28 +4629,15 @@ function RealApp() {
       }
     }
 
-    if (habitApplied) {
-      for (const habitDef of habits) {
-        energy += habitDef.energy ?? 0
-        stress += habitDef.stress ?? 0
-        money += habitDef.money ?? 0
-        englishGrowth += habitDef.english ?? 0
-        research += habitDef.research ?? 0
-        if (habitDef.growth === 'constitution') {
-          constitutionGrowth += habitDef.growthAmount ?? 0
-        }
-        if (habitDef.growth === 'appearance') {
-          appearanceGrowth += habitDef.growthAmount ?? 0
-        }
-      }
-    }
+    // 假期不触发习惯收益。
+    const vacationHabitApplied = false
 
     energy = clamp(energy + 15, 0, 100)
     stress = clamp(stress, 0, 100)
     // 假期在家，不扣本学期每日固定生活费
 
     const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth, english, englishGrowth)
-    const log = buildVacationLog(game, { energy, stress, money, habitApplied })
+    const log = buildVacationLog(game, { energy, stress, money, habitApplied: vacationHabitApplied })
     const isLastWeek = game.vacation.week >= game.vacation.totalWeeks
     const vacationPublished =
       game.researchStarted &&

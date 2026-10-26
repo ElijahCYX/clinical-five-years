@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 export interface ResearchNotice {
-  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club' | 'pe' | 'sleep'
+  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club' | 'pe' | 'sleep' | 'family'
   title: string
   text: string
   journal?: string
@@ -56,6 +56,8 @@ function ResearchNoticeModal({
                       ? 'HEART WARNING'
                       : notice.kind === 'sleep'
                         ? 'SLEEP / 睡眠'
+                      : notice.kind === 'family'
+                        ? 'FAMILY / 家人'
                       : notice.kind === 'club'
                         ? 'CLUB NOTICE'
                         : notice.kind === 'pe'
@@ -86,6 +88,8 @@ function ResearchNoticeModal({
                 ? '这是一次状态提醒，与科研进度无关。'
                 : notice.kind === 'sleep'
                   ? '睡眠状态已记录。今晚别再靠咖啡硬撑。'
+                  : notice.kind === 'family'
+                    ? '家人的支持已记录。'
                 : notice.kind === 'club'
                   ? '组织事务记录已归档。'
                   : '这是科研系统的重要节点。'}

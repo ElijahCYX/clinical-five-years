@@ -39,7 +39,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-scene-08', kind: 'scene', title: '家人视频', text: '妈妈在视频里问你吃没吃饭，你说吃了，其实桌上只有一桶泡面。她没有拆穿你，只让你早点睡，你关掉视频后默默把泡面换成了食堂。', effects: {stress: -5, energy: 2}, condition: (s) => s.habits.includes('familyCall') },
   { id: 'ev-scene-09', kind: 'scene', title: '时间管理讲座', text: '你听了一场时间管理讲座，学会了番茄工作法，并当场用它规划了如何逃避下一场讲座。至少这半小时你确实没有摸鱼。', effects: {prep: 2}, condition: (s) => s.habits.includes('timeManagement') },
   { id: 'ev-scene-10', kind: 'scene', title: '护肤柜台', text: '柜姐说你皮肤缺水，你看了看价格，发现缺的其实是钱包。最后你买了一瓶最便宜的，决定从今天开始早睡，虽然你知道大概率做不到。', effects: {appearanceGrowth: 5, money: -40}, condition: (s) => s.habits.includes('appearanceCare') },
-  { id: 'ev-scene-11', kind: 'scene', title: '咖啡品鉴', text: '你喝了一杯手冲，认真品出了柑橘、坚果和一点纸板味。半小时后你品出了心悸，决定以后还是喝食堂免费热水。', effects: {energy: 4, stress: 2, money: -20}, condition: (s) => s.habits.includes('coffee') },
+  { id: 'ev-scene-11', kind: 'scene', title: '咖啡品鉴', text: '你喝了一杯手冲，认真品出了柑橘、坚果和一点纸板味。半小时后你品出了心悸，决定以后还是喝食堂免费热水。', effects: {energy: 4, stress: 2, money: -20}, condition: (s) => s.coffeeDayKey !== null },
   { id: 'ev-scene-12', kind: 'scene', title: '计划A的代价', text: '你把计划表排得比课表还满，连喝水都安排进了时间块。导员看了都替你累，你却在完成第一项后获得了一种奇怪的成就感。', effects: {prep: 2, stress: 3}, condition: (s) => s.plan==='A' },
   { id: 'ev-scene-13', kind: 'scene', title: '计划B的循环', text: '你按计划完成周期性回顾，回顾时发现上周的回顾也在回顾上上周。你安慰自己：至少这个循环是稳定的。', effects: {prep: 1, stress: 1}, condition: (s) => s.plan==='B' },
   { id: 'ev-scene-14', kind: 'scene', title: '计划C的黎明', text: '你决定从今天开始考前突击，但今天已经快结束了。你抓住最后两小时背了三页，感觉知识正在以临时工的速度进场。', effects: {prep: 3, energy: -3}, condition: (s) => s.plan==='C' },
@@ -505,14 +505,15 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   return next
 }
 
-export function createFamilyReliefEvent(): PendingEvent {
+export function createFamilyReliefEvent(familyAffection = 0): PendingEvent {
+  const money = 500 + Math.round(Math.max(0, familyAffection) * 5)
   return {
     id: 'ev-family-relief',
     kind: 'random',
     title: '朝廷赈灾粮来了',
-    text: '你妈突然在家庭群里发了一个红包，备注写着“最近是不是又瘦了”。你还没来得及回复，银行卡到账提示先响了。家长表示：别省，先吃饭。',
-    effects: { money: 500 },
-    effectLines: ['生活费 +500'],
+    text: `你妈突然在家庭群里发了一个红包，备注写着“最近是不是又瘦了”。你还没来得及回复，银行卡到账提示先响了。家长表示：别省，先吃饭。红包比上次厚了一点，像是他们隔着屏幕也能看出你最近过得紧。`,
+    effects: { money },
+    effectLines: [`生活费 +${money}`],
   }
 }
 

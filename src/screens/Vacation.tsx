@@ -64,7 +64,7 @@ export function VacationScreen({
   const habits = (state.habits ?? [])
     .map((id) => HABIT_BY_ID[id])
     .filter(Boolean)
-  const habitActive = habits.length > 0 && state.stress <= 60
+  const habitActive = false
   const latestLog = state.logs[state.logs.length - 1]
   const vacationLog = latestLog?.title.startsWith(meta.name) ? latestLog : null
   const remainingActions = Math.max(0, 2 - state.selected.length)
@@ -178,7 +178,7 @@ export function VacationScreen({
                 label="压力"
                 value={state.stress}
                 tone={stressTone(state.stress)}
-                sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
+                sub="假期不触发习惯"
               />
               <StressHearts value={state.stressHearts} />
               {(state.highPressureDebuff || state.stress > 70) && (
@@ -231,11 +231,11 @@ export function VacationScreen({
               <div className="plan-mini-row">
                 <span>养成习惯</span>
                 <strong>
-                  {habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'}
+                  {habits.length > 0 ? `${habits.map((item) => item.name).join(' / ')} · 假期不触发` : '无'}
                   <Dot active={habitActive} />
                 </strong>
               </div>
-              <p>假期不设学习计划，但习惯会继续生效。</p>
+              <p>假期不设学习计划，习惯收益暂不结算。</p>
             </div>
 
             <div className="left-progress">
@@ -399,7 +399,7 @@ export function VacationScreen({
               <div className="vacation-habit">
                 <span>当前习惯</span>
                 <strong>
-                  {habits.length > 0 ? habits.map((item) => item.name).join(' / ') : '无'}
+                  {habits.length > 0 ? `${habits.map((item) => item.name).join(' / ')} · 假期不触发` : '无'}
                   <Dot active={habitActive} />
                 </strong>
               </div>
