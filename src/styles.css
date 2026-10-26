@@ -14592,3 +14592,75 @@ body.day-transitioning .skip-rules-overlay {
     display: none;
   }
 }
+
+/* Desktop tab scroll policy:
+   - timetable / week / archive / research: locked (fit in one screen)
+   - grades / club / bond / roommates / diary: vertical only
+   - no tab may scroll horizontally                                            */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-center {
+    overflow-x: hidden;
+  }
+
+  .game-screen .game-center.tab-timetable,
+  .game-screen .game-center.tab-week,
+  .game-screen .game-center.tab-people,
+  .game-screen .game-center.tab-research {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    overscroll-behavior: none;
+  }
+
+  .game-screen .game-center.tab-grades,
+  .game-screen .game-center.tab-club,
+  .game-screen .game-center.tab-bond,
+  .game-screen .game-center.tab-roommates,
+  .game-screen .game-center.tab-diary {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+  }
+
+  /* Archive: fit its fixed dossier without a scroll container. */
+  .game-screen .game-center.tab-people .tab-panel {
+    min-height: 0;
+    padding: 12px 20px;
+  }
+
+  .game-screen .game-center.tab-people .identity-card {
+    padding: 10px 14px 6px;
+  }
+
+  .game-screen .game-center.tab-people .attr-readonly-row {
+    padding: 5px 0;
+  }
+
+  .game-screen .game-center.tab-people .people-meta {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .game-screen .game-center.tab-people .placeholder-note {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+}
+
+/* Scale the fixed dossier/timetable panels on shorter desktop windows so the
+   no-scroll tabs still fit without clipping. */
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 940px) {
+  .game-screen .game-center.tab-timetable .tab-panel,
+  .game-screen .game-center.tab-people .tab-panel {
+    zoom: 0.88;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 820px) {
+  .game-screen .game-center.tab-timetable .tab-panel,
+  .game-screen .game-center.tab-people .tab-panel,
+  .game-screen .game-center.tab-research .tab-panel {
+    zoom: 0.68;
+  }
+}

@@ -1214,7 +1214,7 @@ export function WeekScreen({
                   ['research', '科研'],
                   ['club', '社团'],
                   ['bond', '羁绊'],
-                  ['roommates', '舍友'],
+                  ['roommates', '相识'],
                   ['diary', '日记'],
                 ] as Array<[GameTab, string]>
               ).map(([key, label]) => (
