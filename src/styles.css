@@ -13073,6 +13073,7 @@ body.dinner-open {
 }
 
 .skip-heart {
+  position: relative;
   display: inline-flex;
   animation: skip-heartbeat 0.82s ease-in-out infinite;
   transform-origin: center;
@@ -13140,7 +13141,7 @@ body.dinner-open {
   height: 100%;
   transform-origin: left center;
   background: linear-gradient(90deg, #9e5540, #d7a35f);
-  animation: skip-progress 5s linear forwards;
+  animation: skip-progress 4s linear forwards;
 }
 
 .skip-suspense-line {
@@ -13407,4 +13408,82 @@ body.dinner-open {
   .skip-rules-reactions {
     grid-template-columns: 1fr;
   }
+}
+
+/* High-heart-rate flicker for the skip draw. */
+.skip-class-modal.is-rolling {
+  position: relative;
+  overflow: hidden;
+  animation: skip-modal-heartbeat 0.82s ease-in-out infinite;
+}
+
+.skip-adrenaline-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 42%, rgba(154, 61, 45, 0.12) 100%),
+    linear-gradient(180deg, rgba(194, 82, 56, 0.06), transparent 26%);
+  animation: skip-adrenaline-flash 0.82s ease-in-out infinite;
+}
+
+.skip-class-modal.is-rolling > header,
+.skip-class-modal.is-rolling > .skip-reel-zone,
+.skip-class-modal.is-rolling > .random-event-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.skip-heart {
+  animation-duration: 0.7s;
+}
+
+.skip-heart::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(169, 75, 57, 0.4);
+  border-radius: 50%;
+  animation: skip-heart-ring 0.82s ease-out infinite;
+}
+
+.skip-tension-head {
+  position: relative;
+}
+
+@keyframes skip-modal-heartbeat {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(104, 72, 46, 0.15),
+      0 28px 70px -26px rgba(41, 27, 18, 0.58);
+    filter: brightness(1);
+  }
+  12% {
+    box-shadow:
+      0 0 0 2px rgba(166, 79, 55, 0.24),
+      0 0 34px rgba(166, 79, 55, 0.12),
+      0 28px 70px -26px rgba(41, 27, 18, 0.62);
+    filter: brightness(1.025);
+  }
+  24% {
+    box-shadow:
+      0 0 0 1px rgba(104, 72, 46, 0.15),
+      0 28px 70px -26px rgba(41, 27, 18, 0.58);
+    filter: brightness(0.995);
+  }
+}
+
+@keyframes skip-adrenaline-flash {
+  0%, 100% { opacity: 0.12; }
+  12% { opacity: 0.78; }
+  24% { opacity: 0.2; }
+  36% { opacity: 0.58; }
+  52% { opacity: 0.14; }
+}
+
+@keyframes skip-heart-ring {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  70% { transform: scale(1.55); opacity: 0; }
+  100% { transform: scale(1.55); opacity: 0; }
 }

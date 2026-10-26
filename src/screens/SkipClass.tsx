@@ -187,25 +187,25 @@ export function SkipClassModal({
     const tick = () => {
       if (cancelled) return
       const elapsed = performance.now() - startedAt
-      if (elapsed >= 5000) {
+      if (elapsed >= 4000) {
         finish()
         return
       }
       setReelIndex((current) => (current + 1) % METHODS.length)
       const interval =
-        elapsed < 1000
+        elapsed < 800
           ? 55
-          : elapsed < 2000
+          : elapsed < 1600
             ? 75
-            : elapsed < 3000
+            : elapsed < 2400
               ? 105
-              : elapsed < 3800
+              : elapsed < 3000
                 ? 160
-                : elapsed < 4400
+                : elapsed < 3500
                   ? 240
-                  : elapsed < 4800
+                  : elapsed < 3800
                     ? 340
-                    : 480
+                    : 420
       tickTimer = window.setTimeout(tick, interval)
     }
 
@@ -233,6 +233,7 @@ export function SkipClassModal({
     <div className="random-event-overlay skip-class-overlay" role="dialog" aria-modal="true">
       <div className="random-event-backdrop" />
       <section className={`random-event-modal skip-class-modal ${stage === 'roll' ? 'is-rolling' : ''}`}>
+        {stage === 'roll' && <div className="skip-adrenaline-flash" aria-hidden="true" />}
         <header className="random-event-head">
           <div className="random-event-kind-row">
             <span className="research-notice-tag">SKIP CLASS / 翘课判定</span>
@@ -269,7 +270,7 @@ export function SkipClassModal({
             <p className="skip-suspense-line" key={suspenseIndex}>
               {SUSPENSE_LINES[suspenseIndex]}
             </p>
-            <p className="skip-reel-note">转盘正在减速……五秒后揭晓</p>
+            <p className="skip-reel-note">转盘正在减速……四秒后揭晓</p>
           </div>
         )}
 
