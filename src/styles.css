@@ -15038,3 +15038,10 @@ body.day-transitioning .skip-rules-overlay {
 .week-overview.overview-palette-evening .week-overview-dot.is-current.has-plan {
   background: var(--overview-fill);
 }
+
+
+.action-card.is-coming-soon {
+  opacity: 0.48;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}

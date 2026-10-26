@@ -94,7 +94,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
                 <h3>报名四级</h3>
                 <p>总分 750，425 分通过。</p>
                 <ul>
-                  <li>英语能力 ≥ 25：四级保底 425</li>
+                  <li>英语能力 ≥ 10：四级保底 425</li>
                   <li>报名费 {CET.registrationCost} 元</li>
                 </ul>
                 <small>

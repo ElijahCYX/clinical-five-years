@@ -254,8 +254,8 @@ export const PLANS: PlanDef[] = [
     tagline: '每天上完课都复习',
     desc: '精力消耗最大，准备度下限最高。适合高记忆要求的硬课，也适合想把基础打牢的人。',
     effects: [
-      '每门课每周被动准备度 +5 × K',
-      '每天精力 -5、压力 +2（一周共 -35 / +14）',
+      '每门课每周被动准备度 +3 × K',
+      '每天精力 -4、压力 +2（一周共 -28 / +14）',
       '考前周复习倍率 ×1.0',
     ],
   },
@@ -267,8 +267,8 @@ export const PLANS: PlanDef[] = [
     tagline: '每周末做一次回顾',
     desc: '消耗与收益都居中。两门课难度不同、或者你还想做点别的事时，这是最稳的选择。',
     effects: [
-      '每门课每周被动准备度 +2 × K',
-      '周六、周日过完后各精力 -10、压力 +3（一周共 -20 / +6）',
+      '每门课每周被动准备度 +1 × K',
+      '周六、周日过完后各精力 -8、压力 +3（一周共 -16 / +6）',
       '考前周复习倍率 ×1.1',
     ],
   },
@@ -302,8 +302,8 @@ export const HABITS: HabitDef[] = [
     name: '背单词',
     en: 'VOCAB',
     desc: '每天二十个，四六级与考研都用得上。',
-    effect: '英语成长值 +3%',
-    english: 3,
+    effect: '英语成长值 +50%',
+    english: 50,
   },
   {
     id: 'reading',
@@ -459,7 +459,7 @@ export const ACTIONS: ActionDef[] = [
     energy: 8,
     stress: -20,
     money: 0,
-    effectText: '精力 +8 · 压力 -20 · 生活费按赴约人数结算 · 亲密度按赴约人数分配 +6',
+    effectText: '精力 +8 · 压力 -15 · 生活费按赴约人数结算 · 亲密度按赴约人数分配 +6',
   },
   {
     id: 'selfCare',
@@ -513,8 +513,8 @@ export const ACTIONS: ActionDef[] = [
     energy: -6,
     stress: 2,
     money: 0,
-    effectText: '英语成长值 +50% · 精力 -6 · 压力 +2',
-    english: 50,
+    effectText: '英语成长值 +100% · 精力 -6 · 压力 +2',
+    english: 100,
   },
   {
     id: 'kaoyan',

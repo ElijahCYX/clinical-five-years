@@ -95,7 +95,7 @@ export function sleepRecoveryFor(stress: number, extraTier = 0): {
 }
 
 export function planPassive(plan: PlanId): number {
-  return { A: 5, B: 2, C: 0 }[plan]
+  return { A: 3, B: 1, C: 0 }[plan]
 }
 
 /** 学期计划的每日结算：A 每天、B 仅周六周日、C 平时不产生消耗。 */
@@ -103,8 +103,8 @@ export function planDailyCost(
   plan: PlanId,
   dayIndex: number,
 ): { energy: number; stress: number } {
-  if (plan === 'A') return { energy: -5, stress: 2 }
-  if (plan === 'B' && dayIndex >= 5) return { energy: -10, stress: 3 }
+  if (plan === 'A') return { energy: -4, stress: 2 }
+  if (plan === 'B' && dayIndex >= 5) return { energy: -8, stress: 3 }
   return { energy: 0, stress: 0 }
 }
 
@@ -429,6 +429,7 @@ export function newGameState(player: Player): GameState {
     weekSlotActions: [],
     skipCaught: {},
     coffeeDayKey: null,
+    selfCareDayKey: null,
     eveningCoffeeDayKey: null,
     campusRunDayKey: null,
     peRunCount: 0,
@@ -590,7 +591,7 @@ export function cetScore(
       ? 280 + 3.6 * cappedEnglish + (memory - 5) * 8
       : 300 + 2.4 * cappedEnglish + (memory - 5) * 6
   let score = base + (Math.random() * 20 - 10)
-  if (kind === 'cet4' && english >= 25) score = Math.max(score, CET.pass4)
+  if (kind === 'cet4' && english >= 10) score = Math.max(score, CET.pass4)
   if (kind === 'cet6' && english >= 60) score = Math.max(score, CET.pass6)
   if (kind === 'cet6' && english >= 100) score = Math.max(score, CET.graduate6)
   const floor = kind === 'cet4' ? 200 : 150

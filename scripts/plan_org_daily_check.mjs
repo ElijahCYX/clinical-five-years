@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core'
+const browser=await chromium.launch({executablePath:'/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1600,height:1000}});await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'});await page.evaluate(async()=>{const g=await import('/src/game.ts');const d=await import('/src/data.ts');const demo=await import('/src/demo.ts');const s=g.newGameState(demo.demoPlayer);s.screen='week';s.seasonIndex=0;s.season=d.SEASONS[0];s.week=1;s.plan='A';s.habits=[];s.electiveSelectionDone=true;s.electiveOffers=[];s.eventWeek=1;s.energy=60;s.stress=20;s.money=1000;s.pendingEvent=null;s.weekSlot=1;s.weekSlotSkipped=true;s.weekFocus='balanced';localStorage.setItem('clinical-five-years-save-v44',JSON.stringify({game:s,savedAt:Date.now()}))});await page.reload({waitUntil:'networkidle'});await page.waitForTimeout(250);await page.locator('.title-actions .btn-ghost').click();await page.waitForTimeout(400);
+console.log('tabs',await page.locator('.game-center > .tabs button').allInnerTexts());
+console.log('daily',await page.locator('.daily-action-btn strong').allInnerTexts());
+console.log('cards',await page.locator('.actions-grid .action-card h3').allInnerTexts());
+console.log('selfcare section',await page.locator('.daily-action-btn').filter({hasText:'爱你老己'}).innerText());
+await page.locator('.daily-action-btn').filter({hasText:'爱你老己'}).click();await page.waitForTimeout(300);console.log('after selfcare',await page.evaluate(()=>{const g=JSON.parse(localStorage.getItem('clinical-five-years-save-v44')).game;return {slot:g.weekSlot,energy:g.energy,stress:g.stress,money:g.money,growth:g.constitutionGrowth,con:g.player.attrs.constitution,key:g.selfCareDayKey}}));
+console.log('placeholder',await page.locator('.is-coming-soon').innerText());
+await page.locator('.game-center > .tabs button',{hasText:'组织'}).click();await page.waitForTimeout(300);console.log('org heading',await page.locator('.game-center').innerText().then(t=>t.slice(0,120)));
+await browser.close()

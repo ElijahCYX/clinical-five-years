@@ -658,6 +658,7 @@ export interface GameState {
   weekSlotActions: string[]
   skipCaught: Record<string, number>
   coffeeDayKey: string | null
+  selfCareDayKey: string | null
   eveningCoffeeDayKey: string | null
   campusRunDayKey: string | null
   peRunCount: number

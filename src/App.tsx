@@ -325,6 +325,7 @@ function readSave(): GameState | null {
       weekSlotActions: game.weekSlotActions ?? [],
       skipCaught: game.skipCaught ?? {},
       coffeeDayKey: game.coffeeDayKey ?? null,
+      selfCareDayKey: game.selfCareDayKey ?? null,
       eveningCoffeeDayKey: game.eveningCoffeeDayKey ?? null,
       campusRunDayKey: game.campusRunDayKey ?? null,
       peRunCount: game.peRunCount ?? 0,
@@ -910,7 +911,7 @@ function RealApp() {
         }
         if (
           membership.role === 'member' &&
-          membership.totalActivities >= 6 &&
+          membership.totalActivities >= 25 &&
           game.seasonIndex - membership.roleSinceSeasonIndex >= 1
         ) {
           notices.push(
@@ -925,7 +926,7 @@ function RealApp() {
         }
         if (
           membership.role === 'officer' &&
-          membership.totalActivities >= 12 &&
+          membership.totalActivities >= 60 &&
           game.seasonIndex - membership.roleSinceSeasonIndex >= 4
         ) {
           notices.push(
@@ -1728,7 +1729,7 @@ function RealApp() {
     showResearchNotice({
       kind: 'club',
       title: `欢迎加入${org.name}`,
-      text: `你正式成为${org.name}的一员。${org.description} 每学期第 3 周后，你会获得一次组织福利。每周也可以选择「社团活动」，与组织里的朋友共事。`,
+      text: `你正式成为${org.name}的一员。${org.description} 每学期第 3 周后，你会获得一次组织福利。每周也可以选择「组织活动」，与组织里的朋友共事。`,
       ruleText: `学期福利：${lines.join('；')}。组织朋友会出现在你的关系列表里。`,
       ruleLabel: '组织收益',
     })
@@ -3216,7 +3217,7 @@ function RealApp() {
       }
     } else if (action.id === 'social') {
       energy += 8
-      stress -= 20
+      stress -= 15
       money -= 50
     } else if (action.id === 'club') {
       energy += effectiveEnergyCost(action.energy, base.energy)
@@ -3507,7 +3508,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       energy: clamp(game.energy + 8, 0, 100),
-      stress: clamp(game.stress - 20, 0, 100),
+      stress: clamp(game.stress - 15, 0, 100),
       money: Math.max(0, game.money - cost),
       dinnerPlan: {
         acceptedIds,
@@ -3914,6 +3915,22 @@ function RealApp() {
       ),
       examCoffee: true,
     }
+    setGame(next)
+    persist(next)
+  }
+
+  const dailySelfCare = () => {
+    if (!game || game.money < 30) return
+    const key = dailyActionKey()
+    if (game.selfCareDayKey === key) return
+    const next = carryGrowthState({
+      ...game,
+      money: Math.max(0, game.money - 30),
+      energy: clamp(game.energy + 10, 0, 100),
+      stress: clamp(game.stress - 15, 0, 100),
+      constitutionGrowth: game.constitutionGrowth - 5,
+      selfCareDayKey: key,
+    })
     setGame(next)
     persist(next)
   }
@@ -4466,7 +4483,7 @@ function RealApp() {
         title: '组织学期福利',
         text:
           memberships.length === 2
-            ? '同时参与两个社团，本学期每个社团的收益按 80% 结算。'
+            ? '同时参与两个组织，本学期每个组织的收益按 80% 结算。'
             : '你所在的社团/学生会发来了这学期的组织福利。',
         lines,
       },
@@ -4926,6 +4943,7 @@ function RealApp() {
           onSleepIn={sleepInCurrentSlot}
           onDrinkCoffee={drinkCoffee}
           onCampusRun={doCampusRun}
+          onDailySelfCare={dailySelfCare}
           onSlotLibraryFocus={performSlotLibrary}
           onSlotDinner={performSlotDinner}
           onSlotClubActivity={performSlotClubActivity}

@@ -50,7 +50,7 @@ const VISIBLE_ACTIONS = [
   'electiveHomework',
   'research',
   'club',
-  'selfCare',
+  'bondPlaceholder',
   'social',
   'partTime',
   'sport',
@@ -79,6 +79,7 @@ interface WeekScreenProps {
   onSleepIn?: () => void
   onDrinkCoffee?: () => void
   onCampusRun?: () => void
+  onDailySelfCare?: () => void
   onSlotLibraryFocus?: (focus: string) => void
   onSlotDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSlotClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
@@ -114,6 +115,7 @@ export function WeekScreen({
   onSleepIn,
   onDrinkCoffee,
   onCampusRun,
+  onDailySelfCare,
   onSlotLibraryFocus,
   onSlotDinner,
   onSlotClubActivity,
@@ -325,8 +327,8 @@ export function WeekScreen({
         : researchStage(state.researchProgress).name
   const clubActionName =
     canApplyClub && clubMemberships.length === 0
-      ? '申请加入社团 / 学生会'
-      : '社团 / 学生会活动'
+      ? '申请加入组织'
+      : '组织活动'
   const displayActionName = (action: ActionDef) => {
     if (action.id === 'research') return researchActionName
     if (action.id === 'club') return clubActionName
@@ -335,7 +337,7 @@ export function WeekScreen({
 
   const actionEffectText = (action: ActionDef) => {
     if (action.id === 'english') {
-      return '英语成长值 +50% · 精力 -6 · 压力 +2'
+      return '英语成长值 +100% · 精力 -6 · 压力 +2'
     }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
@@ -413,6 +415,7 @@ export function WeekScreen({
   const dailyKey = `${state.seasonIndex}-${state.week}-${Math.floor(weekSlot / 3)}`
   const coffeeUsedToday = state.coffeeDayKey === dailyKey
   const runUsedToday = state.campusRunDayKey === dailyKey
+  const selfCareUsedToday = state.selfCareDayKey === dailyKey
   const morningActivityDone =
     currentSlotIsMorning && (coffeeUsedToday || runUsedToday)
   const hasPeCourse = Boolean(state.pendingPeCourseId)
@@ -900,11 +903,11 @@ export function WeekScreen({
     if (clubMemberships.length === 0) {
       return (
         <div className="tab-panel">
-          <SectionLabel right="NOT JOINED">社团</SectionLabel>
+          <SectionLabel right="NOT JOINED">组织</SectionLabel>
           <div className="locked-panel">
             <span className="lock-glyph">○</span>
             <h3>还没有加入组织</h3>
-            <p>大一大二的每周行动第一周，可以选择「申请加入社团学生会」。</p>
+            <p>大一大二的每周行动第一周，可以选择「申请加入组织」。</p>
           </div>
         </div>
       )
@@ -912,11 +915,11 @@ export function WeekScreen({
     return (
       <div className="tab-panel">
         <SectionLabel right={`${clubMemberships.length} 个组织`}>
-          社团与学生会
+          我的组织
         </SectionLabel>
         {clubMemberships.length === 2 && (
           <p className="club-panel-note">
-            同时参与两个社团，每周活动与学期福利将按 80% 结算。
+            同时参与两个组织，每周活动与学期福利将按 80% 结算。
           </p>
         )}
         <div className="club-membership-list">
@@ -929,9 +932,9 @@ export function WeekScreen({
               .filter(Boolean) as typeof state.relationships
             const nextNeed =
               membership.role === 'member'
-                ? 6
+                ? 25
                 : membership.role === 'officer'
-                  ? 12
+                  ? 60
                   : null
             return (
               <div className="club-panel" key={membership.orgId}>
@@ -1215,7 +1218,7 @@ export function WeekScreen({
                   ['people', '档案'],
                   ['grades', '成绩'],
                   ['research', '科研'],
-                  ['club', '社团'],
+                  ['club', '组织'],
                   ['bond', '羁绊'],
                   ['roommates', '相识'],
                   ['diary', '日记'],
@@ -1394,6 +1397,16 @@ export function WeekScreen({
                       </em>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className={`daily-action-btn ${selfCareUsedToday ? 'is-used' : ''}`}
+                    disabled={selfCareUsedToday || state.money < 30}
+                    onClick={onDailySelfCare}
+                  >
+                    <strong>爱你老己</strong>
+                    <small>精力 +10 · 压力 -15 · 生活费 -30 · 体质成长值 -5%</small>
+                    <em>{selfCareUsedToday ? '今日已做' : '今日可执行'}</em>
+                  </button>
                 </div>
 
                 {currentSlotActivity ? (
@@ -1480,7 +1493,7 @@ export function WeekScreen({
                       className="btn btn-ghost slot-club-apply-btn"
                       onClick={onApplyClub}
                     >
-                      申请第二个社团
+                      申请第二个组织
                     </button>
                   )}
                 </div>
@@ -1605,6 +1618,30 @@ export function WeekScreen({
                     </div>
                   )}
                   {visibleActions.map((id) => {
+                    if (id === 'bondPlaceholder') {
+                      return (
+                        <div
+                          key="bondPlaceholder"
+                          className="action-card is-locked is-coming-soon"
+                          aria-disabled="true"
+                          title="羁绊生活模块开发中"
+                        >
+                          <div className="action-meta">
+                            <span>社交</span>
+                            <span className="action-no">—</span>
+                          </div>
+                          <h3>羁绊相关</h3>
+                          <p className="action-flavor">
+                            和恋人、兄弟或闺蜜一起度过一段时间。专属生活模块还在开发中。
+                          </p>
+                          <p className="action-effect">灰度功能 · 后续开放</p>
+                          <div className="action-bottom">
+                            <span className="action-en">BOND</span>
+                            <span className="action-locked">后续开发</span>
+                          </div>
+                        </div>
+                      )
+                    }
                     const action = ACTIONS.find((item) => item.id === id)
                     if (!action) return null
                     const locked = lockReason(action)
@@ -1660,7 +1697,7 @@ export function WeekScreen({
                                 onApplyClub?.()
                               }}
                             >
-                              申请第二个社团
+                              申请第二个组织
                             </button>
                           )}
                       </div>
@@ -1883,8 +1920,8 @@ export function WeekScreen({
             <header className="dinner-head">
               <div>
                 <span className="dinner-eyebrow">CHOOSE A CLUB / 选择组织</span>
-                <h2>这周参加哪个社团的活动？</h2>
-                <p>两个社团各自独立计算活动次数、晋升与学期福利。选择后，再邀请同组织的人一起共事。</p>
+                <h2>这周参加哪个组织的活动？</h2>
+                <p>两个组织各自独立计算活动次数、晋升与学期福利。选择后，再邀请同组织的人一起共事。</p>
               </div>
             </header>
             <div className="club-picker-list">
