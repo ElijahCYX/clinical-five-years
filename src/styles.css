@@ -14664,3 +14664,17 @@ body.day-transitioning .skip-rules-overlay {
     zoom: 0.68;
   }
 }
+
+/* Desktop centre column: breathing room plus explicit left/right rules. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-center {
+    box-sizing: border-box;
+    padding: 6px 14px 8px;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+  }
+
+  .game-screen .game-center.tab-week {
+    padding: 6px 14px 8px;
+  }
+}
