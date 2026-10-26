@@ -370,6 +370,81 @@ function removeInfoButtons() {
   hideTooltip()
 }
 
+let smallTextOriginal = new WeakMap<
+  HTMLElement,
+  { value: string; priority: string }
+>()
+
+function clearSmallTextScale() {
+  document
+    .querySelectorAll<HTMLElement>('[data-explain-small="on"]')
+    .forEach((element) => {
+      const original = smallTextOriginal.get(element)
+      if (original) {
+        if (original.value) {
+          element.style.setProperty(
+            'font-size',
+            original.value,
+            original.priority,
+          )
+        } else {
+          element.style.removeProperty('font-size')
+        }
+      } else {
+        element.style.removeProperty('font-size')
+      }
+      element.removeAttribute('data-explain-small')
+    })
+  smallTextOriginal = new WeakMap()
+}
+
+function hasDirectText(element: HTMLElement): boolean {
+  return Array.from(element.childNodes).some(
+    (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim(),
+  )
+}
+
+function applySmallTextScale() {
+  clearSmallTextScale()
+  if (current.master) return
+
+  const candidates: Array<{ element: HTMLElement; size: number }> = []
+  const chromeSelector =
+    '.topbar, .interface-nav, .game-footer, .explain-tip, .explain-i, #app-version'
+
+  document.querySelectorAll<HTMLElement>('body *').forEach((element) => {
+    if (element.closest(chromeSelector)) return
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH'].includes(element.tagName)) {
+      return
+    }
+    if (!hasDirectText(element)) return
+    if (element.getClientRects().length === 0) return
+    const size = parseFloat(getComputedStyle(element).fontSize)
+    if (!Number.isFinite(size) || size <= 0) return
+    candidates.push({ element, size: Math.round(size * 10) / 10 })
+  })
+
+  if (candidates.length === 0) return
+  const tiers = Array.from(
+    new Set(candidates.map((candidate) => candidate.size)),
+  ).sort((a, b) => b - a)
+  if (tiers.length < 4) return
+  const third = tiers[2]
+
+  candidates.forEach(({ element, size }) => {
+    if (size >= third - 0.05) return
+    const delta = third - size >= 3 ? 2 : 1
+    const target = Math.min(third, Math.round((size + delta) * 10) / 10)
+    if (target <= size + 0.05) return
+    smallTextOriginal.set(element, {
+      value: element.style.getPropertyValue('font-size'),
+      priority: element.style.getPropertyPriority('font-size'),
+    })
+    element.dataset.explainSmall = 'on'
+    element.style.setProperty('font-size', `${target}px`, 'important')
+  })
+}
+
 function scan() {
   if (!document.body) return
 
@@ -431,6 +506,7 @@ function scan() {
   }
 
   if (groups.size === 0) hideTooltip()
+  applySmallTextScale()
 }
 
 let initialized = false
@@ -464,6 +540,7 @@ export function initExplanationDecorator() {
   })
   window.addEventListener('scroll', hideTooltip, true)
   window.addEventListener('resize', hideTooltip)
+  window.addEventListener('resize', scheduleScan)
 
   const observer = new MutationObserver(scheduleScan)
   observer.observe(document.body, {
