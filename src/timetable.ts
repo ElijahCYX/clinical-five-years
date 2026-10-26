@@ -177,7 +177,7 @@ export function buildTimetable(state: GameState): TimetableData {
   for (const invite of state.soloInvites ?? []) {
     if (invite.weekKey !== currentWeekKey) continue
     const cell = cells[invite.slot]
-    if (cell && !cell.course && !cell.activity) {
+    if (cell && !cell.activity) {
       cell.soloInvite = invite
     }
   }

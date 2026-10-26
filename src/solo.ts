@@ -110,7 +110,10 @@ export function findSoloSlot(
   const current = Math.max(0, Math.min(20, state.weekSlot))
   const isFree = (slot: number) => {
     const cell = timetable.cells[slot]
-    return Boolean(cell) && !cell.course && !cell.activity && !cell.soloInvite
+    if (!cell || cell.activity || cell.soloInvite) return false
+    // A successfully skipped class leaves the current slot free for actions.
+    if (cell.course) return slot === current && state.weekSlotSkipped
+    return true
   }
   const unrestricted = !event.timing
 

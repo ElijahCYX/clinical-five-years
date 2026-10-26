@@ -678,11 +678,13 @@ export function WeekScreen({
                       className={`timetable-cell timetable-slot ${
                         activity
                           ? 'has-course kind-club'
-                          : soloInvite
-                            ? 'has-course kind-solo'
-                            : course
-                              ? `has-course kind-${kindOf(course.electiveType)}`
-                              : 'is-empty'
+                          : course && soloInvite
+                            ? `has-course kind-${kindOf(course.electiveType)} has-solo-invite`
+                            : soloInvite
+                              ? 'has-course kind-solo'
+                              : course
+                                ? `has-course kind-${kindOf(course.electiveType)}`
+                                : 'is-empty'
                       }`}
                       key={`${day}-${slot}`}
                     >
@@ -690,6 +692,15 @@ export function WeekScreen({
                         <>
                           <strong>{activity.name}</strong>
                           <small>组织活动 · 强制占格</small>
+                        </>
+                      ) : course && soloInvite ? (
+                        <>
+                          <strong>{course.name}</strong>
+                          <small>{course.credits} 学分</small>
+                          <strong className="timetable-solo-event">
+                            翘课{soloInvite.eventName}
+                          </strong>
+                          <small>{soloInvite.partnerName} 单独邀约</small>
                         </>
                       ) : soloInvite ? (
                         <>
