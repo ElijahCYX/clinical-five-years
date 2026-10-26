@@ -418,6 +418,12 @@ export function WeekScreen({
   const hasPeCourse = Boolean(state.pendingPeCourseId)
   const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
+  const pastPalette =
+    weekPhaseClass === 'morning'
+      ? { hue: 40, sat: 50, start: 22, end: 42 }
+      : weekPhaseClass === 'afternoon'
+        ? { hue: 154, sat: 26, start: 18, end: 37 }
+        : { hue: 257, sat: 25, start: 22, end: 42 }
   const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
 
   useLayoutEffect(() => {
@@ -1300,10 +1306,7 @@ export function WeekScreen({
                 </div>
 
                 <div className="week-controls-row">
-                  <div
-                    className={`week-slot-strip palette-${weekPhaseClass}`}
-                    aria-label="本周时间段进度"
-                  >
+                  <div className="week-slot-strip" aria-label="本周时间段进度">
                     {TIMETABLE_DAYS.map((day, dayIndex) => (
                       <div className="week-slot-day" key={day}>
                         {TIMETABLE_SLOTS.map((phase, slotIndex) => {
@@ -1311,6 +1314,15 @@ export function WeekScreen({
                           const cell = weekTimetable.cells[index]
                           const isPast = index < state.weekSlot
                           const isCurrent = index === state.weekSlot
+                          const pastFill = isPast
+                            ? {
+                                background: `hsl(${pastPalette.hue} ${pastPalette.sat}% ${
+                                  pastPalette.start +
+                                  (pastPalette.end - pastPalette.start) *
+                                    (index / 20)
+                                }%)`,
+                              }
+                            : undefined
                           return (
                             <div
                               key={`${day}-${phase}`}
@@ -1321,6 +1333,7 @@ export function WeekScreen({
                                     ? 'is-current'
                                     : 'is-future'
                               } ${cell.course ? 'has-course' : ''}`}
+                              style={pastFill}
                               title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
                             >
                               <span>{index + 1}</span>

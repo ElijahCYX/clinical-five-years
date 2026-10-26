@@ -14966,3 +14966,24 @@ body.day-transitioning .skip-rules-overlay {
   --slot-wash: rgba(150, 135, 186, 0.2);
   --slot-border: rgba(107, 92, 145, 0.5);
 }
+
+/* Restore the original state treatment: solid past cells interpolate from
+   dark to light across the row; future cells stay pale paper. */
+.week-slot-square.is-past {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #f7f1e3;
+}
+
+.week-slot-square.is-future {
+  border-style: dashed;
+  border-color: var(--line);
+  background: rgba(255, 252, 245, 0.34);
+  color: var(--muted);
+}
+
+.game-center .week-slot-square.is-current {
+  border-color: var(--time-accent, var(--green));
+  background: var(--time-accent, var(--green));
+  color: #fffdf6;
+}
