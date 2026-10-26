@@ -3,6 +3,7 @@ import { cetHint, type WeekSimulation } from '../game'
 import type { GameState } from '../types'
 import { Dot, StatBar, StressHearts } from '../ui'
 import {
+  dailyLivingCostFor,
   energyTone,
   stressTone,
 } from '../game'
@@ -111,7 +112,7 @@ export function PlayerRail({
               )}
             </strong>
           </div>
-          <small>每周固定开销 300</small>
+          <small>每日固定开销 ¥{dailyLivingCostFor(state.player?.background)}</small>
         </div>
         <div className="mini-stats">
           <div>

@@ -14914,3 +14914,33 @@ body.day-transitioning .skip-rules-overlay {
   background: linear-gradient(135deg, var(--slot-past-from), var(--slot-past-to));
   color: #fff9ed;
 }
+
+/* Stronger but still calm 6s breath behind the campus broadcast. */
+.campus-broadcast::before {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(188, 222, 176, 0.62), transparent 55%),
+    radial-gradient(circle at 82% 74%, rgba(255, 247, 222, 0.5), transparent 52%),
+    linear-gradient(
+      120deg,
+      rgba(180, 218, 171, 0.42),
+      rgba(255, 249, 233, 0.18) 46%,
+      rgba(163, 204, 158, 0.38)
+    );
+  background-size: 165% 165%;
+  opacity: 0.7;
+  transform-origin: center;
+  animation: campus-broadcast-breathe-strong 6s ease-in-out infinite;
+}
+
+@keyframes campus-broadcast-breathe-strong {
+  0%, 100% {
+    background-position: 4% 50%;
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    background-position: 96% 50%;
+    opacity: 1;
+    transform: scale(1.035);
+  }
+}

@@ -32,7 +32,16 @@ import type {
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
-export const WEEKLY_FIXED_COST = 300
+export const WEEKLY_DAYS = 7
+
+/** 每天固定生活费消耗：平民 / 小康 / 中产 / 名门。 */
+export function dailyLivingCostFor(background?: string | null): number {
+  return (
+    { ordinary: 50, comfortable: 60, middle: 70, affluent: 80 }[
+      background ?? 'ordinary'
+    ] ?? 50
+  )
+}
 
 /** 每周英语行动的进度收益：记忆力 2→+4，10→+6。 */
 export function englishGainForMemory(memory: number): number {
@@ -920,7 +929,6 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   }
 
   energy = clamp(energy + 15, 0, 100)
-  money = Math.max(0, money - WEEKLY_FIXED_COST)
 
   const grown = applyGrowthCarry({
     attrs,

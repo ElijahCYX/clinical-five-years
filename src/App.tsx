@@ -51,12 +51,12 @@ import {
   estimateScore,
   prepGainMultiplier,
   stressReliefForScore,
+  dailyLivingCostFor,
   planDailyCost,
   sleepRecoveryFor,
   planPassive,
   simulateWeek,
   signed,
-  WEEKLY_FIXED_COST,
   applyOpeningTalent,
   applyWeeklyOpeningTalent,
   applyScoreRescue,
@@ -1823,6 +1823,10 @@ function RealApp() {
           ? planDailyCost(state.plan, finishedDay)
           : { energy: 0, stress: 0 }
       const stressAfterDay = clamp(state.stress + daily.stress, 0, 100)
+      const livingCost =
+        state.weekSlot % 3 === 2
+          ? dailyLivingCostFor(state.player?.background)
+          : 0
       const dayKey = `${state.seasonIndex}-${state.week}-${finishedDay}`
       const coffeeBoosted =
         state.weekSlot % 3 === 2 && state.eveningCoffeeDayKey === dayKey
@@ -1845,6 +1849,7 @@ function RealApp() {
         selected: state.selected.filter((id) => id !== 'club'),
         energy: clamp(state.energy + daily.energy + sleep.gain, 0, 100),
         stress: stressAfterDay,
+        money: Math.max(0, state.money - livingCost),
         eveningCoffeeDayKey:
           state.weekSlot % 3 === 2 ? null : state.eveningCoffeeDayKey,
       }
@@ -3269,6 +3274,10 @@ function RealApp() {
         ? planDailyCost(base.plan, finishedDay)
         : { energy: 0, stress: 0 }
     const stressAfterDay = clamp(base.stress + daily.stress, 0, 100)
+    const livingCost =
+      base.weekSlot % 3 === 2
+        ? dailyLivingCostFor(base.player?.background)
+        : 0
     const dayKey = `${base.seasonIndex}-${base.week}-${finishedDay}`
     const coffeeBoosted =
       base.weekSlot % 3 === 2 && base.eveningCoffeeDayKey === dayKey
@@ -3290,6 +3299,7 @@ function RealApp() {
         weekSlotActions: base.weekSlotActions,
         energy: clamp(base.energy + daily.energy + sleep.gain, 0, 100),
         stress: stressAfterDay,
+        money: Math.max(0, base.money - livingCost),
         eveningCoffeeDayKey:
           base.weekSlot % 3 === 2 ? null : base.eveningCoffeeDayKey,
       },
@@ -3603,7 +3613,11 @@ function RealApp() {
       100,
     )
     let stress = clamp(game.stress + effect.stress, 0, 100)
-    const money = Math.max(0, game.money - WEEKLY_FIXED_COST)
+    const money = Math.max(
+      0,
+      game.money -
+        dailyLivingCostFor(game.player?.background) * 7,
+    )
     const prep = { ...game.prep }
     const rewardedCourses = [...game.stressRewardedCourses]
 
@@ -4529,7 +4543,7 @@ function RealApp() {
 
     energy = clamp(energy + 15, 0, 100)
     stress = clamp(stress, 0, 100)
-    // 假期在家，不扣学期内的每周固定开销
+    // 假期在家，不扣本学期每日固定生活费
 
     const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth, english, englishGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })
