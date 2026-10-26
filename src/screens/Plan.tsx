@@ -3,8 +3,7 @@ import { HABITS, PLANS, SCHOOL_NAME } from '../data'
 import type { Course, GameState, HabitId, PlanId, Player } from '../types'
 import { ElectiveSelectionScreen } from './ElectiveSelection'
 import { courseDifficulty } from '../game'
-import { patRemainingThisWeek, unseenRelationCount } from '../social'
-import { Eyebrow, Footer, InterfaceNav, SectionLabel, TopBar } from '../ui'
+import { Eyebrow, Footer, SectionLabel, TopBar } from '../ui'
 
 interface PlanScreenProps {
   player: Player
@@ -69,23 +68,6 @@ export function PlanScreen({
             </button>
           }
         />
-        <InterfaceNav
-          active="main"
-          onMain={() => undefined}
-          onWho={onWho ?? (() => undefined)}
-          onTA={onTA ?? (() => undefined)}
-          badges={
-            state
-              ? {
-                  ta:
-                    unseenRelationCount(state) > 0
-                      ? '新'
-                      : patRemainingThisWeek(state) || undefined,
-                }
-              : undefined
-          }
-        />
-
         <header className="plan-head">
           <div>
             <Eyebrow>SEMESTER PLAN / 01</Eyebrow>
