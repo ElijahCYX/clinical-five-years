@@ -13897,3 +13897,44 @@ body.dinner-open {
     font-size: 42px;
   }
 }
+
+/* Mobile: the week page itself must not pan horizontally.
+   Fit the 21-slot strip into the page so a horizontal swipe always belongs to
+   the Status / Week / Notice pager, not to an inner strip. */
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-left,
+  .game-screen .game-center,
+  .game-screen .game-right {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  .game-screen .week-slot-strip {
+    display: flex;
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .game-screen .week-slot-day {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 1px;
+    margin-left: 0;
+  }
+
+  .game-screen .week-slot-square {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .game-screen .week-slot-square span {
+    font-size: 6.5px;
+  }
+
+  .game-screen .week-slot-square small {
+    display: none;
+  }
+}
