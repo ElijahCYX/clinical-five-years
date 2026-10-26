@@ -1077,17 +1077,13 @@ export function graduationReasons(state: GameState): string[] {
 
 export const KAOYAN_PASS = 300
 
-export function energyCostMultiplier(energy: number): number {
-  if (energy < 20) return 1.4
-  if (energy < 40) return 1.2
-  if (energy < 60) return 1.1
+export function energyCostMultiplier(_energy: number): number {
   return 1
 }
 
-/** 负精力消耗按当前状态放大；恢复类行动不受影响。 */
-export function effectiveEnergyCost(raw: number, currentEnergy: number): number {
-  if (raw >= 0) return raw
-  return -Math.ceil(Math.abs(raw) * energyCostMultiplier(currentEnergy))
+/** 保留统一入口；低精力不再额外放大精力消耗。 */
+export function effectiveEnergyCost(raw: number, _currentEnergy: number): number {
+  return raw
 }
 
 /** 泡图书馆的成本随同时在修课程数增加，并受精力/抗压面板影响。 */

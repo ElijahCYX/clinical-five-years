@@ -181,7 +181,7 @@ export function VacationScreen({
                 sub={habitActive ? '习惯生效中' : '压力过高，习惯已失效'}
               />
               <StressHearts value={state.stressHearts} />
-              {(state.highPressureDebuff || state.stress > 70 || state.energy < 60) && (
+              {(state.highPressureDebuff || state.stress > 70) && (
                 <div className="condition-notes">
                   {state.highPressureDebuff && (
                     <p className="condition-note is-danger">
@@ -190,12 +190,6 @@ export function VacationScreen({
                   )}
                   {!state.highPressureDebuff && state.stress > 70 && (
                     <p className="condition-note is-warn">压力偏高：考试准备度收益 -10%</p>
-                  )}
-                  {state.energy < 60 && (
-                    <p className="condition-note is-warn">
-                      低精力：所有行动精力消耗 +
-                      {state.energy < 20 ? 40 : state.energy < 40 ? 20 : 10}%
-                    </p>
                   )}
                 </div>
               )}
