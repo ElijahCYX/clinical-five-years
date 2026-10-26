@@ -1450,7 +1450,7 @@ export function WeekScreen({
                     disabled={selfCareUsedToday || state.money < selfCareCost}
                     onClick={onDailySelfCare}
                   >
-                    <strong>高碳日，爱你老己！</strong>
+                    <strong>高碳日！爱你老己</strong>
                     <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长值 -5%</small>
                     <em>{selfCareUsedToday ? '今日已做' : '今日可执行'}</em>
                   </button>

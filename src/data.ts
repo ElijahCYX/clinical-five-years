@@ -341,7 +341,7 @@ export const HABITS: HabitDef[] = [
     name: '记账',
     en: 'LEDGER',
     desc: '把每一笔开销记下来。',
-    effect: '喝咖啡、「高碳日，爱你老己！」的生活费花费 -50%',
+    effect: '喝咖啡、「高碳日！爱你老己」的生活费花费 -50%',
   },
   {
     id: 'familyCall',
@@ -451,7 +451,7 @@ export const ACTIONS: ActionDef[] = [
   {
     id: 'selfCare',
     no: '05B',
-    name: '高碳日，爱你老己！',
+    name: '高碳日！爱你老己',
     en: 'TREAT YOURSELF',
     category: '生活',
     flavor: '买一杯想喝的，吃一顿想吃的。先把今天的自己哄好。',
