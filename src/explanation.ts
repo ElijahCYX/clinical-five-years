@@ -427,14 +427,21 @@ function applySmallTextScale() {
   if (candidates.length === 0) return
   const tiers = Array.from(
     new Set(candidates.map((candidate) => candidate.size)),
-  ).sort((a, b) => b - a)
-  if (tiers.length < 4) return
-  const third = tiers[2]
+  ).sort((a, b) => a - b)
+  if (tiers.length === 0) return
+
+  // Only the three globally smallest font-size tiers grow. The smallest gets
+  // the largest bump so the bottom of the type scale stays readable.
+  const bottomTiers = tiers.slice(0, 3)
+  const deltas = new Map<number, number>()
+  bottomTiers.forEach((size, index) => {
+    deltas.set(size, index === 0 ? 2 : index === 1 ? 1.5 : 1)
+  })
 
   candidates.forEach(({ element, size }) => {
-    if (size >= third - 0.05) return
-    const delta = third - size >= 3 ? 2 : 1
-    const target = Math.min(third, Math.round((size + delta) * 10) / 10)
+    const delta = deltas.get(size)
+    if (!delta) return
+    const target = Math.round((size + delta) * 10) / 10
     if (target <= size + 0.05) return
     smallTextOriginal.set(element, {
       value: element.style.getPropertyValue('font-size'),
