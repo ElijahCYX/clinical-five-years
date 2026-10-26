@@ -14819,3 +14819,13 @@ body.day-transitioning .skip-rules-overlay {
   color: var(--gold);
   font-weight: 600;
 }
+
+/* Result screen: allow the report and its action buttons to be reached by scrolling. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .result-screen .shell {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+  }
+}
