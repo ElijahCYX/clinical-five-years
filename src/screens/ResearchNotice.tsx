@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 export interface ResearchNotice {
-  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club' | 'pe'
+  kind: 'lab' | 'published' | 'idea' | 'warning' | 'stress' | 'club' | 'pe' | 'sleep'
   title: string
   text: string
   journal?: string
@@ -54,6 +54,8 @@ function ResearchNoticeModal({
                     ? 'NEW HYPOTHESIS'
                     : notice.kind === 'stress'
                       ? 'HEART WARNING'
+                      : notice.kind === 'sleep'
+                        ? 'SLEEP / 睡眠'
                       : notice.kind === 'club'
                         ? 'CLUB NOTICE'
                         : notice.kind === 'pe'
@@ -82,6 +84,8 @@ function ResearchNoticeModal({
               ? '体测记录已归档。'
               : notice.kind === 'stress'
                 ? '这是一次状态提醒，与科研进度无关。'
+                : notice.kind === 'sleep'
+                  ? '睡眠状态已记录，这会影响下一次清晨的恢复。'
                 : notice.kind === 'club'
                   ? '组织事务记录已归档。'
                   : '这是科研系统的重要节点。'}
@@ -124,16 +128,24 @@ function ResearchNoticeModal({
 
 export function ResearchNoticeProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<ResearchNotice | null>(null)
-  const showResearchNotice = (next: ResearchNotice) => setNotice(next)
+  const queueRef = useRef<ResearchNotice[]>([])
+  const showResearchNotice = (next: ResearchNotice) => {
+    setNotice((current) => {
+      if (current) {
+        queueRef.current.push(next)
+        return current
+      }
+      return next
+    })
+  }
+  const closeNotice = () => {
+    const next = queueRef.current.shift() ?? null
+    setNotice(next)
+  }
   return (
     <ResearchNoticeContext.Provider value={{ showResearchNotice }}>
       {children}
-      {notice && (
-        <ResearchNoticeModal
-          notice={notice}
-          onClose={() => setNotice(null)}
-        />
-      )}
+      {notice && <ResearchNoticeModal notice={notice} onClose={closeNotice} />}
     </ResearchNoticeContext.Provider>
   )
 }

@@ -63,6 +63,25 @@ export function courseK(course: Course, attrs: Record<AttrKey, number>): number 
   return clamp(k, 0.6, 1.4)
 }
 
+
+/** 早晨睡眠恢复：基础 35–45；高压按 30/45/60% 折减。 */
+export function sleepRecoveryFor(stress: number): {
+  base: number
+  tier: 0 | 1 | 2 | 3
+  reduction: number
+  gain: number
+} {
+  const base = 35 + Math.floor(Math.random() * 11)
+  const tier = stress >= 70 ? 3 : stress >= 60 ? 2 : stress >= 50 ? 1 : 0
+  const reduction = tier === 3 ? 0.6 : tier === 2 ? 0.45 : tier === 1 ? 0.3 : 0
+  return {
+    base,
+    tier,
+    reduction,
+    gain: Math.max(1, Math.round(base * (1 - reduction))),
+  }
+}
+
 export function planPassive(plan: PlanId): number {
   return { A: 5, B: 2, C: 0 }[plan]
 }

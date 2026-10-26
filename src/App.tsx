@@ -52,6 +52,7 @@ import {
   prepGainMultiplier,
   stressReliefForScore,
   planDailyCost,
+  sleepRecoveryFor,
   planPassive,
   simulateWeek,
   signed,
@@ -64,6 +65,7 @@ import {
   examReviewTalentMultiplier,
 } from './game'
 import { applyGrowthCarry } from './growth'
+import { pickSleepText } from './sleepTexts'
 import type {
   AttrKey,
   DemoName,
@@ -659,6 +661,22 @@ function absoluteWeek(state: GameState): number {
 
 function RealApp() {
   const { showResearchNotice } = useResearchNotice()
+  const announceSleep = (result: ReturnType<typeof sleepRecoveryFor>, stress: number) => {
+    if (result.tier === 0) return
+    const reduction = Math.round(result.reduction * 100)
+    showResearchNotice({
+      kind: 'sleep',
+      title:
+        result.tier === 3
+          ? '几乎没合眼'
+          : result.tier === 2
+            ? '一夜没睡好'
+            : '睡得不踏实',
+      text: pickSleepText(result.tier as 1 | 2 | 3),
+      ruleText: `压力 ${stress} · 睡眠基础恢复 +${result.base} · 高压折减 -${reduction}% · 实际精力 +${result.gain}`,
+      ruleLabel: '睡眠恢复',
+    })
+  }
   const { showEncounter } = useEncounter()
   const { showTravelEvents } = useTravelEvents()
   const [view, setView] = useState<View>('title')
@@ -1799,6 +1817,11 @@ function RealApp() {
         state.weekSlot % 3 === 2 && state.plan
           ? planDailyCost(state.plan, finishedDay)
           : { energy: 0, stress: 0 }
+      const stressAfterDay = clamp(state.stress + daily.stress, 0, 100)
+      const sleep =
+        state.weekSlot % 3 === 2
+          ? sleepRecoveryFor(stressAfterDay)
+          : { base: 0, tier: 0 as const, reduction: 0, gain: 0 }
       const advanced: GameState = {
         ...state,
         screen: 'week',
@@ -1806,22 +1829,18 @@ function RealApp() {
         weekSlotSkipped: false,
         weekSlotActions: [...state.weekSlotActions, 'clubApplication'],
         selected: state.selected.filter((id) => id !== 'club'),
-        energy: clamp(
-          state.energy +
-            daily.energy +
-            (nextSlot < 21 && nextSlot % 3 === 0 ? 5 : 0),
-          0,
-          100,
-        ),
-        stress: clamp(state.stress + daily.stress, 0, 100),
+        energy: clamp(state.energy + daily.energy + sleep.gain, 0, 100),
+        stress: stressAfterDay,
       }
       if (nextSlot >= 21) {
         endWeek(advanced)
+        announceSleep(sleep, advanced.stress)
         return
       }
       setGame(advanced)
       persist(advanced)
       setView('week')
+      announceSleep(sleep, advanced.stress)
     }
     const success = Math.random() < clubApplicationChance(game, org)
     if (success) {
@@ -1873,14 +1892,20 @@ function RealApp() {
       weekSlotActions: [],
     }
     const finalNext = applyWeeklyOpeningTalent(next)
-    if (!finalNext.clubInitialRecruitmentDone) {
-      setGame({ ...finalNext, screen: 'clubRecruitment' })
-      persist({ ...finalNext, screen: 'clubRecruitment' })
+    const initialSleep = sleepRecoveryFor(finalNext.stress)
+    const withInitialSleep = {
+      ...finalNext,
+      energy: clamp(finalNext.energy + initialSleep.gain, 0, 100),
+    }
+    if (!withInitialSleep.clubInitialRecruitmentDone) {
+      setGame({ ...withInitialSleep, screen: 'clubRecruitment' })
+      persist({ ...withInitialSleep, screen: 'clubRecruitment' })
       setClubRecruitmentMode('initial')
       setView('clubRecruitment')
       return
     }
-    commit({ ...finalNext, energy: clamp(finalNext.energy + 5, 0, 100) }, 'week')
+    commit(withInitialSleep, 'week')
+    announceSleep(initialSleep, withInitialSleep.stress)
   }
 
   const toggleSelected = (prev: GameState, id: string, repeatable: boolean): GameState => {
@@ -3044,7 +3069,7 @@ function RealApp() {
       clubInvites: null,
       player: { ...player, attrs: grown.attrs },
       week: shouldPrepare ? 4 : base.week + 1,
-      energy: sim.energy + (!shouldPrepare ? 5 : 0),
+      energy: sim.energy,
       stress: sim.stress,
       money: sim.money,
       english: grown.english,
@@ -3218,42 +3243,49 @@ function RealApp() {
     }
   }
 
-  const advanceWeekSlot = (base: GameState): GameState => {
+  const advanceWeekSlot = (
+    base: GameState,
+  ): { state: GameState; sleep: ReturnType<typeof sleepRecoveryFor> } => {
     const nextSlot = base.weekSlot + 1
     const finishedDay = Math.floor(base.weekSlot / 3)
     const daily =
       base.weekSlot % 3 === 2 && base.plan
         ? planDailyCost(base.plan, finishedDay)
         : { energy: 0, stress: 0 }
+    const stressAfterDay = clamp(base.stress + daily.stress, 0, 100)
+    const sleep =
+      base.weekSlot % 3 === 2
+        ? sleepRecoveryFor(stressAfterDay)
+        : { base: 0, tier: 0 as const, reduction: 0, gain: 0 }
     return {
-      ...base,
-      weekSlot: nextSlot,
-      weekSlotSkipped: false,
-      weekSlotActions: base.weekSlotActions,
-      energy: clamp(
-        base.energy +
-          daily.energy +
-          (nextSlot < 21 && nextSlot % 3 === 0 ? 5 : 0),
-        0,
-        100,
-      ),
-      stress: clamp(base.stress + daily.stress, 0, 100),
+      state: {
+        ...base,
+        weekSlot: nextSlot,
+        weekSlotSkipped: false,
+        weekSlotActions: base.weekSlotActions,
+        energy: clamp(base.energy + daily.energy + sleep.gain, 0, 100),
+        stress: stressAfterDay,
+      },
+      sleep,
     }
   }
 
   const finishWeekSlot = (base: GameState, actionId?: string) => {
     const normalized = carryGrowthState(base)
-    const advanced = advanceWeekSlot({
+    const advancedResult = advanceWeekSlot({
       ...normalized,
       weekSlotActions: actionId
         ? [...normalized.weekSlotActions, actionId]
         : normalized.weekSlotActions,
     })
+    const { state: advanced, sleep } = advancedResult
     if (advanced.weekSlot >= 21) {
       endWeek(advanced)
+      announceSleep(sleep, advanced.stress)
       return
     }
     commit(advanced, 'week')
+    announceSleep(sleep, advanced.stress)
   }
 
   const attendCurrentCourse = () => {
