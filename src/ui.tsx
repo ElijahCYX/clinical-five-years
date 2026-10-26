@@ -57,9 +57,20 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
       </button>
       {!minimal && (
         <div className="topbar-center">
-          <span className="topbar-title">{GAME_TITLE}</span>
-          <span className="topbar-dot">·</span>
-          <span className="topbar-tag">五年，二十一季，慢慢成为医生</span>
+          <div className="topbar-line">
+            <span className="topbar-title">{GAME_TITLE}</span>
+            <span className="topbar-dot">·</span>
+            <span className="topbar-tag">五年，二十一季，慢慢成为医生</span>
+          </div>
+          <p className="topbar-credits">
+            <span>作者</span>
+            <strong>Dingihyon</strong>
+            <i>・</i>
+            <strong>小狗阿肥</strong>
+          </p>
+          <p className="topbar-thanks">
+            感谢所有测试本游戏的朋友。无论你是否是医学生，感谢你愿意花时间了解医学生的生活。
+          </p>
         </div>
       )}
       <div className="topbar-right">
