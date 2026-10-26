@@ -13,7 +13,6 @@ import {
   drawSoloOptions,
   findSoloSlot,
   soloAcceptanceText,
-  soloContactBlocked,
   soloContacts,
   soloEventTimeHint,
   soloSeasonKind,
@@ -62,10 +61,12 @@ export function SoloInviteModal({
   const [typing, setTyping] = useState(false)
   const [options, setOptions] = useState<SoloEventDef[]>([])
   const [refreshed, setRefreshed] = useState(false)
-  const [phase, setPhase] = useState<'idle' | 'hello' | 'options' | 'inviting' | 'result'>('idle')
+  const [phase, setPhase] = useState<'idle' | 'hello' | 'options' | 'inviting' | 'result' | 'history'>('idle')
   const [result, setResult] = useState<SoloResult | null>(null)
   const [frozenChat, setFrozenChat] = useState(false)
   const [historyDivider, setHistoryDivider] = useState(false)
+  const [historyMode, setHistoryMode] = useState(false)
+  const [historyRecords, setHistoryRecords] = useState<SoloChatRecord[]>([])
   const [historyLeaving, setHistoryLeaving] = useState(false)
   const messageId = useRef(0)
   const timers = useRef<number[]>([])
@@ -90,13 +91,18 @@ export function SoloInviteModal({
   }, [])
 
   useEffect(() => {
-    if (chatRef.current) {
+    if (!chatRef.current) return
+    if (historyMode) {
+      chatRef.current.scrollTop = 0
+    } else {
       chatRef.current.scrollTop = chatRef.current.scrollHeight
     }
-  }, [messages, typing, options, result])
+  }, [messages, typing, options, result, historyMode, historyRecords])
 
   const startHelloFlow = (relation: Relationship, withDivider: boolean) => {
     setHistoryDivider(withDivider)
+    setHistoryMode(false)
+    setHistoryRecords([])
     setHistoryLeaving(false)
     setFrozenChat(false)
     setMessages([])
@@ -125,7 +131,6 @@ export function SoloInviteModal({
   }
 
   const selectContact = (relation: Relationship) => {
-    if (soloContactBlocked(state, relation)) return
     clearTimers()
     setSelected(relation)
     setMessages([])
@@ -135,7 +140,26 @@ export function SoloInviteModal({
     setTyping(false)
     setFrozenChat(false)
     setHistoryDivider(false)
+    setHistoryMode(false)
+    setHistoryRecords([])
     setHistoryLeaving(false)
+
+    const weekRecords = (state.soloChatRecords ?? [])
+      .filter(
+        (record) =>
+          record.weekKey === soloWeekKey(state) &&
+          record.relationshipId === relation.id,
+      )
+      .sort((a, b) => a.attemptSlot - b.attemptSlot)
+    const maxed = soloSuccessCount(state, relation.id) >= SOLO_MAX_WEEKLY_SUCCESS
+
+    if (maxed) {
+      setFrozenChat(true)
+      setHistoryMode(true)
+      setHistoryRecords(weekRecords)
+      setPhase('history')
+      return
+    }
 
     const frozenRecord = (state.soloChatRecords ?? []).find(
       (record) =>
@@ -328,8 +352,9 @@ export function SoloInviteModal({
   }
 
   const selectedBond = selected ? bondOf(selected) : null
-  const selectedBlocked =
-    selected !== null && soloContactBlocked(state, selected)
+  const selectedMaxed =
+    selected !== null &&
+    soloSuccessCount(state, selected.id) >= SOLO_MAX_WEEKLY_SUCCESS
 
   return (
     <div className="solo-overlay" role="dialog" aria-modal="true">
@@ -356,7 +381,6 @@ export function SoloInviteModal({
                 <p className="solo-empty">还没有恋人、兄弟或闺蜜羁绊。</p>
               )}
               {contacts.map((relation) => {
-                const blocked = soloContactBlocked(state, relation)
                 const count = soloSuccessCount(state, relation.id)
                 const frozenRecord = (state.soloChatRecords ?? []).find(
                   (record) =>
@@ -368,10 +392,7 @@ export function SoloInviteModal({
                   <button
                     key={relation.id}
                     type="button"
-                    className={`solo-contact ${selected?.id === relation.id ? 'is-active' : ''} ${
-                      blocked ? 'is-blocked' : ''
-                    }`}
-                    disabled={blocked}
+                    className={`solo-contact ${selected?.id === relation.id ? 'is-active' : ''}`}
                     onClick={() => selectContact(relation)}
                   >
                     <span className="solo-avatar">{relation.name.slice(0, 1)}</span>
@@ -381,7 +402,7 @@ export function SoloInviteModal({
                         {BOND_LABEL[bondOf(relation)]} · 亲密度 {relation.intimacy}
                       </small>
                       <em>
-                        {blocked
+                        {count >= SOLO_MAX_WEEKLY_SUCCESS
                           ? '本周已约满'
                           : frozenRecord
                             ? frozenRecord.outcome === 'accepted'
@@ -415,40 +436,74 @@ export function SoloInviteModal({
                     </small>
                   </div>
                   <span className="solo-chat-status">
-                    {selectedBlocked ? '暂不可邀请' : '在线'}
+                    {historyMode ? '本周记录' : selectedMaxed ? '本周已约满' : '在线'}
                   </span>
                 </header>
 
                 <div
-                  className={`solo-messages ${frozenChat ? 'is-frozen' : ''} ${
-                    historyLeaving ? 'is-leaving' : ''
+                  className={`solo-messages ${
+                    frozenChat || historyMode ? 'is-frozen' : ''
+                  } ${historyLeaving ? 'is-leaving' : ''} ${
+                    historyMode ? 'is-week-history' : ''
                   }`}
                 >
-                  {historyDivider && (
-                    <div className="solo-history-divider">
-                      <span />
-                      <em>以下为新消息</em>
-                      <span />
-                    </div>
-                  )}
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`solo-message is-${message.from}`}
-                    >
-                      {message.from !== 'system' && (
-                        <span className="solo-message-avatar">
-                          {message.from === 'me' ? '我' : selected.name.slice(0, 1)}
-                        </span>
+                  {historyMode ? (
+                    <>
+                      {historyRecords.map((record) => (
+                        <div className="solo-history-segment" key={record.id}>
+                          <div className="solo-history-time">
+                            {soloSlotLabel(record.attemptSlot)}
+                          </div>
+                          {record.chat.map((line, index) => (
+                            <div
+                              className={`solo-message is-${line.from}`}
+                              key={`${record.id}-${index}`}
+                            >
+                              {line.from !== 'system' && (
+                                <span className="solo-message-avatar">
+                                  {line.from === 'me' ? '我' : selected.name.slice(0, 1)}
+                                </span>
+                              )}
+                              <p>{line.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                      <div className="solo-history-end">
+                        <span />
+                        <em>以上为旧消息</em>
+                        <span />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {historyDivider && (
+                        <div className="solo-history-divider">
+                          <span />
+                          <em>以下为新消息</em>
+                          <span />
+                        </div>
                       )}
-                      <p>{message.text}</p>
-                    </div>
-                  ))}
-                  {typing && (
-                    <div className="solo-message is-them">
-                      <span className="solo-message-avatar">{selected.name.slice(0, 1)}</span>
-                      <p className="solo-typing"><i /><i /><i /></p>
-                    </div>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`solo-message is-${message.from}`}
+                        >
+                          {message.from !== 'system' && (
+                            <span className="solo-message-avatar">
+                              {message.from === 'me' ? '我' : selected.name.slice(0, 1)}
+                            </span>
+                          )}
+                          <p>{message.text}</p>
+                        </div>
+                      ))}
+                      {typing && (
+                        <div className="solo-message is-them">
+                          <span className="solo-message-avatar">{selected.name.slice(0, 1)}</span>
+                          <p className="solo-typing"><i /><i /><i /></p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
