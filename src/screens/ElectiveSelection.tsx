@@ -8,9 +8,8 @@ import {
   pePairKey,
 } from '../data'
 import { courseDifficulty, peCoursePredictedRange } from '../game'
-import { patRemainingThisWeek, unseenRelationCount } from '../social'
 import type { Course, ElectiveType, GameState } from '../types'
-import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
+import { Eyebrow, Pill, SectionLabel, TopBar } from '../ui'
 
 interface ElectiveSelectionProps {
   state: GameState
@@ -152,19 +151,6 @@ export function ElectiveSelectionScreen({
             </button>
           }
         />
-        <InterfaceNav
-          active="main"
-          onMain={() => undefined}
-          onWho={onWho ?? (() => undefined)}
-          onTA={onTA ?? (() => undefined)}
-          badges={{
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemainingThisWeek(state) || undefined,
-          }}
-        />
-
         <header className="elective-head">
           <Eyebrow>ELECTIVE COURSES / BEFORE SEMESTER PLAN</Eyebrow>
           <h1 className="page-title">选修课程</h1>
