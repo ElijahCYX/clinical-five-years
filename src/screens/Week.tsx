@@ -12,12 +12,14 @@ import {
   libraryCosts,
   englishGainForMemory,
   estimateRange,
+  courseDifficulty,
   simulateWeek,
 } from '../game'
 import type { ActionDef, DinnerInviteResult, GameState } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
+import { SkipClassModal } from './SkipClass'
 import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
@@ -73,6 +75,7 @@ interface WeekScreenProps {
   onEndWeek: () => void
   onAttendCourse?: () => void
   onSkipCourse?: () => void
+  onSkipResolved?: (success: boolean) => void
   onSlotAction?: (actionId: string) => void
   onSleepIn?: () => void
   onSlotLibraryFocus?: (focus: string) => void
@@ -105,6 +108,7 @@ export function WeekScreen({
   onEndWeek,
   onAttendCourse,
   onSkipCourse,
+  onSkipResolved,
   onSlotAction,
   onSleepIn,
   onSlotLibraryFocus,
@@ -135,6 +139,7 @@ export function WeekScreen({
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const [clubPickerOpen, setClubPickerOpen] = useState(false)
+  const [skipClassOpen, setSkipClassOpen] = useState(false)
   const [mobilePage, setMobilePage] = useState(0)
   const gameGridRef = useRef<HTMLElement | null>(null)
   const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
@@ -387,6 +392,11 @@ export function WeekScreen({
   const currentSlotDay = TIMETABLE_DAYS[Math.floor(weekSlot / 3)]
   const currentSlotPhase = TIMETABLE_SLOTS[weekSlot % 3]
   const currentSlotIsMorning = weekSlot % 3 === 0
+  const currentCourseStars = currentSlotCourse
+    ? courseDifficulty(currentSlotCourse).stars
+    : 3
+  const currentCourseEnergyCost =
+    10 + (currentCourseStars >= 4 ? 2 : currentCourseStars <= 2 ? -2 : 0)
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
 
@@ -1249,8 +1259,9 @@ export function WeekScreen({
                     </div>
                     <h3>{currentSlotCourse.name}</h3>
                     <p>
-                      这节课把你按在了座位上。听课要花掉 5 点精力，但至少人还在教室；
-                      翘课能换回一格自由时间，至于老师会不会记住那个空座位，就交给缘分了。
+                      这节课把你按在了座位上。去上课要花掉 {currentCourseEnergyCost} 点精力，
+                      但能把这门课的准备度往前挪一点；翘课能换回一格自由时间，
+                      至于老师会不会记住那个空座位，就交给缘分和抽查方式了。
                     </p>
                     <div className="slot-course-actions">
                       <button
@@ -1258,14 +1269,14 @@ export function WeekScreen({
                         className="btn btn-primary"
                         onClick={onAttendCourse}
                       >
-                        听课 <small>精力 -5 · 至少人在教室</small>
+                        去上课 <small>精力 -{currentCourseEnergyCost} · 课程准备度 +5</small>
                       </button>
                       <button
                         type="button"
                         className="btn btn-ghost"
-                        onClick={onSkipCourse}
+                        onClick={() => setSkipClassOpen(true)}
                       >
-                        翘课 <small>把时间抢回来 · 后果待定</small>
+                        翘课 <small>把时间抢回来 · 先过老师这一关</small>
                       </button>
                     </div>
                   </section>
@@ -1706,6 +1717,16 @@ export function WeekScreen({
                 declinedIds,
               )
             }
+          }}
+        />
+      )}
+
+      {skipClassOpen && currentSlotCourse && (
+        <SkipClassModal
+          course={currentSlotCourse}
+          onResolved={(success) => {
+            setSkipClassOpen(false)
+            onSkipResolved?.(success)
           }}
         />
       )}

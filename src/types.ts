@@ -273,6 +273,8 @@ export interface ExamResult {
   expectedMin: number
   expectedMax: number
   stressRelief: number
+  usualScore?: number
+  paperScore?: number
 }
 
 export type EventKind = 'scene' | 'attribute' | 'random' | 'romance' | 'consumption'
@@ -652,6 +654,7 @@ export interface GameState {
   weekSlot: number
   weekSlotSkipped: boolean
   weekSlotActions: string[]
+  skipCaught: Record<string, number>
   logs: WeekLog[]
   results: ExamResult[]
   cumulativeCredits: number

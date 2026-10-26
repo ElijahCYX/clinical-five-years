@@ -12855,3 +12855,186 @@ body.dinner-open {
 .week-slot-strip {
   gap: 9px;
 }
+
+.course-score-parts {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 7.5px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- skip-class slot machine ---------- */
+
+.skip-class-modal {
+  max-width: 760px;
+}
+
+.skip-reel-zone,
+.skip-choice-zone,
+.skip-result-zone {
+  margin-top: 4px;
+}
+
+.skip-reel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 170px;
+  margin: 16px 0 8px;
+  border: 1px solid var(--line);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 252, 245, 0.88) 0 31px, rgba(201, 192, 171, 0.16) 31px 32px);
+  overflow: hidden;
+}
+
+.skip-reel-label {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+}
+
+.skip-reel strong {
+  font-family: var(--serif);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.skip-reel small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.skip-reel.is-rolling strong {
+  animation: skip-reel-flicker 0.1s linear infinite;
+  filter: blur(0.4px);
+}
+
+.skip-reel-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.skip-method-banner {
+  border-left: 3px solid var(--green);
+  padding: 9px 12px;
+  background: var(--green-soft);
+}
+
+.skip-method-banner span {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.skip-method-banner strong {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 500;
+}
+
+.skip-method-banner p {
+  margin: 3px 0 0;
+  color: var(--ink-2);
+  font-size: 10px;
+}
+
+.skip-choice-note {
+  margin: 12px 0 7px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.skip-reaction-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.skip-reaction-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.skip-reaction-card strong {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.skip-reaction-card span {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.skip-reaction-card em {
+  color: var(--line-strong);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.skip-reaction-card.is-enabled {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.skip-reaction-card.is-enabled:hover {
+  transform: translateY(-1px);
+}
+
+.skip-reaction-card.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.skip-result-zone .random-event-text {
+  margin-bottom: 14px;
+}
+
+.skip-result-stamp {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.skip-result-zone.is-success .skip-result-stamp {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.skip-result-zone.is-fail .skip-result-stamp {
+  border-color: #a45b4b;
+  color: #a45b4b;
+}
+
+@keyframes skip-reel-flicker {
+  0% { opacity: 0.65; transform: translateY(-2px); }
+  100% { opacity: 1; transform: translateY(1px); }
+}
+
+@media (max-width: 820px) {
+  .skip-reaction-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skip-reel strong {
+    font-size: 30px;
+  }
+}

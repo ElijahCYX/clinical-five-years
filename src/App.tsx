@@ -22,7 +22,11 @@ import {
   backgroundAllowance,
   clamp,
   courseK,
+  courseDifficulty,
   focusAdjustedGains,
+  composeCourseScore,
+  courseScoreWeights,
+  usualScoreFor,
   cetScore,
   getReviewEffect,
   gpaFromScore,
@@ -313,6 +317,10 @@ function readSave(): GameState | null {
       peCourseCredits: game.peCourseCredits ?? 0,
       peCourseCount: game.peCourseCount ?? 0,
       peGraduationExempt: game.peGraduationExempt ?? false,
+      weekSlot: game.weekSlot ?? 0,
+      weekSlotSkipped: game.weekSlotSkipped ?? false,
+      weekSlotActions: game.weekSlotActions ?? [],
+      skipCaught: game.skipCaught ?? {},
       romanceRisk: game.romanceRisk ?? 0,
       teacherScandalRisk: game.teacherScandalRisk ?? 0,
       pendingConfession: game.pendingConfession ?? null,
@@ -3179,17 +3187,36 @@ function RealApp() {
     if (!game || game.weekSlotSkipped) return
     const course = timetableCourseAt(game, game.weekSlot)
     if (!course) return
+    const stars = courseDifficulty(course).stars
+    const energyCost =
+      10 + (stars >= 4 ? 2 : stars <= 2 ? -2 : 0)
     finishWeekSlot(
-      { ...game, energy: clamp(game.energy - 5, 0, 100) },
+      {
+        ...game,
+        energy: clamp(game.energy - energyCost, 0, 100),
+        prep: {
+          ...game.prep,
+          [course.id]: clamp((game.prep[course.id] ?? 0) + 5, 0, 100),
+        },
+      },
       `attend:${course.id}`,
     )
   }
 
-  const skipCurrentCourse = () => {
+  const resolveSkipCourse = (success: boolean) => {
     if (!game || game.weekSlotSkipped) return
     const course = timetableCourseAt(game, game.weekSlot)
     if (!course) return
-    const next = { ...game, weekSlotSkipped: true }
+    const next: GameState = {
+      ...game,
+      weekSlotSkipped: true,
+      skipCaught: success
+        ? game.skipCaught
+        : {
+            ...game.skipCaught,
+            [course.id]: (game.skipCaught[course.id] ?? 0) + 1,
+          },
+    }
     setGame(next)
     persist(next)
   }
@@ -3407,9 +3434,6 @@ function RealApp() {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
       const [rawMin, rawMax] = estimateRange(prep[course.id])
       const cap = effect.scoreCap ?? 100
-      const expectedMin = Math.min(rawMin, cap)
-      const expectedMax = Math.min(rawMax, cap)
-      const expectedCenter = Math.min(estimateScore(prep[course.id]), cap)
       let rawScore =
         38 +
         prep[course.id] * 0.55 +
@@ -3418,10 +3442,43 @@ function RealApp() {
         rawScore *= game.openingTalents.includes('caffeineImmune') ? 0.975 : 0.95
       }
       if (course.electiveType === 'interest') rawScore += 3
-      const score = applyScoreRescue(
+      const paperScore = applyScoreRescue(
         game,
         Math.max(0, Math.min(cap, Math.min(100, Math.trunc(rawScore)))),
       )
+      const caught = game.skipCaught[course.id] ?? 0
+      const { usualScore, finalScore } = composeCourseScore(
+        course,
+        paperScore,
+        caught,
+      )
+      const { paperWeight } = courseScoreWeights(course)
+      const expectedMin = Math.max(
+        0,
+        Math.min(
+          cap,
+          Math.round(
+            usualScoreFor(course, caught) + Math.min(rawMin, cap) * (paperWeight / 100),
+          ),
+        ),
+      )
+      const expectedMax = Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            usualScoreFor(course, caught) + Math.min(rawMax, cap) * (paperWeight / 100),
+          ),
+        ),
+      )
+      const expectedCenter = Math.min(
+        100,
+        Math.round(
+          usualScoreFor(course, caught) +
+            Math.min(estimateScore(prep[course.id]), cap) * (paperWeight / 100),
+        ),
+      )
+      const score = finalScore
       const rawGpa = gpaFromScore(score)
       const gpa = course.makeup
         ? score >= 60
@@ -3436,7 +3493,16 @@ function RealApp() {
         ? stressReliefForScore(score, expectedCenter)
         : 0
       if (eligible) rewardedCourses.push(rewardKey)
-      return { course, score, gpa, expectedMin, expectedMax, stressRelief }
+      return {
+        course,
+        score,
+        gpa,
+        expectedMin,
+        expectedMax,
+        stressRelief,
+        usualScore,
+        paperScore,
+      }
     })
     let peNoticeText: string | null = null
     if (
@@ -3447,13 +3513,22 @@ function RealApp() {
       if (peCourse) {
         const roll = rollPeCourseScore(game, energy)
         const [peMin, peMax] = peCoursePredictedRange(game)
+        const caught = game.skipCaught[peCourse.id] ?? 0
+        const { usualScore, finalScore } = composeCourseScore(
+          peCourse,
+          roll.score,
+          caught,
+        )
+        const { paperWeight } = courseScoreWeights(peCourse)
         results.push({
           course: peCourse,
-          score: roll.score,
-          gpa: peGpaFor(roll.score),
+          score: finalScore,
+          gpa: peGpaFor(finalScore),
           expectedMin: Math.min(peMin, peMax),
           expectedMax: Math.max(peMin, peMax),
           stressRelief: 0,
+          usualScore,
+          paperScore: roll.score,
         })
         if (roll.floored) peNoticeText = PE_FLOOR_TEXT
       }
@@ -3539,8 +3614,11 @@ function RealApp() {
           result.course.electiveType === 'politics',
       )
       .map((result) => result.course.id)
+    const nextSkipCaught = { ...game.skipCaught }
+    for (const result of results) delete nextSkipCaught[result.course.id]
     const next: GameState = {
       ...game,
+      skipCaught: nextSkipCaught,
       screen: 'result',
       week: 4,
       energy,
@@ -4632,7 +4710,7 @@ function RealApp() {
           onToggleAction={toggleAction}
           onEndWeek={endWeek}
           onAttendCourse={attendCurrentCourse}
-          onSkipCourse={skipCurrentCourse}
+          onSkipResolved={resolveSkipCourse}
           onSlotAction={performWeekSlotAction}
           onSleepIn={sleepInCurrentSlot}
           onSlotLibraryFocus={performSlotLibrary}

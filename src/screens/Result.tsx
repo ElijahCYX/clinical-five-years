@@ -140,6 +140,13 @@ export function ResultScreen({
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
                       </span>
+                      {typeof result.usualScore === 'number' &&
+                        typeof result.paperScore === 'number' && (
+                          <span className="course-score-parts">
+                            平时分 {result.usualScore} + 卷面 {result.paperScore} =
+                            总评 {result.score}
+                          </span>
+                        )}
                       {(result.course.electiveType === 'water' ||
                         result.course.electiveType === 'interest') &&
                         result.score < 60 && (

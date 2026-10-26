@@ -109,6 +109,38 @@ export function courseDifficulty(course: Course): {
   return { score, stars, label: labels[stars - 1] }
 }
 
+export function courseScoreWeights(course: Course): {
+  usualMax: number
+  paperWeight: number
+} {
+  if (course.electiveType === 'pe') return { usualMax: 20, paperWeight: 80 }
+  if (course.electiveType === 'politics') return { usualMax: 40, paperWeight: 60 }
+  if (course.electiveType === 'interest' || course.electiveType === 'water') {
+    return { usualMax: 50, paperWeight: 50 }
+  }
+  return { usualMax: 20, paperWeight: 80 }
+}
+
+export function usualScoreFor(course: Course, caughtCount: number): number {
+  const { usualMax } = courseScoreWeights(course)
+  return Math.max(0, Math.round(usualMax * (1 - Math.max(0, caughtCount) * 0.2)))
+}
+
+export function composeCourseScore(
+  course: Course,
+  paperScore: number,
+  caughtCount: number,
+): { usualScore: number; paperScore: number; finalScore: number } {
+  const { paperWeight, usualMax } = courseScoreWeights(course)
+  const usualScore = Math.max(0, Math.round(usualMax * (1 - Math.max(0, caughtCount) * 0.2)))
+  const paperPart = paperScore * (paperWeight / 100)
+  return {
+    usualScore,
+    paperScore,
+    finalScore: clamp(Math.round(usualScore + paperPart), 0, 100),
+  }
+}
+
 export function estimateRange(prep: number): [number, number] {
   return [estimateScore(prep) - 5, estimateScore(prep) + 5]
 }
@@ -360,6 +392,7 @@ export function newGameState(player: Player): GameState {
     weekSlot: 0,
     weekSlotSkipped: false,
     weekSlotActions: [],
+    skipCaught: {},
     logs: [],
     results: [],
     cumulativeCredits: 0,
