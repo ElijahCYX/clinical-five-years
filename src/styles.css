@@ -15178,3 +15178,66 @@ html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .action-flavor 
   line-clamp: 2;
   line-height: 1.35;
 }
+
+/* Desktop safety net: non-game screens may scroll vertically but never
+   horizontally; the Plan footer must remain reachable. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .screen:not(.game-screen) > .shell {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+  }
+
+  .plan-screen .shell {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .plan-screen .plan-sheet {
+    overflow: visible;
+  }
+
+  .screen > .shell,
+  .random-event-modal,
+  .dinner-modal {
+    overflow-x: hidden;
+  }
+}
+
+/* Popup safety: popups scroll internally instead of being cut off. */
+.confession-modal,
+.lover-contact-modal,
+.bond-picker-modal,
+.bond-break-confirm-modal,
+.bond-result-modal,
+.focus-modal {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 999px) {
+  .confession-modal,
+  .lover-contact-modal,
+  .bond-picker-modal,
+  .bond-break-confirm-modal,
+  .bond-result-modal,
+  .focus-modal {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+
+@media (min-width: 1000px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .vacation-screen .shell {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
