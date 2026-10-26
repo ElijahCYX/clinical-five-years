@@ -79,6 +79,8 @@ interface WeekScreenProps {
   onSkipResolved?: (success: boolean) => void
   onSlotAction?: (actionId: string) => void
   onSleepIn?: () => void
+  onDrinkCoffee?: () => void
+  onCampusRun?: () => void
   onSlotLibraryFocus?: (focus: string) => void
   onSlotDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSlotClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
@@ -112,6 +114,8 @@ export function WeekScreen({
   onSkipResolved,
   onSlotAction,
   onSleepIn,
+  onDrinkCoffee,
+  onCampusRun,
   onSlotLibraryFocus,
   onSlotDinner,
   onSlotClubActivity,
@@ -403,6 +407,11 @@ export function WeekScreen({
     : 3
   const currentCourseEnergyCost =
     10 + (currentCourseStars >= 4 ? 2 : currentCourseStars <= 2 ? -2 : 0)
+  const dailyKey = `${state.seasonIndex}-${state.week}-${Math.floor(weekSlot / 3)}`
+  const coffeeUsedToday = state.coffeeDayKey === dailyKey
+  const runUsedToday = state.campusRunDayKey === dailyKey
+  const hasPeCourse = Boolean(state.pendingPeCourseId)
+  const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
 
@@ -1227,6 +1236,39 @@ export function WeekScreen({
                       })}
                     </div>
                   ))}
+                </div>
+
+                <div className="daily-action-bar">
+                  <div className="daily-action-label">
+                    <span>每日行动</span>
+                    <small>每天各一次 · 不消耗时间段</small>
+                  </div>
+                  <button
+                    type="button"
+                    className={`daily-action-btn ${coffeeUsedToday ? 'is-used' : ''}`}
+                    disabled={coffeeUsedToday || state.money < 10 || state.energy >= 100}
+                    onClick={onDrinkCoffee}
+                  >
+                    <strong>喝咖啡</strong>
+                    <small>精力 +10 · 生活费 -10</small>
+                    <em>{coffeeUsedToday ? '今日已喝' : '今日可执行'}</em>
+                  </button>
+                  {hasPeCourse && (
+                    <button
+                      type="button"
+                      className={`daily-action-btn campus-run ${runUsedToday ? 'is-used' : ''}`}
+                      disabled={runUsedToday || state.energy < 20 || state.peRunCount >= 24}
+                      onClick={onCampusRun}
+                    >
+                      <strong>校园跑</strong>
+                      <small>精力 -20 · 体质成长 +1</small>
+                      <em>
+                        {runUsedToday
+                          ? '今日已跑'
+                          : `${state.peRunCount} / 24 · 成绩上限 ${runCap}`}
+                      </em>
+                    </button>
+                  )}
                 </div>
 
                 {currentSlotActivity ? (

@@ -68,6 +68,7 @@ import {
 import type {
   AttrKey,
   DemoName,
+  ExamResult,
   GameState,
   HabitId,
   OpeningTalentId,
@@ -321,6 +322,9 @@ function readSave(): GameState | null {
       weekSlotSkipped: game.weekSlotSkipped ?? false,
       weekSlotActions: game.weekSlotActions ?? [],
       skipCaught: game.skipCaught ?? {},
+      coffeeDayKey: game.coffeeDayKey ?? null,
+      campusRunDayKey: game.campusRunDayKey ?? null,
+      peRunCount: game.peRunCount ?? 0,
       romanceRisk: game.romanceRisk ?? 0,
       teacherScandalRisk: game.teacherScandalRisk ?? 0,
       pendingConfession: game.pendingConfession ?? null,
@@ -1618,6 +1622,7 @@ function RealApp() {
       peCourseHistory: peCourse
         ? [...new Set([...game.peCourseHistory, peCourse.id])]
         : game.peCourseHistory,
+      peRunCount: peCourse ? 0 : game.peRunCount,
       electiveOffers: [],
       electiveSelectionDone: true,
       relationships:
@@ -3236,6 +3241,40 @@ function RealApp() {
     persist(next)
   }
 
+  const dailyActionKey = () =>
+    `${game?.seasonIndex ?? 0}-${game?.week ?? 1}-${Math.floor((game?.weekSlot ?? 0) / 3)}`
+
+  const drinkCoffee = () => {
+    if (!game || game.money < 10 || game.energy >= 100) return
+    const key = dailyActionKey()
+    if (game.coffeeDayKey === key) return
+    const next: GameState = {
+      ...game,
+      energy: clamp(game.energy + 10, 0, 100),
+      money: Math.max(0, game.money - 10),
+      coffeeDayKey: key,
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const doCampusRun = () => {
+    if (!game || !game.pendingPeCourseId) return
+    if (game.energy < 20 || game.peRunCount >= 24) return
+    const key = dailyActionKey()
+    if (game.campusRunDayKey === key) return
+    const next: GameState = {
+      ...game,
+      energy: clamp(game.energy - 20, 0, 100),
+      constitutionGrowth: game.constitutionGrowth + 1,
+      weekSlotActions: [...game.weekSlotActions, 'campusRun'],
+      peRunCount: game.peRunCount + 1,
+      campusRunDayKey: key,
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const performWeekSlotAction = (actionId: string) => {
     if (!game) return
     if (game.weekSlotSkipped) {
@@ -3445,7 +3484,7 @@ function RealApp() {
     const prep = { ...game.prep }
     const rewardedCourses = [...game.stressRewardedCourses]
 
-    const results = game.season.courses.map((course) => {
+    const results: ExamResult[] = game.season.courses.map((course) => {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
       const [rawMin, rawMax] = estimateRange(prep[course.id])
       const cap = effect.scoreCap ?? 100
@@ -3535,15 +3574,19 @@ function RealApp() {
           caught,
         )
         const { paperWeight } = courseScoreWeights(peCourse)
+        const peScoreCap =
+          game.peRunCount >= 24 ? 100 : game.peRunCount >= 12 ? 80 : 60
+        const cappedScore = Math.min(finalScore, peScoreCap)
         results.push({
           course: peCourse,
-          score: finalScore,
-          gpa: peGpaFor(finalScore),
-          expectedMin: Math.min(peMin, peMax),
-          expectedMax: Math.max(peMin, peMax),
+          score: cappedScore,
+          gpa: peGpaFor(cappedScore),
+          expectedMin: Math.min(peMin, peMax, peScoreCap),
+          expectedMax: Math.min(Math.max(peMin, peMax), peScoreCap),
           stressRelief: 0,
           usualScore,
           paperScore: roll.score,
+          scoreCap: peScoreCap,
         })
         if (roll.floored) peNoticeText = PE_FLOOR_TEXT
       }
@@ -3634,6 +3677,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       skipCaught: nextSkipCaught,
+      peRunCount: 0,
       screen: 'result',
       week: 4,
       energy,
@@ -4728,6 +4772,8 @@ function RealApp() {
           onSkipResolved={resolveSkipCourse}
           onSlotAction={performWeekSlotAction}
           onSleepIn={sleepInCurrentSlot}
+          onDrinkCoffee={drinkCoffee}
+          onCampusRun={doCampusRun}
           onSlotLibraryFocus={performSlotLibrary}
           onSlotDinner={performSlotDinner}
           onSlotClubActivity={performSlotClubActivity}

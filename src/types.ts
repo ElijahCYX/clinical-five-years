@@ -275,6 +275,7 @@ export interface ExamResult {
   stressRelief: number
   usualScore?: number
   paperScore?: number
+  scoreCap?: number
 }
 
 export type EventKind = 'scene' | 'attribute' | 'random' | 'romance' | 'consumption'
@@ -655,6 +656,9 @@ export interface GameState {
   weekSlotSkipped: boolean
   weekSlotActions: string[]
   skipCaught: Record<string, number>
+  coffeeDayKey: string | null
+  campusRunDayKey: string | null
+  peRunCount: number
   logs: WeekLog[]
   results: ExamResult[]
   cumulativeCredits: number

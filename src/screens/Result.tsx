@@ -145,6 +145,10 @@ export function ResultScreen({
                           <span className="course-score-parts">
                             平时分 {result.usualScore} + 卷面 {result.paperScore} =
                             总评 {result.score}
+                            {typeof result.scoreCap === 'number' &&
+                              result.scoreCap < 100 && (
+                                <em> · 校园跑成绩上限 {result.scoreCap}</em>
+                              )}
                           </span>
                         )}
                       {(result.course.electiveType === 'water' ||
