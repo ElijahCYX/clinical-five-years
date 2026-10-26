@@ -34,7 +34,7 @@ export function TitleScreen({ hasSave, onStart, onContinue }: TitleScreenProps) 
               <i />
               <span>8 维天赋</span>
               <i />
-              <span>153 学分</span>
+              <span>196 学分</span>
               <i />
               <span>多种人生去向</span>
             </div>
