@@ -13414,6 +13414,8 @@ body.dinner-open {
 .skip-class-modal.is-rolling {
   position: relative;
   overflow: hidden;
+  transform-origin: center;
+  will-change: transform, box-shadow, filter;
   animation: skip-modal-heartbeat 0.82s ease-in-out infinite;
 }
 
@@ -13454,23 +13456,41 @@ body.dinner-open {
 
 @keyframes skip-modal-heartbeat {
   0%, 100% {
+    transform: scale(1);
     box-shadow:
       0 0 0 1px rgba(104, 72, 46, 0.15),
       0 28px 70px -26px rgba(41, 27, 18, 0.58);
     filter: brightness(1);
   }
-  12% {
+  10% {
+    transform: scale(1.032);
     box-shadow:
-      0 0 0 2px rgba(166, 79, 55, 0.24),
-      0 0 34px rgba(166, 79, 55, 0.12),
-      0 28px 70px -26px rgba(41, 27, 18, 0.62);
-    filter: brightness(1.025);
+      0 0 0 2px rgba(166, 79, 55, 0.3),
+      0 0 42px rgba(166, 79, 55, 0.18),
+      0 28px 70px -26px rgba(41, 27, 18, 0.64);
+    filter: brightness(1.035);
   }
-  24% {
+  20% {
+    transform: scale(0.996);
     box-shadow:
       0 0 0 1px rgba(104, 72, 46, 0.15),
       0 28px 70px -26px rgba(41, 27, 18, 0.58);
     filter: brightness(0.995);
+  }
+  30% {
+    transform: scale(1.018);
+    box-shadow:
+      0 0 0 2px rgba(166, 79, 55, 0.2),
+      0 0 28px rgba(166, 79, 55, 0.1),
+      0 28px 70px -26px rgba(41, 27, 18, 0.6);
+    filter: brightness(1.02);
+  }
+  42% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 1px rgba(104, 72, 46, 0.15),
+      0 28px 70px -26px rgba(41, 27, 18, 0.58);
+    filter: brightness(1);
   }
 }
 
