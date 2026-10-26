@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import type {
   BondActionResult,
   BondType,
@@ -10,6 +11,10 @@ import { currentWeekKey, progressWeek } from '../social'
 import { bondLabel } from '../bonds'
 import { BOND_BREAK_CONFIRM } from '../bondTexts'
 import { Bar, Pill, SectionLabel } from '../ui'
+
+function Portal({ children }: { children: ReactNode }) {
+  return createPortal(children, document.body)
+}
 
 interface BondScreenProps {
   state: GameState
@@ -311,6 +316,7 @@ export function BondScreen({
       )}
 
       {breakTarget && (
+        <Portal>
         <div className="bond-break-confirm-overlay" role="dialog" aria-modal="true">
           <div
             className="bond-break-confirm-backdrop"
@@ -340,9 +346,11 @@ export function BondScreen({
             </div>
           </section>
         </div>
+        </Portal>
       )}
 
       {bondResult && (
+        <Portal>
         <div className="bond-result-overlay" role="dialog" aria-modal="true">
           <div
             className="bond-result-backdrop"
@@ -387,9 +395,11 @@ export function BondScreen({
             </button>
           </section>
         </div>
+        </Portal>
       )}
 
       {contactResult && (
+        <Portal>
         <div className="lover-contact-overlay" role="dialog" aria-modal="true">
           <div
             className="lover-contact-backdrop"
@@ -422,6 +432,7 @@ export function BondScreen({
             </button>
           </section>
         </div>
+        </Portal>
       )}
     </div>
   )
