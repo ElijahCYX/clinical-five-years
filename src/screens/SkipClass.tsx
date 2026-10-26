@@ -156,28 +156,69 @@ export function SkipClassModal({
   const correctReaction = REACTIONS.find((item) => item.matches === method.key) ?? null
 
   useEffect(() => {
-    const tick = window.setInterval(() => {
+    const startedAt = performance.now()
+    let cancelled = false
+    let tickTimer: number | null = null
+    let revealTimer: number | null = null
+    let suspenseTimer: number | null = null
+
+    const finish = () => {
+      if (cancelled) return
+      if (tickTimer !== null) window.clearTimeout(tickTimer)
+      if (suspenseTimer !== null) window.clearInterval(suspenseTimer)
+      // 最后停在授课老师真正抽中的方式上。
+      setReelIndex(METHODS.findIndex((item) => item.key === method.key))
+      setRolling(false)
+      revealTimer = window.setTimeout(() => {
+        if (cancelled) return
+        setStage(method.key === 'none' ? 'result' : 'choose')
+        if (method.key === 'none') {
+          setResult({
+            success: true,
+            text: SUCCESS_TEXTS.none[
+              Math.floor(Math.random() * SUCCESS_TEXTS.none.length)
+            ],
+          })
+        }
+      }, 160)
+    }
+
+    // 转速从快到慢：每一次切换的间隔逐渐拉长，最后停在结果上。
+    const tick = () => {
+      if (cancelled) return
+      const elapsed = performance.now() - startedAt
+      if (elapsed >= 5000) {
+        finish()
+        return
+      }
       setReelIndex((current) => (current + 1) % METHODS.length)
-    }, 75)
-    const suspenseTick = window.setInterval(() => {
+      const interval =
+        elapsed < 1000
+          ? 55
+          : elapsed < 2000
+            ? 75
+            : elapsed < 3000
+              ? 105
+              : elapsed < 3800
+                ? 160
+                : elapsed < 4400
+                  ? 240
+                  : elapsed < 4800
+                    ? 340
+                    : 480
+      tickTimer = window.setTimeout(tick, interval)
+    }
+
+    suspenseTimer = window.setInterval(() => {
       setSuspenseIndex((current) => (current + 1) % SUSPENSE_LINES.length)
     }, 520)
-    const stop = window.setTimeout(() => {
-      window.clearInterval(tick)
-      window.clearInterval(suspenseTick)
-      setRolling(false)
-      setStage(method.key === 'none' ? 'result' : 'choose')
-      if (method.key === 'none') {
-        setResult({
-          success: true,
-          text: SUCCESS_TEXTS.none[Math.floor(Math.random() * SUCCESS_TEXTS.none.length)],
-        })
-      }
-    }, 3000)
+    tickTimer = window.setTimeout(tick, 60)
+
     return () => {
-      window.clearInterval(tick)
-      window.clearInterval(suspenseTick)
-      window.clearTimeout(stop)
+      cancelled = true
+      if (tickTimer !== null) window.clearTimeout(tickTimer)
+      if (revealTimer !== null) window.clearTimeout(revealTimer)
+      if (suspenseTimer !== null) window.clearInterval(suspenseTimer)
     }
   }, [method])
 
@@ -228,7 +269,7 @@ export function SkipClassModal({
             <p className="skip-suspense-line" key={suspenseIndex}>
               {SUSPENSE_LINES[suspenseIndex]}
             </p>
-            <p className="skip-reel-note">老虎机还有三秒揭晓……</p>
+            <p className="skip-reel-note">转盘正在减速……五秒后揭晓</p>
           </div>
         )}
 
