@@ -16373,3 +16373,15 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     animation: none;
   }
 }
+
+/* Modal stacking: popups must cover the fixed bottom navigation and all
+   in-page sticky controls, not just the page content underneath. */
+.confession-overlay,
+.lover-contact-overlay,
+.bond-picker-overlay,
+.bond-break-confirm-overlay,
+.bond-result-overlay,
+.auto-pat-overlay,
+.focus-backdrop {
+  z-index: 2600;
+}
