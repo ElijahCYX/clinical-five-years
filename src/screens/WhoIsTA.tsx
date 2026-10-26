@@ -26,7 +26,7 @@ import {
 } from '../social'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { romanceRiskAfterWeek } from '../events'
-import { BOND_DEFS, bondTypeAvailable } from '../bonds'
+import { BOND_DEFS, bondTypeAvailable, hasAvailableBond } from '../bonds'
 
 interface WhoIsTAScreenProps {
   state: GameState
@@ -405,6 +405,7 @@ export function WhoIsTAScreen({
         <InterfaceNav
           active="ta"
           variant="bottom"
+          bondAlert={hasAvailableBond(state)}
           onMain={onMain}
           onWho={onWho}
           onTA={() => undefined}

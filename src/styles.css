@@ -16337,3 +16337,39 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     font-size: 12px;
   }
 }
+
+/* Flashing exclamation beside TA when a bond can be established. */
+.interface-alert {
+  display: inline-block;
+  margin-left: 5px;
+  color: var(--red);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  animation: interface-alert-blink 0.9s steps(2, end) infinite;
+}
+
+.interface-btn.is-active .interface-alert {
+  color: #ffd37a;
+}
+
+@keyframes interface-alert-blink {
+  0%,
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  41%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interface-alert {
+    animation: none;
+  }
+}

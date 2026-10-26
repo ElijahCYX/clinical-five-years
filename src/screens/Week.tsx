@@ -37,6 +37,7 @@ import {
   TIMETABLE_SLOTS,
 } from '../timetable'
 import { soloInviteAt } from '../solo'
+import { hasAvailableBond } from '../bonds'
 import {
   currentWeekKey,
   academicYearForSeason,
@@ -1889,6 +1890,7 @@ export function WeekScreen({
           <InterfaceNav
             active="main"
             variant="bottom"
+            bondAlert={hasAvailableBond(state)}
             onMain={() => undefined}
             onWho={onOpenWhoAmI ?? (() => undefined)}
             onTA={onOpenTA ?? (() => undefined)}

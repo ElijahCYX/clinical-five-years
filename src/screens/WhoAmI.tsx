@@ -11,6 +11,7 @@ import type { GameState } from '../types'
 import { Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import { patRemainingThisWeek, unseenRelationCount } from '../social'
+import { hasAvailableBond } from '../bonds'
 
 interface WhoAmIScreenProps {
   state: GameState
@@ -413,6 +414,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
         <InterfaceNav
           active="who"
           variant="bottom"
+          bondAlert={hasAvailableBond(state)}
           onMain={onMain}
           onWho={() => undefined}
           onTA={onTA ?? (() => undefined)}

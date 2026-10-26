@@ -1,4 +1,4 @@
-import type { BondType, Player, Relationship } from './types'
+import type { BondType, GameState, Player, Relationship } from './types'
 
 export const BOND_DEFS: { type: BondType; label: string; description: string }[] = [
   {
@@ -51,3 +51,12 @@ export const BROTHER_BOND_TEXT =
 
 export const SISTER_BOND_TEXT =
   'TA 把耳机分给你一只，说：“以后这些事都可以跟我说。”你们坐在操场边听完那首歌，谁也没急着回宿舍。'
+
+
+export function hasAvailableBond(state: GameState): boolean {
+  const player = state.player
+  if (!player) return false
+  return state.relationships.some((relation) =>
+    BOND_DEFS.some((def) => bondTypeAvailable(player, relation, def.type)),
+  )
+}

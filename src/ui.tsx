@@ -304,6 +304,7 @@ export function InterfaceNav({
   onTA,
   badges = {},
   variant = 'top',
+  bondAlert = false,
 }: {
   active: 'main' | 'who' | 'ta'
   onMain: () => void
@@ -311,6 +312,7 @@ export function InterfaceNav({
   onTA: () => void
   badges?: Partial<Record<'main' | 'who' | 'ta', string | number | boolean>>
   variant?: 'top' | 'bottom'
+  bondAlert?: boolean
 }) {
   const renderBadge = (value: string | number | boolean | undefined) => {
     if (value === undefined || value === false || value === 0 || value === '') {
@@ -341,6 +343,11 @@ export function InterfaceNav({
         aria-current={active === key ? 'page' : undefined}
       >
         {label}
+        {key === 'ta' && bondAlert && (
+          <span className="interface-alert" aria-label="有可以建立羁绊的人" title="有可以建立羁绊的人">
+            !
+          </span>
+        )}
         {badge}
       </button>
     )

@@ -17,6 +17,7 @@ import type { GameState, ReviewChoice } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { patRemainingThisWeek, unseenRelationCount } from '../social'
+import { hasAvailableBond } from '../bonds'
 
 interface PrepScreenProps {
   state: GameState
@@ -203,6 +204,7 @@ export function PrepScreen({
         />
         <InterfaceNav
           active="main"
+          bondAlert={hasAvailableBond(state)}
           onMain={() => undefined}
           onWho={onWho ?? (() => undefined)}
           onTA={onTA ?? (() => undefined)}

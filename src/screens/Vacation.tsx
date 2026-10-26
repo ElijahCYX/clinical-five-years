@@ -11,6 +11,7 @@ import type { ActionDef, DinnerInviteResult, GameState } from '../types'
 import { Bar, Dot, Eyebrow, InterfaceNav, Pill, StatBar, StressHearts, TopBar } from '../ui'
 import { TravelModal } from './Travel'
 import { patRemainingThisWeek, unseenRelationCount, vacationTravelInviteKey } from '../social'
+import { hasAvailableBond } from '../bonds'
 
 interface VacationScreenProps {
   state: GameState
@@ -422,6 +423,7 @@ export function VacationScreen({
           <InterfaceNav
             active="main"
             variant="bottom"
+            bondAlert={hasAvailableBond(state)}
             onMain={() => undefined}
             onWho={onWho ?? (() => undefined)}
             onTA={onTA ?? (() => undefined)}
