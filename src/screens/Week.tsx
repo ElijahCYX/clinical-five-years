@@ -1255,18 +1255,47 @@ export function WeekScreen({
                     <h2>这周，你想怎么过？</h2>
                     <p>21 个时间段，每次选择都会推进时间。当前：{currentSlotDay} · {currentSlotPhase}。</p>
                   </div>
-                  <div
-                    className={`week-phase-badge phase-${weekPhaseClass}`}
-                    key={weekPhaseClass}
-                  >
-                    <span className="week-phase-symbol" aria-hidden="true">
-                      {weekPhaseSymbol}
-                    </span>
-                    <div>
-                      <small>{currentSlotDay}</small>
-                      <strong>{currentSlotPhase}</strong>
+                  <div className="week-header-stack">
+                    <div
+                      className={`week-phase-badge phase-${weekPhaseClass}`}
+                      key={weekPhaseClass}
+                    >
+                      <span className="week-phase-symbol" aria-hidden="true">
+                        {weekPhaseSymbol}
+                      </span>
+                      <div>
+                        <small>{currentSlotDay}</small>
+                        <strong>{currentSlotPhase}</strong>
+                      </div>
+                      <em>{weekSlot + 1} / 21</em>
                     </div>
-                    <em>{weekSlot + 1} / 21</em>
+                    <div className="week-minimap" aria-label="本周时间段进度">
+                      <div className="week-minimap-grid">
+                        {TIMETABLE_DAYS.map((day, dayIndex) =>
+                          TIMETABLE_SLOTS.map((phase, slotIndex) => {
+                            const index = dayIndex * 3 + slotIndex
+                            const cell = weekTimetable.cells[index]
+                            const isPast = index < state.weekSlot
+                            const isCurrent = index === state.weekSlot
+                            return (
+                              <span
+                                key={`${day}-${phase}`}
+                                className={`week-minimap-cell ${
+                                  isPast
+                                    ? 'is-past'
+                                    : isCurrent
+                                      ? 'is-current'
+                                      : 'is-future'
+                                } ${cell.course ? 'has-course' : ''}`}
+                                title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
+                              >
+                                {index + 1}
+                              </span>
+                            )
+                          }),
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
