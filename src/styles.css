@@ -14174,3 +14174,63 @@ body.day-transitioning .skip-rules-overlay {
       0 0 24px rgba(47, 91, 76, 0.28);
   }
 }
+
+/* Current slot: enlarge via flex allocation, not transform, so it stays square
+   and never paints over its neighbours. Breathing is expressed as a glow. */
+.week-slot-strip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.week-slot-day {
+  display: contents;
+}
+
+.week-slot-day:not(:first-child) .week-slot-square:first-child {
+  margin-left: 5px;
+}
+
+.week-slot-square {
+  flex: 1 1 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+}
+
+.game-center .week-slot-square.is-current {
+  flex: 1.45 1 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+  transform: none;
+  z-index: 4;
+  animation: week-slot-current-glow 1s ease-in-out infinite;
+}
+
+@keyframes week-slot-current-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(47, 91, 76, 0.22),
+      0 0 12px rgba(47, 91, 76, 0.16);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(47, 91, 76, 0.34),
+      0 0 26px rgba(47, 91, 76, 0.3);
+    filter: brightness(1.12);
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .week-slot-strip {
+    gap: 2px;
+  }
+
+  .week-slot-day:not(:first-child) .week-slot-square:first-child {
+    margin-left: 4px;
+  }
+}
