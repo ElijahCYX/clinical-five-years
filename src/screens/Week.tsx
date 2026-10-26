@@ -420,7 +420,7 @@ export function WeekScreen({
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const pastPalette =
     weekPhaseClass === 'morning'
-      ? { hue: 40, sat: 50, start: 22, end: 42 }
+      ? { hue: 40, sat: 50, start: 27, end: 43 }
       : weekPhaseClass === 'afternoon'
         ? { hue: 154, sat: 26, start: 18, end: 37 }
         : { hue: 257, sat: 25, start: 22, end: 42 }
