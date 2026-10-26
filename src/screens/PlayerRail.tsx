@@ -36,7 +36,6 @@ export function PlayerRail({
     .map((id) => HABIT_BY_ID[id])
     .filter(Boolean)
   const habitActive = habits.length > 0 && state.stress <= 60
-  const remainingActions = Math.max(0, 2 - state.selected.length)
   const isExam = mode === 'exam'
 
   return (
@@ -190,20 +189,6 @@ export function PlayerRail({
         </p>
       </div>
 
-      <div className="left-progress">
-        <div>
-          <span>主线进度</span>
-          <strong>{String(state.seasonIndex + 1).padStart(2, '0')} / 21 季</strong>
-        </div>
-        <div>
-          <span>{isExam ? '当前阶段' : '本周行动'}</span>
-          <strong>{isExam ? '考试周' : `${remainingActions} / 2 剩余`}</strong>
-        </div>
-        <div>
-          <span>本周课程</span>
-          <strong>{state.season.courses.length} 门</strong>
-        </div>
-      </div>
     </aside>
   )
 }

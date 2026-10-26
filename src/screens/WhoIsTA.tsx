@@ -409,7 +409,6 @@ export function WhoIsTAScreen({
           onWho={onWho}
           onTA={() => undefined}
           badges={{
-            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
             ta:
               unseenRelationCount(state) > 0
                 ? '新'

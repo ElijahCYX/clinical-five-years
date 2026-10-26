@@ -426,7 +426,6 @@ export function VacationScreen({
             onWho={onWho ?? (() => undefined)}
             onTA={onTA ?? (() => undefined)}
             badges={{
-              main: remainingActions > 0 ? remainingActions : undefined,
               ta:
                 unseenRelationCount(state) > 0
                   ? '新'

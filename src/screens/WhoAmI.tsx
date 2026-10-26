@@ -417,7 +417,6 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
           onWho={() => undefined}
           onTA={onTA ?? (() => undefined)}
           badges={{
-            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
             ta:
               unseenRelationCount(state) > 0
                 ? '新'

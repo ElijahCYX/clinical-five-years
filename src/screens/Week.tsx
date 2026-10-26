@@ -1849,7 +1849,6 @@ export function WeekScreen({
             onWho={onOpenWhoAmI ?? (() => undefined)}
             onTA={onOpenTA ?? (() => undefined)}
             badges={{
-              main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
               ta:
                 unseenRelationCount(state) > 0
                   ? '新'

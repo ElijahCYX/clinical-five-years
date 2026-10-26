@@ -15657,3 +15657,12 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     padding-bottom: 62px;
   }
 }
+
+/* Desktop left rail: no internal scrolling; the rail must be fully visible. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-left {
+    height: 100%;
+    overflow-y: hidden;
+    overflow-x: hidden;
+  }
+}
