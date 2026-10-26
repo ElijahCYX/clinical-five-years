@@ -1268,6 +1268,38 @@ export function WeekScreen({
                     </div>
                     <em>{weekSlot + 1} / 21</em>
                   </div>
+                  <div className="week-overview" aria-label="本周安排概览">
+                    <div className="week-overview-head">
+                      <span>本周概览</span>
+                      <small>7 日 × 3 段</small>
+                    </div>
+                    <div className="week-overview-grid">
+                      {TIMETABLE_SLOTS.flatMap((phase, slotIndex) =>
+                        TIMETABLE_DAYS.map((day, dayIndex) => {
+                          const index = dayIndex * 3 + slotIndex
+                          const cell = weekTimetable.cells[index]
+                          const hasPlan = Boolean(cell.course || cell.activity)
+                          const isPast = index < state.weekSlot
+                          const isCurrent = index === state.weekSlot
+                          return (
+                            <span
+                              key={`${day}-${phase}`}
+                              className={`week-overview-dot ${
+                                hasPlan ? 'has-plan' : 'is-free'
+                              } ${isPast ? 'is-past' : ''} ${
+                                isCurrent ? 'is-current' : ''
+                              }`}
+                              title={`${day} · ${phase} · ${
+                                cell.course?.name ??
+                                cell.activity?.name ??
+                                '空闲'
+                              }`}
+                            />
+                          )
+                        }),
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="week-controls-row">

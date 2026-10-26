@@ -14704,3 +14704,105 @@ body.day-transitioning .skip-rules-overlay {
   background: transparent;
   backdrop-filter: none;
 }
+
+/* Compact 7×3 overview: filled = planned, hollow = free, past = desaturated. */
+.week-overview {
+  display: none;
+}
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  .week-overview {
+    display: flex;
+    flex: 0 0 200px;
+    width: 200px;
+    height: 58px;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 9px;
+    border: 1px solid var(--line);
+    background: rgba(255, 252, 245, 0.42);
+  }
+
+  .week-overview-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--muted);
+  }
+
+  .week-overview-head span {
+    color: var(--green);
+    font-family: var(--serif);
+    font-size: 9px;
+  }
+
+  .week-overview-head small {
+    font-size: 6.5px;
+    letter-spacing: 0.05em;
+  }
+
+  .week-overview-grid {
+    display: grid;
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    align-items: center;
+    justify-items: center;
+    gap: 2px 4px;
+  }
+
+  .week-overview-dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1px solid rgba(111, 107, 96, 0.55);
+    border-radius: 50%;
+    background: transparent;
+  }
+
+  .week-overview-dot.has-plan {
+    border-color: transparent;
+    background: var(--green);
+  }
+
+  .week-overview-dot.is-past {
+    opacity: 0.36;
+    filter: saturate(0.15);
+  }
+
+  .week-overview-dot.is-past.has-plan {
+    background: #afa899;
+  }
+
+  .week-overview-dot.is-current {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    border-color: var(--time-accent, var(--green));
+    background: transparent;
+    animation: week-overview-current-breathe 1s ease-in-out infinite;
+  }
+
+  .week-overview-dot.is-current.has-plan {
+    background: var(--time-accent, var(--green));
+  }
+}
+
+@keyframes week-overview-current-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(47, 91, 76, 0.24),
+      0 0 5px rgba(47, 91, 76, 0.2);
+    opacity: 0.82;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(47, 91, 76, 0.4),
+      0 0 12px rgba(47, 91, 76, 0.42);
+    opacity: 1;
+  }
+}
