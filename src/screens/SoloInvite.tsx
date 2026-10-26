@@ -222,10 +222,10 @@ export function SoloInviteModal({
       )
       setPhase('idle')
       timers.current.push(
-        window.setTimeout(() => setHistoryLeaving(true), 300),
+        window.setTimeout(() => setHistoryLeaving(true), 500),
         window.setTimeout(() => {
           startHelloFlow(relation, true)
-        }, 800),
+        }, 1500),
       )
       return
     }

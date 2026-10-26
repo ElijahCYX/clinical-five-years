@@ -16678,7 +16678,7 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 
 .solo-messages.is-leaving {
   pointer-events: none;
-  animation: solo-history-leave 0.5s ease-in forwards;
+  animation: solo-history-leave 1s ease-in forwards;
 }
 
 .solo-history-divider {
