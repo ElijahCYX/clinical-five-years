@@ -16565,3 +16565,104 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     animation: none;
   }
 }
+
+/* Solo chat typography: two-thirds of the previous doubled pass (title stays). */
+.solo-window .solo-window-head span {
+  font-size: 10px;
+}
+
+.solo-window .solo-close {
+  width: 32px;
+  height: 32px;
+  font-size: 24px;
+}
+
+.solo-window .solo-contacts-head {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-empty {
+  font-size: 13.5px;
+}
+
+.solo-window .solo-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 17.5px;
+}
+
+.solo-window .solo-contact-copy strong {
+  font-size: 17.5px;
+}
+
+.solo-window .solo-contact-copy small,
+.solo-window .solo-contact-copy em {
+  font-size: 10px;
+}
+
+.solo-window .solo-chat-empty span {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-chat-empty h3 {
+  font-size: 26.5px;
+}
+
+.solo-window .solo-chat-empty p {
+  font-size: 12.5px;
+}
+
+.solo-window .solo-chat-head strong {
+  font-size: 20px;
+}
+
+.solo-window .solo-chat-head small,
+.solo-window .solo-chat-status {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-message-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.solo-window .solo-message p {
+  font-size: 14px;
+}
+
+.solo-window .solo-message.is-system p {
+  font-size: 11.5px;
+}
+
+.solo-window .solo-options-head {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-refresh {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-option strong {
+  font-size: 16px;
+}
+
+.solo-window .solo-option small {
+  font-size: 9.5px;
+}
+
+.solo-window .solo-option em {
+  font-size: 10px;
+}
+
+.solo-window .solo-result span {
+  font-size: 10.5px;
+}
+
+.solo-window .solo-result strong {
+  font-size: 14.5px;
+}
+
+.solo-window .solo-result .btn {
+  font-size: 16px;
+}
