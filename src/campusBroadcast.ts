@@ -184,22 +184,81 @@ const CAMPUS_PLACES = [
   '绿化带小径',
 ]
 
-const CAMPUS_HAPPENINGS = [
-  '有人在发社团招新的传单，路过的学生接了一张又一张，没走几步就攒成一把彩色的纸，最后还是舍不得扔',
-  '志愿者支起了义诊摊位，排队的人比预想中多，几个穿白大褂的学生一边维持秩序，一边给老人解释下一步该去哪个窗口',
-  '一位新生举着地图在原地转了两圈，最后还是问了路人，问完又笑着道谢，像是终于确认自己真的已经在这里上学了',
-  '有人抱着一摞厚书从台阶上下来，最上面一本摇摇欲坠，旁边的人伸手扶了一下，两个人因此聊起了同一门课',
-  '一只校园猫躺在路中间晒太阳，行人纷纷绕行，有人蹲下来拍照，它连耳朵都没动一下，像早就习惯了被围观',
-  '几个学生蹲在地上调试音响，试音声一遍遍穿过走廊，经过的人忍不住回头看，又装作只是恰好路过',
-  '有人弹起吉他，围过来的听众比演奏者还紧张，一曲结束后大家先安静了两秒，才想起要鼓掌',
-  '一场讲座的海报刚贴上墙，就被另一张活动海报盖住了一半，路过的学生停下来研究半天，最后两张都拍了照',
-  '雨突然落下来，没带伞的人一起躲进屋檐下，原本不认识的人因为这场雨站得很近，开始聊起天气和下一节课',
-  '一个社团在摆摊做手工体验，桌上很快堆满了半成品，负责人一边教一边说“失败也算作品”，围观的人越聚越多',
+type WeatherKind =
+  | 'rain'
+  | 'sun'
+  | 'cloudy'
+  | 'wind'
+  | 'cold'
+  | 'hot'
+  | 'fog'
+  | 'dry'
+  | 'snow'
+  | 'neutral'
+
+type EventWeather = 'any' | 'rain' | 'sun'
+
+interface CampusHappeningDef {
+  text: string
+  weather?: EventWeather
+}
+
+const CAMPUS_HAPPENINGS: CampusHappeningDef[] = [
+  {
+    text: '有人在发社团招新的传单，路过的学生接了一张又一张，没走几步就攒成一把彩色的纸，最后还是舍不得扔',
+  },
+  {
+    text: '志愿者支起了义诊摊位，排队的人比预想中多，几个穿白大褂的学生一边维持秩序，一边给老人解释下一步该去哪个窗口',
+  },
+  {
+    text: '一位新生举着地图在原地转了两圈，最后还是问了路人，问完又笑着道谢，像是终于确认自己真的已经在这里上学了',
+  },
+  {
+    text: '有人抱着一摞厚书从台阶上下来，最上面一本摇摇欲坠，旁边的人伸手扶了一下，两个人因此聊起了同一门课',
+  },
+  {
+    text: '一只校园猫躺在路中间晒太阳，行人纷纷绕行，有人蹲下来拍照，它连耳朵都没动一下，像早就习惯了被围观',
+    weather: 'sun',
+  },
+  {
+    text: '几个学生蹲在地上调试音响，试音声一遍遍穿过走廊，经过的人忍不住回头看，又装作只是恰好路过',
+  },
+  {
+    text: '有人弹起吉他，围过来的听众比演奏者还紧张，一曲结束后大家先安静了两秒，才想起要鼓掌',
+  },
+  {
+    text: '一场讲座的海报刚贴上墙，就被另一张活动海报盖住了一半，路过的学生停下来研究半天，最后两张都拍了照',
+  },
+  {
+    text: '雨突然落下来，没带伞的人一起躲进屋檐下，原本不认识的人因为这场雨站得很近，开始聊起天气和下一节课',
+    weather: 'rain',
+  },
+  {
+    text: '一个社团在摆摊做手工体验，桌上很快堆满了半成品，负责人一边教一边说“失败也算作品”，围观的人越聚越多',
+  },
 ]
 
-export const CAMPUS_EVENT_LINES = CAMPUS_PLACES.flatMap((place) =>
-  CAMPUS_HAPPENINGS.map((happening) => `${place}${happening}。`),
-)
+export const CAMPUS_EVENT_LINES: string[] = []
+export const CAMPUS_EVENT_WEATHERS: EventWeather[] = []
+for (const place of CAMPUS_PLACES) {
+  for (const happening of CAMPUS_HAPPENINGS) {
+    CAMPUS_EVENT_LINES.push(`${place}${happening.text}。`)
+    CAMPUS_EVENT_WEATHERS.push(happening.weather ?? 'any')
+  }
+}
+
+function weatherKindForLine(line: string): WeatherKind {
+  if (/雨|雷阵雨|阵雨/.test(line)) return 'rain'
+  if (/雪/.test(line)) return 'snow'
+  if (/雾/.test(line)) return 'fog'
+  if (/晴|阳光|太阳|晒/.test(line)) return 'sun'
+  if (/阴|多云|云层|云走/.test(line)) return 'cloudy'
+  if (/大风|风大|风里|风把|风停|风力|风从/.test(line)) return 'wind'
+  if (/降温|冷|霜|寒/.test(line)) return 'cold'
+  if (/闷热|高温|回暖|热饮|热汤|冰饮|热、/.test(line)) return 'hot'
+  if (/干燥|静电/.test(line)) return 'dry'
+  return 'neutral'
+}
 
 // ---------- C 库：节日 / 校庆播报 ----------
 
@@ -352,8 +411,13 @@ export function getCampusBroadcast(state: GameState): CampusBroadcast {
     `${state.season.id}-${state.week}-${dayIndex}-${year}-${month}-${state.player?.name ?? ''}`,
   )
   const weather = WEATHER_LINES[seed % WEATHER_LINES.length]
-  const campus =
-    CAMPUS_EVENT_LINES[(seed * 7 + dayIndex) % CAMPUS_EVENT_LINES.length]
+  const weatherKind = weatherKindForLine(weather)
+  const compatibleEvents = CAMPUS_EVENT_LINES.filter((_, index) => {
+    const fit = CAMPUS_EVENT_WEATHERS[index]
+    return fit === 'any' || fit === weatherKind
+  })
+  const pool = compatibleEvents.length > 0 ? compatibleEvents : CAMPUS_EVENT_LINES
+  const campus = pool[(seed * 7 + dayIndex) % pool.length]
   const holiday = getHolidayBroadcast(year, month)
   return { weather, campus, holiday }
 }
