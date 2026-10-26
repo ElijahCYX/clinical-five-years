@@ -13568,3 +13568,63 @@ body.dinner-open {
     display: none;
   }
 }
+
+/* Keep the masthead to one row: title on the left, credits on the right. */
+.topbar-center {
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  max-width: min(68vw, 860px);
+}
+
+.topbar-line {
+  flex: 0 0 auto;
+}
+
+.topbar-authors {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 440px;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.topbar-credits {
+  justify-content: flex-start;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+}
+
+.topbar-credits strong {
+  font-size: 10.5px;
+}
+
+.topbar-thanks {
+  max-width: 440px;
+  font-size: 7.5px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+@media (max-width: 1260px) {
+  .topbar-center {
+    gap: 12px;
+    max-width: 68vw;
+  }
+
+  .topbar-thanks {
+    display: none;
+  }
+
+  .topbar-authors {
+    padding-left: 12px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .topbar-authors {
+    display: none;
+  }
+}
