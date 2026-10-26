@@ -188,23 +188,23 @@ export function SkipClassModal({
     const tick = () => {
       if (cancelled) return
       const elapsed = performance.now() - startedAt
-      if (elapsed >= 4000) {
+      if (elapsed >= 3000) {
         finish()
         return
       }
       setReelIndex((current) => (current + 1) % METHODS.length)
       const interval =
-        elapsed < 800
+        elapsed < 600
           ? 55
-          : elapsed < 1600
+          : elapsed < 1200
             ? 75
-            : elapsed < 2400
+            : elapsed < 1800
               ? 105
-              : elapsed < 3000
+              : elapsed < 2250
                 ? 160
-                : elapsed < 3500
+                : elapsed < 2600
                   ? 240
-                  : elapsed < 3800
+                  : elapsed < 2850
                     ? 340
                     : 420
       setReelInterval(interval)
@@ -309,7 +309,7 @@ export function SkipClassModal({
               {SUSPENSE_LINES[suspenseIndex]}
             </p>
             <p className="skip-reel-note">
-              {isSettled ? '结果锁定……老师正在看你。' : '转盘正在减速……四秒后揭晓'}
+              {isSettled ? '结果锁定……老师正在看你。' : '转盘正在减速……三秒后揭晓'}
             </p>
           </div>
         )}
