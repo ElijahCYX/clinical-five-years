@@ -14135,3 +14135,20 @@ body.dinner-open {
   30% { opacity: 1; transform: scale3d(1, 1, 1); }
   100% { opacity: 0; transform: scale3d(1, 1, 1); }
 }
+
+/* Wait for the new-day overture before any popup is revealed. */
+body.day-transitioning .random-event-overlay,
+body.day-transitioning .dinner-overlay,
+body.day-transitioning .focus-backdrop,
+body.day-transitioning .bond-picker-overlay,
+body.day-transitioning .confession-overlay,
+body.day-transitioning .lover-contact-overlay,
+body.day-transitioning .auto-pat-overlay,
+body.day-transitioning .bond-break-confirm-overlay,
+body.day-transitioning .bond-result-overlay,
+body.day-transitioning .skip-class-overlay,
+body.day-transitioning .skip-rules-overlay {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

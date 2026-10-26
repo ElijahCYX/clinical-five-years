@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ACTIONS,
   ATTRS,
@@ -423,7 +423,7 @@ export function WeekScreen({
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previousSlot = previousSlotRef.current
     const previousWeek = previousWeekRef.current
     const isEveningToNextDay =
@@ -445,11 +445,13 @@ export function WeekScreen({
           ? `第 ${state.week} 周 · 周一`
           : `第 ${Math.floor(state.weekSlot / 3) + 1} 天 · ${nextDay}`,
     })
+    document.body.classList.add('day-transitioning')
     if (dayTransitionTimerRef.current !== null) {
       window.clearTimeout(dayTransitionTimerRef.current)
     }
     dayTransitionTimerRef.current = window.setTimeout(() => {
       setDayTransition(null)
+      document.body.classList.remove('day-transitioning')
       dayTransitionTimerRef.current = null
     }, 1800)
   }, [state.weekSlot, state.week, tab])
@@ -459,6 +461,7 @@ export function WeekScreen({
       if (dayTransitionTimerRef.current !== null) {
         window.clearTimeout(dayTransitionTimerRef.current)
       }
+      document.body.classList.remove('day-transitioning')
     },
     [],
   )
