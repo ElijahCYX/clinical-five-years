@@ -1271,7 +1271,10 @@ export function WeekScreen({
                     </div>
                     <em>{weekSlot + 1} / 21</em>
                   </div>
-                  <div className="week-overview" aria-label="本周安排概览">
+                  <div
+                    className={`week-overview overview-palette-${weekPhaseClass}`}
+                    aria-label="本周安排概览"
+                  >
                     <div className="week-overview-head">
                       <span>本周概览</span>
                       <small>7 日 × 3 段</small>
@@ -1287,15 +1290,11 @@ export function WeekScreen({
                           return (
                             <span
                               key={`${day}-${phase}`}
-                              className={`week-overview-dot overview-${
-                                slotIndex === 0
-                                  ? 'morning'
-                                  : slotIndex === 1
-                                    ? 'afternoon'
-                                    : 'evening'
-                              } ${hasPlan ? 'has-plan' : 'is-free'} ${
-                                isPast ? 'is-past' : ''
-                              } ${isCurrent ? 'is-current' : ''}`}
+                              className={`week-overview-dot ${
+                                hasPlan ? 'has-plan' : 'is-free'
+                              } ${isPast ? 'is-past' : ''} ${
+                                isCurrent ? 'is-current' : ''
+                              }`}
                               title={`${day} · ${phase} · ${
                                 cell.course?.name ??
                                 cell.activity?.name ??

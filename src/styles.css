@@ -15012,3 +15012,29 @@ body.day-transitioning .skip-rules-overlay {
 .week-overview-dot.overview-evening.is-current.has-plan {
   background: hsl(257 25% 22%);
 }
+
+/* All filled overview dots share one color, chosen from the middle of the
+   current time-of-day gradient. */
+.week-overview.overview-palette-morning {
+  --overview-fill: hsl(40 50% 35%);
+}
+
+.week-overview.overview-palette-afternoon {
+  --overview-fill: hsl(154 26% 28%);
+}
+
+.week-overview.overview-palette-evening {
+  --overview-fill: hsl(257 25% 32%);
+}
+
+.week-overview.overview-palette-morning .week-overview-dot.has-plan,
+.week-overview.overview-palette-afternoon .week-overview-dot.has-plan,
+.week-overview.overview-palette-evening .week-overview-dot.has-plan {
+  background: var(--overview-fill);
+}
+
+.week-overview.overview-palette-morning .week-overview-dot.is-current.has-plan,
+.week-overview.overview-palette-afternoon .week-overview-dot.is-current.has-plan,
+.week-overview.overview-palette-evening .week-overview-dot.is-current.has-plan {
+  background: var(--overview-fill);
+}
