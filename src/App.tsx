@@ -18,6 +18,7 @@ import {
   timetableActivityAt,
   timetableCourseAt,
 } from './timetable'
+import { soloDayKey } from './solo'
 import {
   backgroundAllowance,
   clamp,
@@ -90,6 +91,7 @@ import type {
   ScreenName,
   VacationKind,
   WeekLog,
+  SoloInvite,
 } from './types'
 import { CetEventScreen } from './screens/CetEvent'
 import { CetResultScreen } from './screens/CetResult'
@@ -356,6 +358,8 @@ function readSave(): GameState | null {
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
       familyAffection: game.familyAffection ?? 0,
       familyCrisisRescued: game.familyCrisisRescued ?? false,
+      soloInvites: game.soloInvites ?? [],
+      soloRefusals: game.soloRefusals ?? {},
       mentorRecognition: game.mentorRecognition ?? 0,
       walkEncounterWeekKey: game.walkEncounterWeekKey ?? null,
       walkEncounterDayKey: game.walkEncounterDayKey ?? null,
@@ -3400,6 +3404,50 @@ function RealApp() {
     announceSleep(sleep, advanced.stress)
   }
 
+  const scheduleSoloInvite = (invite: SoloInvite) => {
+    if (!game) return
+    if (game.soloInvites.some((item) => item.id === invite.id)) return
+    const next: GameState = {
+      ...game,
+      soloInvites: [...game.soloInvites, invite],
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const markSoloRefusal = (relationshipId: string) => {
+    if (!game) return
+    const next: GameState = {
+      ...game,
+      soloRefusals: {
+        ...game.soloRefusals,
+        [relationshipId]: soloDayKey(game),
+      },
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const resolveSoloDate = (inviteId: string) => {
+    if (!game) return
+    const invite = game.soloInvites.find((item) => item.id === inviteId)
+    if (!invite || invite.resolved || invite.slot !== game.weekSlot) return
+    const next: GameState = {
+      ...game,
+      energy: clamp(game.energy - 10, 0, 100),
+      money: Math.max(0, game.money - 50),
+      relationships: game.relationships.map((relation) =>
+        relation.id === invite.relationshipId
+          ? { ...relation, intimacy: Math.min(100, relation.intimacy + 5) }
+          : relation,
+      ),
+      soloInvites: game.soloInvites.map((item) =>
+        item.id === invite.id ? { ...item, resolved: true } : item,
+      ),
+    }
+    finishWeekSlot(next, `soloDate:${invite.id}`)
+  }
+
   const attendCurrentCourse = () => {
     if (!game || game.weekSlotSkipped) return
     const course = timetableCourseAt(game, game.weekSlot)
@@ -5018,6 +5066,9 @@ function RealApp() {
           onDrinkCoffee={drinkCoffee}
           onCampusRun={doCampusRun}
           onDailySelfCare={dailySelfCare}
+          onScheduleSoloInvite={scheduleSoloInvite}
+          onSoloRefusal={markSoloRefusal}
+          onResolveSoloDate={resolveSoloDate}
           onSlotLibraryFocus={performSlotLibrary}
           onSlotDinner={performSlotDinner}
           onSlotClubActivity={performSlotClubActivity}

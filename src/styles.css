@@ -15666,3 +15666,674 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     overflow-x: hidden;
   }
 }
+
+/* ---------- solo invitation ---------- */
+
+.solo-invite-card {
+  border-color: rgba(156, 111, 67, 0.55);
+  background:
+    linear-gradient(135deg, rgba(247, 238, 224, 0.85), rgba(255, 252, 245, 0.8));
+}
+
+.legend-dot.solo {
+  background: #a67c52;
+}
+
+.timetable-slot.kind-solo {
+  border-color: rgba(166, 124, 82, 0.5);
+  background: rgba(246, 234, 217, 0.6);
+}
+
+.timetable-slot.kind-solo strong {
+  color: #7c5734;
+}
+
+.solo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.solo-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 27, 23, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.solo-window {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 94vw);
+  aspect-ratio: 4 / 3;
+  max-height: calc(100dvh - 36px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  box-shadow: 0 40px 100px -34px rgba(12, 24, 18, 0.65);
+}
+
+.solo-window-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px 11px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(246, 241, 230, 0.9);
+}
+
+.solo-window-head span {
+  color: var(--muted);
+  font-size: 7.5px;
+  letter-spacing: 0.13em;
+}
+
+.solo-window-head h2 {
+  margin: 2px 0 0;
+  font-family: var(--serif);
+  font-size: 23px;
+  font-weight: 500;
+}
+
+.solo-close {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.solo-close:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.solo-window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.solo-contacts {
+  flex: 0 0 33.333%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: rgba(244, 238, 226, 0.6);
+}
+
+.solo-contacts-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.solo-contact-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.solo-empty {
+  margin: 16px 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.solo-contact {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 9px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-3);
+  text-align: left;
+  cursor: pointer;
+}
+
+.solo-contact:hover {
+  background: rgba(255, 252, 245, 0.8);
+}
+
+.solo-contact.is-active {
+  border-color: var(--line);
+  background: var(--card);
+}
+
+.solo-contact.is-blocked {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.solo-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #f6f1e6;
+  font-family: var(--serif);
+  font-size: 13px;
+}
+
+.solo-contact-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.solo-contact-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.solo-contact-copy small,
+.solo-contact-copy em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 7.5px;
+  font-style: normal;
+}
+
+.solo-chat {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 252, 246, 0.45);
+}
+
+.solo-chat-empty {
+  margin: auto;
+  max-width: 360px;
+  padding: 24px;
+  text-align: center;
+}
+
+.solo-chat-empty span {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.solo-chat-empty h3 {
+  margin: 8px 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.solo-chat-empty p {
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.75;
+}
+
+.solo-chat-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.solo-chat-head strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.solo-chat-head small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.solo-chat-status {
+  color: var(--green);
+  font-size: 8px;
+}
+
+.solo-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.solo-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  animation: solo-message-in 0.22s ease both;
+}
+
+.solo-message.is-me {
+  flex-direction: row-reverse;
+}
+
+.solo-message.is-system {
+  justify-content: center;
+}
+
+.solo-message-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 9px;
+}
+
+.solo-message p {
+  max-width: 76%;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.solo-message.is-me p {
+  background: var(--green);
+  border-color: var(--green);
+  color: #f6f1e6;
+}
+
+.solo-message.is-system p {
+  max-width: 90%;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 8.5px;
+  text-align: center;
+}
+
+.solo-typing {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  min-height: 18px;
+}
+
+.solo-typing i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: solo-typing 1s ease-in-out infinite;
+}
+
+.solo-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.solo-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.solo-options {
+  flex: 0 0 auto;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(246, 241, 230, 0.72);
+}
+
+.solo-options-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.solo-refresh {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--green);
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.solo-refresh:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.solo-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.solo-option {
+  min-height: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-3);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.solo-option:hover {
+  border-color: var(--green);
+  transform: translateY(-1px);
+}
+
+.solo-option strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.solo-option small {
+  display: block;
+  margin-top: 2px;
+  color: var(--gold);
+  font-size: 7px;
+}
+
+.solo-option em {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 7.5px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.solo-result {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--green-soft);
+}
+
+.solo-result span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.solo-result strong {
+  flex: 1;
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.solo-result .btn {
+  flex: 0 0 auto;
+}
+
+@keyframes solo-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes solo-typing {
+  0%, 100% { opacity: 0.35; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* date gate */
+
+.solo-date-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2800;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.solo-date-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 27, 23, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.solo-date-prompt,
+.solo-date-modal {
+  position: relative;
+  z-index: 1;
+  width: min(620px, 92vw);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 26px 28px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  box-shadow: 0 34px 90px -30px rgba(12, 24, 18, 0.65);
+}
+
+.solo-date-prompt {
+  text-align: center;
+}
+
+.solo-date-kicker {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.solo-date-prompt h2,
+.solo-date-modal h2 {
+  margin: 7px 0 9px;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.solo-date-prompt p,
+.solo-date-modal header p {
+  margin: 0 0 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.solo-date-prompt > strong {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--gold);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.solo-date-body {
+  margin: 16px 0 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.solo-date-copy {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.solo-date-body blockquote {
+  margin: 14px 0;
+  padding-left: 13px;
+  border-left: 2px solid var(--gold);
+  color: var(--ink-3);
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.solo-date-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.solo-date-effects span {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 9px;
+}
+
+@media (max-width: 820px) {
+  .solo-overlay {
+    padding: 8px;
+  }
+
+  .solo-window {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: none;
+    aspect-ratio: auto;
+  }
+
+  .solo-window-head {
+    padding: 10px 12px 8px;
+  }
+
+  .solo-window-head h2 {
+    font-size: 20px;
+  }
+
+  .solo-contacts {
+    flex-basis: 38%;
+  }
+
+  .solo-contact {
+    padding: 7px 5px;
+    gap: 6px;
+  }
+
+  .solo-avatar {
+    width: 25px;
+    height: 25px;
+    font-size: 11px;
+  }
+
+  .solo-contact-copy strong {
+    font-size: 12px;
+  }
+
+  .solo-contact-copy small,
+  .solo-contact-copy em {
+    font-size: 6.5px;
+  }
+
+  .solo-chat-head {
+    padding: 7px 9px;
+  }
+
+  .solo-messages {
+    padding: 9px;
+    gap: 6px;
+  }
+
+  .solo-message p {
+    max-width: 82%;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .solo-options {
+    padding: 6px 8px 8px;
+  }
+
+  .solo-option {
+    padding: 6px;
+  }
+
+  .solo-option strong {
+    font-size: 11px;
+  }
+
+  .solo-option em {
+    -webkit-line-clamp: 1;
+    font-size: 7px;
+  }
+
+  .solo-result {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .solo-date-prompt,
+  .solo-date-modal {
+    padding: 18px 16px;
+  }
+
+  .solo-date-prompt h2,
+  .solo-date-modal h2 {
+    font-size: 25px;
+  }
+
+  .solo-date-copy {
+    font-size: 12px;
+  }
+}

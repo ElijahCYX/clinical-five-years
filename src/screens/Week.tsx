@@ -14,7 +14,7 @@ import {
   courseDifficulty,
   simulateWeek,
 } from '../game'
-import type { ActionDef, DinnerInviteResult, GameState } from '../types'
+import type { ActionDef, DinnerInviteResult, GameState, SoloInvite } from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
@@ -25,6 +25,8 @@ import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
 import { CampusNoticeBoard } from './CampusNotice'
 import { BondScreen } from './Bond'
+import { SoloInviteModal } from './SoloInvite'
+import { SoloDateOverlay } from './SoloDate'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
@@ -34,6 +36,7 @@ import {
   TIMETABLE_DAYS,
   TIMETABLE_SLOTS,
 } from '../timetable'
+import { soloInviteAt } from '../solo'
 import {
   currentWeekKey,
   academicYearForSeason,
@@ -50,7 +53,7 @@ const VISIBLE_ACTIONS = [
   'electiveHomework',
   'research',
   'club',
-  'bondPlaceholder',
+  'soloInvite',
   'social',
   'partTime',
   'sport',
@@ -80,6 +83,9 @@ interface WeekScreenProps {
   onDrinkCoffee?: () => void
   onCampusRun?: () => void
   onDailySelfCare?: () => void
+  onScheduleSoloInvite?: (invite: SoloInvite) => void
+  onSoloRefusal?: (relationshipId: string) => void
+  onResolveSoloDate?: (inviteId: string) => void
   onSlotLibraryFocus?: (focus: string) => void
   onSlotDinner?: (acceptedIds: string[], declinedIds: string[], cost: number) => void
   onSlotClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
@@ -116,6 +122,9 @@ export function WeekScreen({
   onDrinkCoffee,
   onCampusRun,
   onDailySelfCare,
+  onScheduleSoloInvite,
+  onSoloRefusal,
+  onResolveSoloDate,
   onSlotLibraryFocus,
   onSlotDinner,
   onSlotClubActivity,
@@ -144,6 +153,7 @@ export function WeekScreen({
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const [clubPickerOpen, setClubPickerOpen] = useState(false)
+  const [soloInviteOpen, setSoloInviteOpen] = useState(false)
   const [skipClassOpen, setSkipClassOpen] = useState(false)
   const [skipRulesOpen, setSkipRulesOpen] = useState(false)
   const [mobilePage, setMobilePage] = useState(0)
@@ -300,6 +310,16 @@ export function WeekScreen({
       setDinnerOpen(true)
       return
     }
+    if (id === 'soloInvite') {
+      if (
+        timetableActivityAt(state, state.weekSlot) ||
+        (!state.weekSlotSkipped && timetableCourseAt(state, state.weekSlot))
+      ) {
+        return
+      }
+      setSoloInviteOpen(true)
+      return
+    }
     if (id === 'club') {
       if (canApplyClub && clubMemberships.length === 0) {
         onApplyClub?.()
@@ -402,6 +422,7 @@ export function WeekScreen({
     : VISIBLE_ACTIONS
   const weekTimetable = buildTimetable(state)
   const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
+  const activeSoloInvite = soloInviteAt(state, weekSlot)
   const currentSlotActivity = timetableActivityAt(state, weekSlot)
   const currentSlotCourse =
     !currentSlotActivity &&
@@ -630,6 +651,7 @@ export function WeekScreen({
               <span><i className="legend-dot pe" />体育课</span>
               <span><i className="legend-dot politics" />思政课</span>
               <span><i className="legend-dot club" />组织活动</span>
+              <span><i className="legend-dot solo" />单独邀约</span>
             </div>
           </div>
 
@@ -649,14 +671,17 @@ export function WeekScreen({
                   const cell = timetable.cells[dayIndex * 3 + slotIndex]
                   const course = cell.course
                   const activity = cell.activity
+                  const soloInvite = cell.soloInvite
                   return (
                     <div
                       className={`timetable-cell timetable-slot ${
                         activity
                           ? 'has-course kind-club'
-                          : course
-                            ? `has-course kind-${kindOf(course.electiveType)}`
-                            : 'is-empty'
+                          : soloInvite
+                            ? 'has-course kind-solo'
+                            : course
+                              ? `has-course kind-${kindOf(course.electiveType)}`
+                              : 'is-empty'
                       }`}
                       key={`${day}-${slot}`}
                     >
@@ -664,6 +689,11 @@ export function WeekScreen({
                         <>
                           <strong>{activity.name}</strong>
                           <small>组织活动 · 强制占格</small>
+                        </>
+                      ) : soloInvite ? (
+                        <>
+                          <strong>{soloInvite.eventName}</strong>
+                          <small>{soloInvite.partnerName} · 单独邀约</small>
                         </>
                       ) : course ? (
                         <>
@@ -1287,7 +1317,11 @@ export function WeekScreen({
                         TIMETABLE_DAYS.map((day, dayIndex) => {
                           const index = dayIndex * 3 + slotIndex
                           const cell = weekTimetable.cells[index]
-                          const hasPlan = Boolean(cell.course || cell.activity)
+                          const hasPlan = Boolean(
+                            cell.course ||
+                              cell.activity ||
+                              cell.soloInvite,
+                          )
                           const isPast = index < state.weekSlot
                           const isCurrent = index === state.weekSlot
                           return (
@@ -1301,6 +1335,7 @@ export function WeekScreen({
                               title={`${day} · ${phase} · ${
                                 cell.course?.name ??
                                 cell.activity?.name ??
+                                cell.soloInvite?.eventName ??
                                 '空闲'
                               }`}
                             />
@@ -1622,26 +1657,35 @@ export function WeekScreen({
                     </div>
                   )}
                   {visibleActions.map((id) => {
-                    if (id === 'bondPlaceholder') {
+                    if (id === 'soloInvite') {
                       return (
                         <div
-                          key="bondPlaceholder"
-                          className="action-card is-locked is-coming-soon"
-                          aria-disabled="true"
-                          title="羁绊生活模块开发中"
+                          key="soloInvite"
+                          className="action-card solo-invite-card"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSoloInviteOpen(true)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              setSoloInviteOpen(true)
+                            }
+                          }}
                         >
                           <div className="action-meta">
                             <span>社交</span>
                             <span className="action-no">—</span>
                           </div>
-                          <h3>羁绊相关</h3>
+                          <h3>单独邀约</h3>
                           <p className="action-flavor">
-                            和恋人、兄弟或闺蜜一起度过一段时间。专属生活模块还在开发中。
+                            邀请一位恋人、兄弟或闺蜜单独出去。对方会决定约会时间。
                           </p>
-                          <p className="action-effect">灰度功能 · 后续开放</p>
+                          <p className="action-effect">
+                            赴约时间另行占用 · 每位羁绊每周最多成功 2 次
+                          </p>
                           <div className="action-bottom">
-                            <span className="action-en">BOND</span>
-                            <span className="action-locked">后续开发</span>
+                            <span className="action-en">SOLO</span>
+                            <span className="action-repeat">约会时间另计</span>
                           </div>
                         </div>
                       )
@@ -2040,6 +2084,23 @@ export function WeekScreen({
               onArrangeDinner?.(acceptedIds, declinedIds, cost)
             }
           }}
+        />
+      )}
+
+      {soloInviteOpen && (
+        <SoloInviteModal
+          state={state}
+          onClose={() => setSoloInviteOpen(false)}
+          onSchedule={(invite) => onScheduleSoloInvite?.(invite)}
+          onRefuse={(relationshipId) => onSoloRefusal?.(relationshipId)}
+        />
+      )}
+
+      {activeSoloInvite && !soloInviteOpen && (
+        <SoloDateOverlay
+          state={state}
+          invite={activeSoloInvite}
+          onFinish={() => onResolveSoloDate?.(activeSoloInvite.id)}
         />
       )}
     </div>

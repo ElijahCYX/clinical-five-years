@@ -580,6 +580,18 @@ export interface ClubActivityPlan {
   committed: boolean
 }
 
+export interface SoloInvite {
+  id: string
+  relationshipId: string
+  partnerName: string
+  bondType: BondType
+  eventId: string
+  eventName: string
+  slot: number
+  weekKey: string
+  resolved: boolean
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -693,6 +705,8 @@ export interface GameState {
   lastHypothesisOfferSeason: string | null
   familyAffection: number
   familyCrisisRescued: boolean
+  soloInvites: SoloInvite[]
+  soloRefusals: Record<string, string>
   mentorRecognition: number
   walkEncounterWeekKey: string | null
   walkEncounterDayKey: string | null

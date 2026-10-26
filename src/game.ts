@@ -464,6 +464,8 @@ export function newGameState(player: Player): GameState {
     lastHypothesisOfferSeason: null,
     familyAffection: 0,
     familyCrisisRescued: false,
+    soloInvites: [],
+    soloRefusals: {},
     mentorRecognition: 0,
     walkEncounterWeekKey: null,
     walkEncounterDayKey: null,

@@ -1,6 +1,6 @@
 import { ELECTIVE_COURSE_BY_ID } from './data'
 import { ORG_BY_ID } from './organizations'
-import type { Course, GameState } from './types'
+import type { Course, GameState, SoloInvite } from './types'
 
 export const TIMETABLE_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 export const TIMETABLE_SLOTS = ['早上', '下午', '晚上'] as const
@@ -16,6 +16,7 @@ export interface TimetableCell {
   slot: number
   course: Course | null
   activity?: TimetableActivity
+  soloInvite?: SoloInvite
 }
 
 export interface TimetableCourseBlock {
@@ -172,11 +173,21 @@ export function buildTimetable(state: GameState): TimetableData {
   for (const course of shuffle(professional, random)) place(course)
   for (const course of shuffle(electivePlacement, random)) place(course)
 
+  const currentWeekKey = `${state.season.id}-${state.week}`
+  for (const invite of state.soloInvites ?? []) {
+    if (invite.weekKey !== currentWeekKey) continue
+    const cell = cells[invite.slot]
+    if (cell && !cell.course && !cell.activity) {
+      cell.soloInvite = invite
+    }
+  }
+
   return {
     cells,
     blocks,
     totalSlots: blocks.reduce((sum, block) => sum + block.slots, 0),
-    placedSlots: cells.filter((cell) => cell.course !== null || cell.activity)
-      .length,
+    placedSlots: cells.filter(
+      (cell) => cell.course !== null || cell.activity || cell.soloInvite,
+    ).length,
   }
 }
