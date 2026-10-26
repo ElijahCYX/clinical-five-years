@@ -37,7 +37,7 @@ import {
   TIMETABLE_SLOTS,
 } from '../timetable'
 import { soloInviteAt } from '../solo'
-import { hasAvailableBond } from '../bonds'
+import { hasAvailableBond, hasUnusedLoverContact } from '../bonds'
 import {
   currentWeekKey,
   academicYearForSeason,
@@ -424,6 +424,7 @@ export function WeekScreen({
   const weekTimetable = buildTimetable(state)
   const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
   const activeSoloInvite = soloInviteAt(state, weekSlot)
+  const bondContactUnused = hasUnusedLoverContact(state)
   const currentSlotActivity = timetableActivityAt(state, weekSlot)
   const currentSlotCourse =
     !currentSlotActivity &&
@@ -1258,10 +1259,21 @@ export function WeekScreen({
                 <button
                   key={key}
                   type="button"
-                  className={tab === key ? 'is-active' : ''}
+                  className={`${tab === key ? 'is-active' : ''} ${
+                    key === 'bond' && bondContactUnused ? 'bond-alert-button' : ''
+                  }`}
                   onClick={() => setTab(key)}
                 >
                   {label}
+                  {key === 'bond' && bondContactUnused && (
+                    <span
+                      className="tab-alert"
+                      aria-label="有尚未使用的联系 TA"
+                      title="有尚未使用的联系 TA"
+                    >
+                      !
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>

@@ -16494,3 +16494,74 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 .solo-window .solo-result .btn {
   font-size: 24px;
 }
+
+/* Shared breathing alert for bond-related buttons. */
+.interface-alert,
+.tab-alert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-left: 6px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: middle;
+  box-shadow: 0 0 0 2px rgba(169, 79, 56, 0.16);
+  animation: bond-alert-pulse 1.6s ease-in-out infinite;
+}
+
+.interface-btn.is-active .interface-alert,
+.tabs button.is-active .tab-alert {
+  color: #fff;
+}
+
+.tabs button.bond-alert-button,
+.interface-btn.bond-alert-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: bond-alert-wash 1.6s ease-in-out infinite;
+}
+
+.tabs button.bond-alert-button {
+  gap: 0;
+}
+
+@keyframes bond-alert-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.58;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes bond-alert-wash {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 100px rgba(169, 79, 56, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 0 100px rgba(169, 79, 56, 0.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interface-alert,
+  .tab-alert,
+  .tabs button.bond-alert-button,
+  .interface-btn.bond-alert-button {
+    animation: none;
+  }
+}

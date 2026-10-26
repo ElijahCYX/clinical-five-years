@@ -338,7 +338,7 @@ export function InterfaceNav({
     return (
       <button
         type="button"
-        className={`interface-btn ${active === key ? 'is-active' : ''} ${badge ? 'has-badge' : ''}`}
+        className={`interface-btn ${active === key ? 'is-active' : ''} ${badge ? 'has-badge' : ''} ${key === 'ta' && bondAlert ? 'bond-alert-button' : ''}`}
         onClick={onClick}
         aria-current={active === key ? 'page' : undefined}
       >

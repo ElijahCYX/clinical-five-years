@@ -1,3 +1,4 @@
+import { currentWeekKey } from './social'
 import type { BondType, GameState, Player, Relationship } from './types'
 
 export const BOND_DEFS: { type: BondType; label: string; description: string }[] = [
@@ -58,5 +59,15 @@ export function hasAvailableBond(state: GameState): boolean {
   if (!player) return false
   return state.relationships.some((relation) =>
     BOND_DEFS.some((def) => bondTypeAvailable(player, relation, def.type)),
+  )
+}
+
+
+export function hasUnusedLoverContact(state: GameState): boolean {
+  const weekKey = currentWeekKey(state)
+  return state.relationships.some(
+    (relation) =>
+      relation.partner &&
+      relation.lastContactKey !== weekKey,
   )
 }
