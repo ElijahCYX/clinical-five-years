@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ACTIONS,
   ATTRS,
@@ -149,6 +149,14 @@ export function WeekScreen({
   const [mobilePage, setMobilePage] = useState(0)
   const gameGridRef = useRef<HTMLElement | null>(null)
   const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
+  const [dayTransition, setDayTransition] = useState<{
+    key: number
+    dayLabel: string
+    weekLabel: string
+  } | null>(null)
+  const previousSlotRef = useRef(state.weekSlot)
+  const previousWeekRef = useRef(state.week)
+  const dayTransitionTimerRef = useRef<number | null>(null)
   const player = state.player
   if (!player) return null
 
@@ -414,6 +422,46 @@ export function WeekScreen({
   const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const weekPhaseSymbol = weekPhaseClass === 'morning' ? '☀' : weekPhaseClass === 'afternoon' ? '◐' : '☾'
+
+  useEffect(() => {
+    const previousSlot = previousSlotRef.current
+    const previousWeek = previousWeekRef.current
+    const isEveningToNextDay =
+      previousSlot % 3 === 2 &&
+      (state.weekSlot === previousSlot + 1 ||
+        (state.weekSlot === 0 && state.week !== previousWeek))
+    previousSlotRef.current = state.weekSlot
+    previousWeekRef.current = state.week
+
+    if (!isEveningToNextDay || tab !== 'week') return
+    const center = gameGridRef.current?.querySelector('.game-center') as HTMLElement | null
+    center?.scrollTo({ top: 0 })
+    const nextDay = TIMETABLE_DAYS[Math.floor(state.weekSlot / 3)]
+    setDayTransition({
+      key: Date.now(),
+      dayLabel: state.weekSlot === 0 && state.week !== previousWeek ? '新的一周' : nextDay,
+      weekLabel:
+        state.weekSlot === 0 && state.week !== previousWeek
+          ? `第 ${state.week} 周 · 周一`
+          : `第 ${Math.floor(state.weekSlot / 3) + 1} 天 · ${nextDay}`,
+    })
+    if (dayTransitionTimerRef.current !== null) {
+      window.clearTimeout(dayTransitionTimerRef.current)
+    }
+    dayTransitionTimerRef.current = window.setTimeout(() => {
+      setDayTransition(null)
+      dayTransitionTimerRef.current = null
+    }, 1800)
+  }, [state.weekSlot, state.week, tab])
+
+  useEffect(
+    () => () => {
+      if (dayTransitionTimerRef.current !== null) {
+        window.clearTimeout(dayTransitionTimerRef.current)
+      }
+    },
+    [],
+  )
 
   const lockReason = (action: ActionDef): string | null => {
     if (
@@ -1177,6 +1225,23 @@ export function WeekScreen({
                 </button>
               ))}
             </nav>
+
+            {dayTransition && (
+              <div
+                key={dayTransition.key}
+                className="day-transition-overlay"
+                aria-hidden="true"
+              >
+                <span className="day-transition-sun" />
+                <div className="day-transition-copy">
+                  <Eyebrow>NEW DAY / WEEK {state.week}</Eyebrow>
+                  <h2>{dayTransition.dayLabel}</h2>
+                  <p>新的一天开始了</p>
+                  <small>{dayTransition.weekLabel}</small>
+                </div>
+                <span className="day-transition-horizon" />
+              </div>
+            )}
 
             {tab === 'timetable' && renderTimetable()}
 
