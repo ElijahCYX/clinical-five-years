@@ -14678,3 +14678,22 @@ body.day-transitioning .skip-rules-overlay {
     padding: 6px 14px 8px;
   }
 }
+
+/* Campus notice: the daily broadcast always shows in full; only the personal
+   notice feed gets the remaining height and scrolls. */
+.campus-broadcast,
+.game-screen .campus-broadcast {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.campus-broadcast-copy {
+  height: auto;
+  overflow: visible;
+}
+
+.campus-player-notices,
+.game-screen .campus-player-notices {
+  flex: 1 1 auto;
+  min-height: 0;
+}
