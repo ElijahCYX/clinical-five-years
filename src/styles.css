@@ -15510,3 +15510,92 @@ html[data-explain-master="on"][data-explain-rule="off"] [data-explain-category="
     max-width: calc(100vw - 24px);
   }
 }
+
+/* Bottom interface navigation inside the main game center. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-grid {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .game-screen .game-left {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .game-screen .game-center {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+  }
+
+  .game-screen .game-right {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .game-screen .interface-nav.is-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    height: 30px;
+    margin: 5px 0 0;
+    border: 1px solid var(--line);
+    background: rgba(246, 241, 230, 0.96);
+    box-shadow: none;
+    backdrop-filter: blur(5px);
+  }
+
+  .game-screen .interface-nav.is-bottom .interface-btn {
+    padding: 4px 10px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .game-screen .interface-nav.is-bottom .interface-btn.is-active {
+    background: var(--green);
+    color: #f6f1e6;
+  }
+
+  .game-screen .interface-nav.is-bottom .interface-badge {
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-grid > .interface-nav.is-bottom {
+    position: fixed;
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 2000;
+    width: auto;
+    height: 38px;
+    margin: 0;
+    border: 1px solid var(--line-strong);
+    background: rgba(246, 241, 230, 0.97);
+    box-shadow: 0 8px 28px -14px rgba(24, 32, 26, 0.55);
+    backdrop-filter: blur(8px);
+  }
+
+  .game-screen .game-grid > .interface-nav.is-bottom .interface-btn {
+    padding: 10px 6px;
+    font-size: 10px;
+  }
+
+  .game-screen .game-left,
+  .game-screen .game-center,
+  .game-screen .game-right {
+    padding-bottom: 62px;
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-grid > .interface-nav.is-bottom {
+    border-radius: 999px;
+    overflow: hidden;
+  }
+}

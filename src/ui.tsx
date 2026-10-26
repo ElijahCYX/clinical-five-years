@@ -302,12 +302,14 @@ export function InterfaceNav({
   onWho,
   onTA,
   badges = {},
+  variant = 'top',
 }: {
   active: 'main' | 'who' | 'ta'
   onMain: () => void
   onWho: () => void
   onTA: () => void
   badges?: Partial<Record<'main' | 'who' | 'ta', string | number | boolean>>
+  variant?: 'top' | 'bottom'
 }) {
   const renderBadge = (value: string | number | boolean | undefined) => {
     if (value === undefined || value === false || value === 0 || value === '') {
@@ -344,7 +346,7 @@ export function InterfaceNav({
   }
 
   return (
-    <nav className="interface-nav" aria-label="界面切换">
+    <nav className={`interface-nav is-${variant}`} aria-label="界面切换">
       {item('main', '主界面', onMain)}
       {item('who', '我是谁', onWho)}
       {item('ta', 'TA 是谁', onTA)}

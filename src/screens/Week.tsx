@@ -1107,20 +1107,6 @@ export function WeekScreen({
           }
         />
 
-        <InterfaceNav
-          active="main"
-          onMain={() => undefined}
-          onWho={onOpenWhoAmI ?? (() => undefined)}
-          onTA={onOpenTA ?? (() => undefined)}
-          badges={{
-            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemainingThisWeek(state) || undefined,
-          }}
-        />
-
         <header className="game-head">
           <div className="game-head-left">
             <Eyebrow>
@@ -1856,6 +1842,20 @@ export function WeekScreen({
               </button>
             </div>
           </aside>
+          <InterfaceNav
+            active="main"
+            variant="bottom"
+            onMain={() => undefined}
+            onWho={onOpenWhoAmI ?? (() => undefined)}
+            onTA={onOpenTA ?? (() => undefined)}
+            badges={{
+              main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+              ta:
+                unseenRelationCount(state) > 0
+                  ? '新'
+                  : patRemainingThisWeek(state) || undefined,
+            }}
+          />
         </main>
 
         <footer className="game-footer">

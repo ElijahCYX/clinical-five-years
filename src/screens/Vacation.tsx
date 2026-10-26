@@ -96,20 +96,6 @@ export function VacationScreen({
             </button>
           }
         />
-        <InterfaceNav
-          active="main"
-          onMain={() => undefined}
-          onWho={onWho ?? (() => undefined)}
-          onTA={onTA ?? (() => undefined)}
-          badges={{
-            main: remainingActions > 0 ? remainingActions : undefined,
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemainingThisWeek(state) || undefined,
-          }}
-        />
-
         <header className="game-head">
           <div className="game-head-left">
             <Eyebrow>INTERLUDE / {meta.en}</Eyebrow>
@@ -433,6 +419,20 @@ export function VacationScreen({
               </button>
             </div>
           </aside>
+          <InterfaceNav
+            active="main"
+            variant="bottom"
+            onMain={() => undefined}
+            onWho={onWho ?? (() => undefined)}
+            onTA={onTA ?? (() => undefined)}
+            badges={{
+              main: remainingActions > 0 ? remainingActions : undefined,
+              ta:
+                unseenRelationCount(state) > 0
+                  ? '新'
+                  : patRemainingThisWeek(state) || undefined,
+            }}
+          />
         </main>
 
         <footer className="game-footer">
