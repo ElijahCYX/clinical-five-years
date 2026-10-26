@@ -14469,3 +14469,126 @@ body.day-transitioning .skip-rules-overlay {
     display: none;
   }
 }
+
+/* Desktop Week: fit the whole page and stop the centre column from scrolling. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-center.tab-week {
+    overflow-y: hidden;
+    padding-right: 0;
+  }
+
+  .game-screen .game-center.tab-week .week-title-row {
+    margin-top: 0;
+    padding: 7px 0 7px;
+  }
+
+  .game-screen .game-center.tab-week .week-controls-row {
+    margin: 2px 0 6px;
+  }
+
+  .game-screen .game-center.tab-week .daily-action-bar {
+    margin: 4px 0 6px;
+    padding: 6px 10px;
+  }
+
+  .game-screen .game-center.tab-week .free-slot-heading {
+    margin: 2px 0 6px;
+  }
+
+  .game-screen .game-center.tab-week .actions-grid {
+    gap: 6px;
+  }
+
+  .game-screen .game-center.tab-week .action-card {
+    padding: 7px 9px 6px;
+  }
+
+  .game-screen .game-center.tab-week .action-footer {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+}
+
+/* Shorter desktop windows: two rows of six actions instead of three rows of four. */
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 940px) {
+  .game-screen .game-center.tab-week .actions-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Fallback for very short desktop windows where fitting all content would be unreadable. */
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 820px) {
+  .game-screen .game-center.tab-week {
+    overflow-y: auto;
+  }
+}
+
+/* Tighter desktop Week rhythm so the no-scroll layout still fits. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .game-screen .game-center.tab-week .week-title-row {
+    padding: 5px 0;
+  }
+
+  .game-screen .game-center.tab-week .week-controls-row {
+    margin: 2px 0 4px;
+  }
+
+  .game-screen .game-center.tab-week .daily-action-bar {
+    margin: 2px 0 4px;
+    padding: 5px 10px;
+  }
+
+  .game-screen .game-center.tab-week .free-slot-heading {
+    margin: 2px 0 4px;
+  }
+
+  .game-screen .game-center.tab-week .action-footer {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 940px) {
+  .game-screen .game-center.tab-week .week-title-row {
+    padding: 3px 0;
+  }
+
+  .game-screen .game-center.tab-week .daily-action-bar {
+    margin: 1px 0 3px;
+    padding: 4px 10px;
+  }
+
+  .game-screen .game-center.tab-week .free-slot-heading {
+    margin: 1px 0 3px;
+  }
+
+  .game-screen .game-center.tab-week .action-card {
+    padding: 5px 8px 4px;
+  }
+
+  .game-screen .game-center.tab-week .action-flavor {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .game-screen .game-center.tab-week .action-footer {
+    margin-top: 3px;
+    padding-top: 3px;
+  }
+}
+
+/* On shorter desktop windows drop the redundant auto-advance footnote. */
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 920px) {
+  .game-screen .game-center.tab-week .action-footer {
+    display: none;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: landscape) and (max-height: 920px) {
+  .game-screen .game-center.tab-week .coming-soon {
+    display: none;
+  }
+}

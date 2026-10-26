@@ -1196,7 +1196,7 @@ export function WeekScreen({
           />
 
 
-          <section className={`game-center time-${weekPhaseClass}`}>
+          <section className={`game-center time-${weekPhaseClass} tab-${tab}`}>
             <div
               className={`time-phase-veil phase-${weekPhaseClass}`}
               key={weekPhaseClass}
