@@ -258,6 +258,13 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
         <span className="brand-copy">
           <span className="brand-cn">{SCHOOL_NAME}</span>
           <span className="brand-en">{SCHOOL_EN} · 学生档案</span>
+          <span className="brand-mobile-authors">
+            作者 <strong>Dingihyon<sup title="共同作者">#</sup></strong>
+            <i>·</i>
+            <strong>HuongGayu<sup title="共同作者">#</sup></strong>
+            <i>·</i>
+            <strong>林小菌</strong>
+          </span>
         </span>
       </button>
       {!minimal && (
