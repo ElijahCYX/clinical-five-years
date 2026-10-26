@@ -315,7 +315,7 @@ export function GraduationScreen({
             </h1>
             <p className="ending-lede">
               {graduated
-                ? '五年，二十季，从解剖楼到病房。你终于把学生证换成了毕业证。'
+                ? '五年，二十一季，从解剖楼到病房。你终于把学生证换成了毕业证。'
                 : '还有几项没有完成。医学这条路不差这一年，先把该补的补上。'}
             </p>
 
