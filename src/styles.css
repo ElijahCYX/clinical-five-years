@@ -14152,3 +14152,25 @@ body.day-transitioning .skip-rules-overlay {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Make the current time slot unmistakable: ~2x area with a 1 Hz breathing glow. */
+.game-center .week-slot-square.is-current {
+  z-index: 4;
+  transform-origin: center;
+  animation: week-slot-current-breathe 1s ease-in-out infinite;
+}
+
+@keyframes week-slot-current-breathe {
+  0%, 100% {
+    transform: scale(1.42);
+    box-shadow:
+      0 0 0 2px rgba(47, 91, 76, 0.2),
+      0 0 16px rgba(47, 91, 76, 0.16);
+  }
+  50% {
+    transform: scale(1.54);
+    box-shadow:
+      0 0 0 3px rgba(47, 91, 76, 0.32),
+      0 0 24px rgba(47, 91, 76, 0.28);
+  }
+}

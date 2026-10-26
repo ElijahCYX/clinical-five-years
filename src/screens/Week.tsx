@@ -1559,12 +1559,6 @@ export function WeekScreen({
                 </div>
 
                 <div className="action-footer">
-                  <div className="selected-summary">
-                    <span>时间段</span>
-                    <strong>
-                      {currentSlotDay} · {currentSlotPhase} · 第 {weekSlot + 1} / 21 段
-                    </strong>
-                  </div>
                   <span className="slot-auto-note">选择行动后自动进入下一时间段</span>
                 </div>
 
