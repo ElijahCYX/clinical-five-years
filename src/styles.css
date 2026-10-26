@@ -13416,7 +13416,7 @@ body.dinner-open {
   overflow: hidden;
   transform-origin: center;
   will-change: transform, box-shadow, filter;
-  animation: skip-modal-heartbeat 0.6s ease-in-out infinite;
+  animation: skip-modal-heartbeat 0.5s ease-in-out infinite;
 }
 
 .skip-adrenaline-flash {
@@ -13427,7 +13427,7 @@ body.dinner-open {
   background:
     radial-gradient(ellipse at center, transparent 42%, rgba(154, 61, 45, 0.12) 100%),
     linear-gradient(180deg, rgba(194, 82, 56, 0.06), transparent 26%);
-  animation: skip-adrenaline-flash 0.6s ease-in-out infinite;
+  animation: skip-adrenaline-flash 0.5s ease-in-out infinite;
 }
 
 .skip-class-modal.is-rolling > header,
@@ -13447,7 +13447,7 @@ body.dinner-open {
   inset: -5px;
   border: 1px solid rgba(169, 75, 57, 0.4);
   border-radius: 50%;
-  animation: skip-heart-ring 0.6s ease-out infinite;
+  animation: skip-heart-ring 0.5s ease-out infinite;
 }
 
 .skip-tension-head {
