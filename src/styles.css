@@ -14068,3 +14068,70 @@ body.dinner-open {
     font-size: 13px;
   }
 }
+
+/* Smoother new-day overture: keep all movement on transform/opacity,
+   avoid clip-path and animated filters so the sunrise stays on the compositor. */
+.day-transition-overlay {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  animation: day-overture-smooth 1.8s cubic-bezier(0.16, 0.72, 0.2, 1) both;
+}
+
+.day-transition-sun {
+  filter: none;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  animation: day-overture-sun-smooth 1.8s cubic-bezier(0.15, 0.7, 0.18, 1) both;
+}
+
+.day-transition-copy {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  animation: day-overture-copy-smooth 1.8s cubic-bezier(0.16, 0.72, 0.2, 1) both;
+}
+
+.day-transition-horizon {
+  will-change: transform, opacity;
+  animation: day-overture-horizon-smooth 1.8s cubic-bezier(0.16, 0.72, 0.2, 1) both;
+}
+
+@keyframes day-overture-smooth {
+  0% { opacity: 0; transform: translate3d(0, 10px, 0); }
+  14% { opacity: 1; transform: translate3d(0, 0, 0); }
+  78% { opacity: 1; transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes day-overture-sun-smooth {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 150px, 0) scale(0.88);
+  }
+  16% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 1;
+    transform: translate3d(0, -6px, 0) scale(1);
+  }
+  100% {
+    opacity: 0.72;
+    transform: translate3d(0, -24px, 0) scale(1.04);
+  }
+}
+
+@keyframes day-overture-copy-smooth {
+  0% { opacity: 0; transform: translate3d(0, 16px, 0); }
+  25% { opacity: 1; transform: translate3d(0, 0, 0); }
+  78% { opacity: 1; transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; transform: translate3d(0, -8px, 0); }
+}
+
+@keyframes day-overture-horizon-smooth {
+  0% { opacity: 0; transform: scale3d(0.35, 1, 1); }
+  30% { opacity: 1; transform: scale3d(1, 1, 1); }
+  100% { opacity: 0; transform: scale3d(1, 1, 1); }
+}
