@@ -433,7 +433,7 @@ function applySmallTextScale() {
 
   candidates.forEach(({ element, size }) => {
     if (size >= third - 0.05) return
-    const delta = third - size >= 3 ? 2 : 1
+    const delta = third - size >= 3 ? 3 : 2
     const target = Math.min(third, Math.round((size + delta) * 10) / 10)
     if (target <= size + 0.05) return
     smallTextOriginal.set(element, {
