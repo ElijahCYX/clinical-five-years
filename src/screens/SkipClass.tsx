@@ -4,20 +4,20 @@ import type { Course } from '../types'
 type MethodKey = 'paper' | 'gps' | 'digital' | 'rollcall' | 'none'
 type ReactionKey = 'friendSign' | 'fakeLocation' | 'intel' | 'friendAnswer'
 
-interface MethodInfo {
+export interface MethodInfo {
   key: MethodKey
   label: string
   hint: string
 }
 
-interface ReactionInfo {
+export interface ReactionInfo {
   key: ReactionKey
   label: string
   hint: string
   matches: MethodKey
 }
 
-const METHODS: MethodInfo[] = [
+export const METHODS: MethodInfo[] = [
   { key: 'paper', label: '纸质签到', hint: '一张纸，从第一排一路传到最后。' },
   { key: 'gps', label: 'GPS 签到', hint: '老师的屏幕上出现了一堆重叠的蓝点。' },
   { key: 'digital', label: '数字签到', hint: '群里弹出一个限时签到码，过期不候。' },
@@ -25,14 +25,16 @@ const METHODS: MethodInfo[] = [
   { key: 'none', label: '不签到', hint: '老师今天心情不错，或者也没备好课。' },
 ]
 
-const REACTIONS: ReactionInfo[] = [
+export const REACTIONS: ReactionInfo[] = [
   { key: 'friendSign', label: '朋友代签', hint: '让还在教室的朋友帮你签一个。', matches: 'paper' },
   { key: 'fakeLocation', label: '虚拟定位', hint: '打开那个“朋友推荐”的定位软件。', matches: 'gps' },
   { key: 'intel', label: '情报收集', hint: '问问教室里的朋友签到码是多少。', matches: 'digital' },
   { key: 'friendAnswer', label: '朋友代答', hint: '让朋友在老师点到你时替你答一声。', matches: 'rollcall' },
 ]
 
-const METHOD_PROBABILITIES: Record<string, number[]> = {
+export type SkipCategory = 'professional' | 'water' | 'politics' | 'pe' | 'interest'
+
+export const METHOD_PROBABILITIES: Record<SkipCategory, number[]> = {
   professional: [10, 10, 25, 15, 40],
   water: [10, 10, 10, 10, 60],
   politics: [10, 10, 25, 30, 25],
@@ -82,7 +84,7 @@ const FAIL_TEXTS: Record<ReactionKey, string[]> = {
   ],
 }
 
-function categoryFor(course: Course): keyof typeof METHOD_PROBABILITIES {
+export function skipCategoryFor(course: Course): SkipCategory {
   if (course.electiveType === 'pe') return 'pe'
   if (course.electiveType === 'politics') return 'politics'
   if (course.electiveType === 'interest') return 'interest'
@@ -91,7 +93,7 @@ function categoryFor(course: Course): keyof typeof METHOD_PROBABILITIES {
 }
 
 function drawMethod(course: Course): MethodInfo {
-  const weights = METHOD_PROBABILITIES[categoryFor(course)]
+  const weights = METHOD_PROBABILITIES[skipCategoryFor(course)]
   const total = weights.reduce((sum, value) => sum + value, 0)
   let roll = Math.random() * total
   for (let i = 0; i < METHODS.length; i += 1) {

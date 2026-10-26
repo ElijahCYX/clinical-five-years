@@ -20,6 +20,7 @@ import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
 import { SkipClassModal } from './SkipClass'
+import { SkipRulesModal } from './SkipRules'
 import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
@@ -140,6 +141,7 @@ export function WeekScreen({
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const [clubPickerOpen, setClubPickerOpen] = useState(false)
   const [skipClassOpen, setSkipClassOpen] = useState(false)
+  const [skipRulesOpen, setSkipRulesOpen] = useState(false)
   const [mobilePage, setMobilePage] = useState(0)
   const gameGridRef = useRef<HTMLElement | null>(null)
   const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
@@ -1271,13 +1273,24 @@ export function WeekScreen({
                       >
                         去上课 <small>精力 -{currentCourseEnergyCost} · 课程准备度 +5</small>
                       </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setSkipClassOpen(true)}
-                      >
-                        翘课 <small>把时间抢回来 · 先过老师这一关</small>
-                      </button>
+                      <div className="skip-action-group">
+                        <button
+                          type="button"
+                          className="btn btn-ghost skip-action-main"
+                          onClick={() => setSkipClassOpen(true)}
+                        >
+                          翘课 <small>把时间抢回来 · 先过老师这一关</small>
+                        </button>
+                        <button
+                          type="button"
+                          className="skip-info-btn"
+                          aria-label="查看翘课判定规则"
+                          title="查看翘课判定规则"
+                          onClick={() => setSkipRulesOpen(true)}
+                        >
+                          i
+                        </button>
+                      </div>
                     </div>
                   </section>
                 ) : (
@@ -1716,6 +1729,13 @@ export function WeekScreen({
               )
             }
           }}
+        />
+      )}
+
+      {skipRulesOpen && currentSlotCourse && (
+        <SkipRulesModal
+          course={currentSlotCourse}
+          onClose={() => setSkipRulesOpen(false)}
         />
       )}
 
