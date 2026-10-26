@@ -77,20 +77,6 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
           }
         />
 
-        <InterfaceNav
-          active="who"
-          onMain={onMain}
-          onWho={() => undefined}
-          onTA={onTA ?? (() => undefined)}
-          badges={{
-            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemainingThisWeek(state) || undefined,
-          }}
-        />
-
         <header className="whoami-head">
           <div>
             <Eyebrow>WHO AM I / PLAYER DOSSIER</Eyebrow>
@@ -424,6 +410,20 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
             )}
           </section>
         </main>
+        <InterfaceNav
+          active="who"
+          variant="bottom"
+          onMain={onMain}
+          onWho={() => undefined}
+          onTA={onTA ?? (() => undefined)}
+          badges={{
+            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
+          }}
+        />
       </div>
 
     </div>

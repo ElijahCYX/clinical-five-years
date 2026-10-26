@@ -15598,3 +15598,62 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     overflow: hidden;
   }
 }
+
+/* Bottom interface navigation on dossier pages. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .screen:not(.game-screen) .interface-nav.is-bottom {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    height: 32px;
+    margin: auto 0 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    background: rgba(246, 241, 230, 0.96);
+    box-shadow: none;
+    backdrop-filter: blur(5px);
+  }
+
+  .screen:not(.game-screen) .interface-nav.is-bottom .interface-btn {
+    padding: 5px 10px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .screen:not(.game-screen) .interface-nav.is-bottom .interface-btn.is-active {
+    background: var(--green);
+    color: #f6f1e6;
+  }
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .screen:not(.game-screen) .interface-nav.is-bottom {
+    position: fixed;
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 2000;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: auto;
+    height: 38px;
+    margin: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(246, 241, 230, 0.97);
+    box-shadow: 0 8px 28px -14px rgba(24, 32, 26, 0.55);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
+
+  .screen:not(.game-screen) .interface-nav.is-bottom .interface-btn {
+    padding: 10px 6px;
+    font-size: 10px;
+  }
+
+  .whoami-screen .shell,
+  .whois-screen .shell {
+    padding-bottom: 62px;
+  }
+}

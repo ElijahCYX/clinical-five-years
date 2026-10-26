@@ -134,20 +134,6 @@ export function WhoIsTAScreen({
             </button>
           }
         />
-        <InterfaceNav
-          active="ta"
-          onMain={onMain}
-          onWho={onWho}
-          onTA={() => undefined}
-          badges={{
-            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemaining || undefined,
-          }}
-        />
-
         <header className="whois-head">
           <div>
             <Eyebrow>WHO IS TA / RELATIONSHIP LEDGER</Eyebrow>
@@ -416,6 +402,21 @@ export function WhoIsTAScreen({
             </div>
           )}
         </section>
+        <InterfaceNav
+          active="ta"
+          variant="bottom"
+          onMain={onMain}
+          onWho={onWho}
+          onTA={() => undefined}
+          badges={{
+            main: state.selected.length < 2 ? 2 - state.selected.length : undefined,
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemaining || undefined,
+          }}
+        />
+
       </div>
       {birthdayTarget && (
         <div className="random-event-overlay" role="dialog" aria-modal="true">
