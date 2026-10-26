@@ -1782,14 +1782,33 @@ function RealApp() {
     if (!game) return
     const org = ORG_BY_ID[orgId]
     if (!org) return
+    const completeApplication = (state: GameState) => {
+      const nextSlot = state.weekSlot + 1
+      const advanced: GameState = {
+        ...state,
+        screen: 'week',
+        weekSlot: nextSlot,
+        weekSlotSkipped: false,
+        weekSlotActions: [...state.weekSlotActions, 'clubApplication'],
+        selected: state.selected.filter((id) => id !== 'club'),
+        energy:
+          nextSlot < 21 && nextSlot % 3 === 0
+            ? clamp(state.energy + 5, 0, 100)
+            : state.energy,
+      }
+      if (nextSlot >= 21) {
+        endWeek(advanced)
+        return
+      }
+      setGame(advanced)
+      persist(advanced)
+      setView('week')
+    }
     const success = Math.random() < clubApplicationChance(game, org)
     if (success) {
       const joined = joinClubState(game, orgId)
       if (joined === game) {
-        const next: GameState = { ...game, screen: 'week' }
-        setGame(next)
-        persist(next)
-        setView('week')
+        completeApplication({ ...game, screen: 'week' })
         showResearchNotice({
           kind: 'club',
           title: '申请结果',
@@ -1807,15 +1826,10 @@ function RealApp() {
           committed: true,
         },
       }
-      setGame(next)
-      persist(next)
-      setView('week')
+      completeApplication(next)
       showClubWelcome(orgId)
     } else {
-      const next: GameState = { ...game, screen: 'week' }
-      setGame(next)
-      persist(next)
-      setView('week')
+      completeApplication({ ...game, screen: 'week' })
       showResearchNotice({
         kind: 'club',
         title: '申请结果',
