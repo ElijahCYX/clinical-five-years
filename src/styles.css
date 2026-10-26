@@ -15045,3 +15045,136 @@ body.day-transitioning .skip-rules-overlay {
   filter: grayscale(1);
   cursor: not-allowed;
 }
+
+/* Desktop canvas ratio selector. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .screen > .shell {
+    width: min(
+      calc(100vw - 24px),
+      calc((100dvh - 24px) * var(--canvas-aspect, 1.6))
+    );
+    aspect-ratio: var(--canvas-aspect, 1.6);
+  }
+}
+
+.canvas-ratio-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.canvas-ratio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 245, 0.5);
+  color: var(--ink-3);
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.canvas-ratio-chip i {
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.canvas-ratio-chip:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.canvas-ratio-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 120;
+  width: 186px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 16px 36px -24px rgba(36, 30, 22, 0.45);
+}
+
+.canvas-ratio-menu > p {
+  margin: 0 0 6px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 11px;
+}
+
+.canvas-ratio-menu button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1px 8px;
+  width: 100%;
+  padding: 7px 6px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--ink-3);
+  text-align: left;
+  cursor: pointer;
+}
+
+.canvas-ratio-menu button:hover,
+.canvas-ratio-menu button.is-active {
+  background: var(--green-soft);
+}
+
+.canvas-ratio-menu button strong {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.canvas-ratio-menu button small {
+  grid-column: 1 / 2;
+  color: var(--muted);
+  font-size: 7.5px;
+}
+
+.canvas-ratio-menu button em {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+  align-self: center;
+  color: var(--green);
+  font-size: 7.5px;
+  font-style: normal;
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .canvas-ratio-wrap {
+    display: none;
+  }
+}
+
+/* Narrower canvas ratios: compress the Week action grid so it still fits. */
+html[data-canvas-ratio="3:2"] .game-screen .game-center.tab-week .actions-grid,
+html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .actions-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+
+html[data-canvas-ratio="3:2"] .game-screen .game-center.tab-week .action-card,
+html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .action-card {
+  padding: 5px 7px 4px;
+}
+
+html[data-canvas-ratio="3:2"] .game-screen .game-center.tab-week .action-flavor,
+html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .action-flavor {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.35;
+}

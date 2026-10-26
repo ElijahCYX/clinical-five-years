@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { GAME_TITLE, SCHOOL_EN, SCHOOL_NAME } from './data'
 import { getSaveHandler, requestSave, subscribeSave } from './saveBridge'
 
@@ -45,6 +45,108 @@ function SaveTopbarButton() {
   )
 }
 
+const CANVAS_RATIO_KEY = 'clinical-five-years-canvas-ratio'
+
+type CanvasRatioId = 'auto' | '16:10' | '3:2' | '4:3'
+
+const CANVAS_RATIOS: Array<{ id: CanvasRatioId; label: string; detail: string }> = [
+  { id: 'auto', label: '自适应', detail: '跟随窗口' },
+  { id: '16:10', label: '16:10', detail: '标准画布' },
+  { id: '3:2', label: '3:2', detail: '略高一档' },
+  { id: '4:3', label: '4:3', detail: '更接近方形' },
+]
+
+function canvasAspectFor(id: CanvasRatioId): number {
+  if (id === '16:10') return 1.6
+  if (id === '3:2') return 1.5
+  if (id === '4:3') return 4 / 3
+  const raw = (window.innerWidth - 24) / Math.max(1, window.innerHeight - 24)
+  return Math.max(1.2, Math.min(2.2, raw))
+}
+
+function applyCanvasRatio(id: CanvasRatioId) {
+  const aspect = canvasAspectFor(id)
+  document.documentElement.style.setProperty('--canvas-aspect', aspect.toFixed(5))
+  document.documentElement.dataset.canvasRatio = id
+}
+
+function readStoredCanvasRatio(): CanvasRatioId {
+  const stored = localStorage.getItem(CANVAS_RATIO_KEY)
+  return CANVAS_RATIOS.some((item) => item.id === stored)
+    ? (stored as CanvasRatioId)
+    : '16:10'
+}
+
+function CanvasRatioButton() {
+  const [ratio, setRatio] = useState<CanvasRatioId>(readStoredCanvasRatio)
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const apply = () => applyCanvasRatio(ratio)
+    apply()
+    localStorage.setItem(CANVAS_RATIO_KEY, ratio)
+    if (ratio !== 'auto') return
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
+  }, [ratio])
+
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
+
+  const current = CANVAS_RATIOS.find((item) => item.id === ratio) ?? CANVAS_RATIOS[1]
+
+  return (
+    <div className="canvas-ratio-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className="canvas-ratio-chip"
+        aria-label="调整画布比例"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span>画布 {current.label}</span>
+        <i aria-hidden="true">⌄</i>
+      </button>
+      {open && (
+        <div className="canvas-ratio-menu" role="menu">
+          <p>画布比例</p>
+          {CANVAS_RATIOS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={ratio === item.id}
+              className={ratio === item.id ? 'is-active' : ''}
+              onClick={() => {
+                setRatio(item.id)
+                setOpen(false)
+              }}
+            >
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+              {ratio === item.id && <em>当前</em>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
   return (
     <header className="topbar">
@@ -82,6 +184,7 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
         </div>
       )}
       <div className="topbar-right">
+        <CanvasRatioButton />
         <SaveTopbarButton />
         {right}
       </div>
