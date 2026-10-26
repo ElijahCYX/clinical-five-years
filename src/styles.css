@@ -14234,3 +14234,24 @@ body.day-transitioning .skip-rules-overlay {
     margin-left: 4px;
   }
 }
+
+/* Desktop: cap the day strip height, keep the enlarged current square exactly
+   square, and let flex shrink instead of painting over neighbours. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .week-slot-strip {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .week-slot-square {
+    max-width: 34px;
+    max-height: 34px;
+  }
+
+  .game-center .week-slot-square.is-current {
+    flex: 1.45 1 0;
+    max-width: 48px;
+    max-height: 48px;
+    aspect-ratio: 1;
+  }
+}
