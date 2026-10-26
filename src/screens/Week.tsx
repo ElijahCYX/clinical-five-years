@@ -1496,7 +1496,7 @@ export function WeekScreen({
 
                 <div className="free-slot-heading">
                   <span>自由行动</span>
-                  <p>
+                  <p className="slot-free-note">
                     {state.weekSlotSkipped
                       ? '你翘掉了这节课，这个时间段现在归你自己安排。'
                       : '当前时间段没有课程，可以自由安排。'}

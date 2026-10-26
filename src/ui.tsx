@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { GAME_TITLE, SCHOOL_EN, SCHOOL_NAME } from './data'
 import { getSaveHandler, requestSave, subscribeSave } from './saveBridge'
+import {
+  getExplanationSettings,
+  setExplanationSettings,
+  subscribeExplanation,
+  type ExplanationCategory,
+} from './explanation'
 
 export function CrossMark({ size = 34 }: { size?: number }) {
   return (
@@ -42,6 +48,102 @@ function SaveTopbarButton() {
       <span className="save-chip-dot" aria-hidden="true" />
       保存进度
     </button>
+  )
+}
+
+const EXPLAIN_CATEGORIES: Array<{
+  id: ExplanationCategory
+  label: string
+  detail: string
+}> = [
+  { id: 'page', label: '页面导语', detail: '页面标题下的介绍与开场说明' },
+  { id: 'card', label: '卡片描述', detail: '行动、计划与习惯卡上的说明文案' },
+  { id: 'rule', label: '规则提示', detail: '注意事项、提醒与规则说明' },
+]
+
+function ExplanationToggle() {
+  const settings = useSyncExternalStore(
+    subscribeExplanation,
+    getExplanationSettings,
+    getExplanationSettings,
+  )
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
+
+  const setCategory = (category: ExplanationCategory) => {
+    setExplanationSettings({ [category]: !settings[category] })
+  }
+
+  return (
+    <div className="explain-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className={`explain-toggle ${settings.master ? 'is-on' : ''}`}
+        aria-pressed={settings.master}
+        aria-label="显示或隐藏解释说明"
+        title={settings.master ? '隐藏解释说明' : '显示解释说明'}
+        onClick={() => {
+          setExplanationSettings({ master: !settings.master })
+          if (settings.master) setOpen(false)
+        }}
+      >
+        <span className="explain-toggle-glyph" aria-hidden="true">i</span>
+        <span className="explain-toggle-label">解释</span>
+        <span className="explain-toggle-track" aria-hidden="true">
+          <span />
+        </span>
+      </button>
+      {settings.master && (
+        <button
+          type="button"
+          className={`explain-caret ${open ? 'is-open' : ''}`}
+          aria-label="解释说明分类"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          ⌄
+        </button>
+      )}
+      {open && settings.master && (
+        <div className="explain-menu" role="menu">
+          <p>解释说明</p>
+          {EXPLAIN_CATEGORIES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="switch"
+              aria-checked={settings[item.id]}
+              className={`explain-menu-row ${settings[item.id] ? 'is-on' : ''}`}
+              onClick={() => setCategory(item.id)}
+            >
+              <span>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </span>
+              <i aria-hidden="true">
+                <span />
+              </i>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -184,6 +286,7 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
         </div>
       )}
       <div className="topbar-right">
+        <ExplanationToggle />
         <CanvasRatioButton />
         <SaveTopbarButton />
         {right}

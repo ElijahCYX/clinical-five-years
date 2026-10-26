@@ -195,8 +195,10 @@ export function PlanScreen({
                     className={`habit-card ${selected ? 'is-selected' : ''} ${
                       disabled ? 'is-disabled' : ''
                     }`}
-                    onClick={() => toggleHabit(item.id)}
-                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) toggleHabit(item.id)
+                    }}
+                    data-disabled={disabled || undefined}
                   >
                     <span className="habit-en">{item.en}</span>
                     <span className="habit-name">
