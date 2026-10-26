@@ -65,6 +65,8 @@ export function SoloInviteModal({
   const [phase, setPhase] = useState<'idle' | 'hello' | 'options' | 'inviting' | 'result'>('idle')
   const [result, setResult] = useState<SoloResult | null>(null)
   const [frozenChat, setFrozenChat] = useState(false)
+  const [historyDivider, setHistoryDivider] = useState(false)
+  const [historyLeaving, setHistoryLeaving] = useState(false)
   const messageId = useRef(0)
   const timers = useRef<number[]>([])
   const chatRef = useRef<HTMLDivElement | null>(null)
@@ -93,6 +95,35 @@ export function SoloInviteModal({
     }
   }, [messages, typing, options, result])
 
+  const startHelloFlow = (relation: Relationship, withDivider: boolean) => {
+    setHistoryDivider(withDivider)
+    setHistoryLeaving(false)
+    setFrozenChat(false)
+    setMessages([])
+    setOptions([])
+    setRefreshed(false)
+    setResult(null)
+    setTyping(false)
+    setPhase('hello')
+    const bond = bondOf(relation)
+    const reply = randomOf(SOLO_PARTNER_REPLIES[bond])
+
+    timers.current.push(
+      window.setTimeout(() => push('me', '在吗？'), 250),
+      window.setTimeout(() => {
+        setTyping(true)
+      }, 950),
+      window.setTimeout(() => {
+        setTyping(false)
+        push('them', reply)
+      }, 2250),
+      window.setTimeout(() => {
+        setOptions(drawSoloOptions(bond, soloSeasonKind(state)))
+        setPhase('options')
+      }, 3250),
+    )
+  }
+
   const selectContact = (relation: Relationship) => {
     if (soloContactBlocked(state, relation)) return
     clearTimers()
@@ -103,6 +134,8 @@ export function SoloInviteModal({
     setResult(null)
     setTyping(false)
     setFrozenChat(false)
+    setHistoryDivider(false)
+    setHistoryLeaving(false)
 
     const frozenRecord = (state.soloChatRecords ?? []).find(
       (record) =>
@@ -144,24 +177,36 @@ export function SoloInviteModal({
       return
     }
 
-    setPhase('hello')
-    const bond = bondOf(relation)
-    const reply = randomOf(SOLO_PARTNER_REPLIES[bond])
+    const previousRecord = (state.soloChatRecords ?? [])
+      .filter(
+        (record) =>
+          record.weekKey === soloWeekKey(state) &&
+          record.relationshipId === relation.id &&
+          record.attemptSlot !== state.weekSlot,
+      )
+      .sort((a, b) => b.attemptSlot - a.attemptSlot)[0]
 
-    timers.current.push(
-      window.setTimeout(() => push('me', '在吗？'), 250),
-      window.setTimeout(() => {
-        setTyping(true)
-      }, 950),
-      window.setTimeout(() => {
-        setTyping(false)
-        push('them', reply)
-      }, 2250),
-      window.setTimeout(() => {
-        setOptions(drawSoloOptions(bond, soloSeasonKind(state)))
-        setPhase('options')
-      }, 3250),
-    )
+    if (previousRecord) {
+      setFrozenChat(true)
+      setHistoryDivider(false)
+      setMessages(
+        previousRecord.chat.map((line, index) => ({
+          id: index + 1,
+          from: line.from,
+          text: line.text,
+        })),
+      )
+      setPhase('idle')
+      timers.current.push(
+        window.setTimeout(() => setHistoryLeaving(true), 300),
+        window.setTimeout(() => {
+          startHelloFlow(relation, true)
+        }, 800),
+      )
+      return
+    }
+
+    startHelloFlow(relation, false)
   }
 
   const refreshOptions = () => {
@@ -374,7 +419,18 @@ export function SoloInviteModal({
                   </span>
                 </header>
 
-                <div className={`solo-messages ${frozenChat ? 'is-frozen' : ''}`}>
+                <div
+                  className={`solo-messages ${frozenChat ? 'is-frozen' : ''} ${
+                    historyLeaving ? 'is-leaving' : ''
+                  }`}
+                >
+                  {historyDivider && (
+                    <div className="solo-history-divider">
+                      <span />
+                      <em>以下为新消息</em>
+                      <span />
+                    </div>
+                  )}
                   {messages.map((message) => (
                     <div
                       key={message.id}
