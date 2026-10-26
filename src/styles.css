@@ -14873,3 +14873,44 @@ body.day-transitioning .skip-rules-overlay {
     animation: none;
   }
 }
+
+/* Three time-of-day gradients for the 21 slot squares:
+   morning = gold, afternoon = green, evening = violet. */
+.week-slot-square.slot-morning {
+  --slot-past-from: #6f5220;
+  --slot-past-to: #b98737;
+  --slot-wash: rgba(218, 174, 92, 0.2);
+  --slot-border: rgba(166, 128, 55, 0.52);
+}
+
+.week-slot-square.slot-afternoon {
+  --slot-past-from: #294d40;
+  --slot-past-to: #5c8469;
+  --slot-wash: rgba(126, 162, 134, 0.2);
+  --slot-border: rgba(77, 116, 92, 0.5);
+}
+
+.week-slot-square.slot-evening {
+  --slot-past-from: #463768;
+  --slot-past-to: #7b6aa2;
+  --slot-wash: rgba(150, 135, 186, 0.2);
+  --slot-border: rgba(107, 92, 145, 0.5);
+}
+
+.week-slot-square.is-past {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--slot-past-from), var(--slot-past-to));
+  color: #fff9ed;
+}
+
+.week-slot-square.is-future {
+  border-color: var(--slot-border);
+  background: linear-gradient(135deg, var(--slot-wash), rgba(255, 252, 245, 0.48));
+  color: var(--ink-3);
+}
+
+.game-center .week-slot-square.is-current {
+  border-color: var(--slot-border);
+  background: linear-gradient(135deg, var(--slot-past-from), var(--slot-past-to));
+  color: #fff9ed;
+}

@@ -1308,23 +1308,22 @@ export function WeekScreen({
                           const cell = weekTimetable.cells[index]
                           const isPast = index < state.weekSlot
                           const isCurrent = index === state.weekSlot
-                          // 过去的时间格从深绿逐渐过渡到浅苔绿，像时间被一格一格用掉。
-                          const pastFill = isPast
-                            ? {
-                                background: `linear-gradient(135deg, hsl(158 28% ${20 + index * 0.9}%), hsl(148 22% ${27 + index * 0.9}%))`,
-                              }
-                            : undefined
+                          const slotPhase =
+                            slotIndex === 0
+                              ? 'morning'
+                              : slotIndex === 1
+                                ? 'afternoon'
+                                : 'evening'
                           return (
                             <div
                               key={`${day}-${phase}`}
-                              className={`week-slot-square ${
+                              className={`week-slot-square slot-${slotPhase} ${
                                 isPast
                                   ? 'is-past'
                                   : isCurrent
                                     ? 'is-current'
                                     : 'is-future'
                               } ${cell.course ? 'has-course' : ''}`}
-                              style={pastFill}
                               title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
                             >
                               <span>{index + 1}</span>
