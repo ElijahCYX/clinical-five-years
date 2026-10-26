@@ -1255,84 +1255,71 @@ export function WeekScreen({
                     <h2>这周，你想怎么过？</h2>
                     <p>21 个时间段，每次选择都会推进时间。当前：{currentSlotDay} · {currentSlotPhase}。</p>
                   </div>
-                  <div className="week-header-stack">
-                    <div
-                      className={`week-phase-badge phase-${weekPhaseClass}`}
-                      key={weekPhaseClass}
-                    >
-                      <span className="week-phase-symbol" aria-hidden="true">
-                        {weekPhaseSymbol}
-                      </span>
-                      <div>
-                        <small>{currentSlotDay}</small>
-                        <strong>{currentSlotPhase}</strong>
-                      </div>
-                      <em>{weekSlot + 1} / 21</em>
+                  <div
+                    className={`week-phase-badge mobile-week-badge phase-${weekPhaseClass}`}
+                    key={`mobile-${weekPhaseClass}`}
+                  >
+                    <span className="week-phase-symbol" aria-hidden="true">
+                      {weekPhaseSymbol}
+                    </span>
+                    <div>
+                      <small>{currentSlotDay}</small>
+                      <strong>{currentSlotPhase}</strong>
                     </div>
-                    <div className="week-minimap" aria-label="本周时间段进度">
-                      <div className="week-minimap-grid">
-                        {TIMETABLE_DAYS.map((day, dayIndex) =>
-                          TIMETABLE_SLOTS.map((phase, slotIndex) => {
-                            const index = dayIndex * 3 + slotIndex
-                            const cell = weekTimetable.cells[index]
-                            const isPast = index < state.weekSlot
-                            const isCurrent = index === state.weekSlot
-                            return (
-                              <span
-                                key={`${day}-${phase}`}
-                                className={`week-minimap-cell ${
-                                  isPast
-                                    ? 'is-past'
-                                    : isCurrent
-                                      ? 'is-current'
-                                      : 'is-future'
-                                } ${cell.course ? 'has-course' : ''}`}
-                                title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
-                              >
-                                {index + 1}
-                              </span>
-                            )
-                          }),
-                        )}
-                      </div>
-                    </div>
+                    <em>{weekSlot + 1} / 21</em>
                   </div>
                 </div>
 
-                <div className="week-slot-strip" aria-label="本周时间段进度">
-                  {TIMETABLE_DAYS.map((day, dayIndex) => (
-                    <div className="week-slot-day" key={day}>
-                      {TIMETABLE_SLOTS.map((phase, slotIndex) => {
-                        const index = dayIndex * 3 + slotIndex
-                        const cell = weekTimetable.cells[index]
-                        const isPast = index < state.weekSlot
-                        const isCurrent = index === state.weekSlot
-                        // 过去的时间格从深绿逐渐过渡到浅苔绿，像时间被一格一格用掉。
-                        const pastFill = isPast
-                          ? {
-                              background: `linear-gradient(135deg, hsl(158 28% ${20 + index * 0.9}%), hsl(148 22% ${27 + index * 0.9}%))`,
-                            }
-                          : undefined
-                        return (
-                          <div
-                            key={`${day}-${phase}`}
-                            className={`week-slot-square ${
-                              isPast
-                                ? 'is-past'
-                                : isCurrent
-                                  ? 'is-current'
-                                  : 'is-future'
-                            } ${cell.course ? 'has-course' : ''}`}
-                            style={pastFill}
-                            title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
-                          >
-                            <span>{index + 1}</span>
-                            <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
-                          </div>
-                        )
-                      })}
+                <div className="week-controls-row">
+                  <div className="week-slot-strip" aria-label="本周时间段进度">
+                    {TIMETABLE_DAYS.map((day, dayIndex) => (
+                      <div className="week-slot-day" key={day}>
+                        {TIMETABLE_SLOTS.map((phase, slotIndex) => {
+                          const index = dayIndex * 3 + slotIndex
+                          const cell = weekTimetable.cells[index]
+                          const isPast = index < state.weekSlot
+                          const isCurrent = index === state.weekSlot
+                          // 过去的时间格从深绿逐渐过渡到浅苔绿，像时间被一格一格用掉。
+                          const pastFill = isPast
+                            ? {
+                                background: `linear-gradient(135deg, hsl(158 28% ${20 + index * 0.9}%), hsl(148 22% ${27 + index * 0.9}%))`,
+                              }
+                            : undefined
+                          return (
+                            <div
+                              key={`${day}-${phase}`}
+                              className={`week-slot-square ${
+                                isPast
+                                  ? 'is-past'
+                                  : isCurrent
+                                    ? 'is-current'
+                                    : 'is-future'
+                              } ${cell.course ? 'has-course' : ''}`}
+                              style={pastFill}
+                              title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
+                            >
+                              <span>{index + 1}</span>
+                              <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div
+                    className={`week-phase-badge desktop-week-badge phase-${weekPhaseClass}`}
+                    key={`desktop-${weekPhaseClass}`}
+                  >
+                    <span className="week-phase-symbol" aria-hidden="true">
+                      {weekPhaseSymbol}
+                    </span>
+                    <div>
+                      <small>{currentSlotDay}</small>
+                      <strong>{currentSlotPhase}</strong>
                     </div>
-                  ))}
+                    <em>{weekSlot + 1} / 21</em>
+                  </div>
                 </div>
 
                 <div className="daily-action-bar">

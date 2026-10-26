@@ -14388,3 +14388,84 @@ body.day-transitioning .skip-rules-overlay {
     filter: brightness(1.14);
   }
 }
+
+/* Desktop week controls: one 1×21 slot row on the left, a 200px time card on
+   the right. Their horizontal ranges must not overlap. */
+.week-controls-row {
+  display: block;
+}
+
+.desktop-week-badge {
+  display: none;
+}
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  .week-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 10px;
+  }
+
+  .week-controls-row > .week-slot-strip {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+    justify-content: space-between;
+  }
+
+  .week-controls-row .week-slot-day {
+    display: contents;
+  }
+
+  .week-controls-row .week-slot-square {
+    max-width: none;
+    max-height: none;
+    flex: 1 1 0;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .week-controls-row .week-slot-square.is-current {
+    flex: 1.45 1 0;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: 1;
+  }
+
+  .week-controls-row .desktop-week-badge {
+    display: flex;
+    flex: 0 0 200px;
+    width: 200px;
+    min-width: 200px;
+    height: 60px;
+    min-height: 60px;
+    box-sizing: border-box;
+    padding: 9px 11px;
+    gap: 10px;
+  }
+
+  .week-controls-row .desktop-week-badge .week-phase-symbol {
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+  }
+
+  .week-controls-row .desktop-week-badge small {
+    font-size: 9px;
+  }
+
+  .week-controls-row .desktop-week-badge strong {
+    font-size: 18px;
+  }
+
+  .week-controls-row .desktop-week-badge em {
+    font-size: 10px;
+  }
+
+  .mobile-week-badge {
+    display: none;
+  }
+}
