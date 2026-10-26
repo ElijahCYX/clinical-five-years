@@ -1,7 +1,7 @@
 import type { GameState, NoticeItem } from './types'
 import { gameDate } from './social'
 
-// ---------- A 库：30 条天气播报 ----------
+// ---------- A 库：300 条天气播报 ----------
 
 export const WEATHER_LINES = [
   '今天多云，太阳短暂露了个脸，又很快缩回云层后面。',
@@ -106,6 +106,49 @@ export const WEATHER_LINES = [
   '今天晴，操场的跑道被晒得发白，跑完一圈鞋底都是热的。',
 ]
 
+// 200 条额外天气播报：20 种天气开头 × 10 种校园收尾。
+const EXTRA_WEATHER_OPENINGS = [
+  '今天晴，天蓝得很干净，风把云推得很远',
+  '今天多云，云走得不快，光在校园里慢慢移动',
+  '今天阴，云层低低地压着教学楼',
+  '今天小雨，雨点不密，路面刚被打湿',
+  '今天阵雨，雨来得急，停得也快',
+  '今天大风，树影在墙上晃个不停',
+  '今天降温，空气里有清晰的凉意',
+  '今天回暖，风里带着一点潮气',
+  '今天有雾，远处的楼只剩下轮廓',
+  '今天闷热，树叶一动不动',
+  '今天空气干燥，阳光落在皮肤上有点烫',
+  '今天湿冷，风钻进袖口',
+  '今天傍晚转晴，云边露出一点金色',
+  '今天清晨有薄霜，草地白了一层',
+  '今天午后阳光很好，走廊里很亮',
+  '今天夜里有雨，早晨的地面还湿着',
+  '今天风停了，湖面很平',
+  '今天云层很厚，天光一直没完全亮起来',
+  '今天空气清冽，远处的山看得很清楚',
+  '今天晴间多云，光影在路面上来回换',
+]
+
+const EXTRA_WEATHER_ENDINGS = [
+  '图书馆门口的猫换了个更暖的位置，继续睡',
+  '食堂门口的热饮窗口排起了短队，大家捧着杯子不肯松手',
+  '教学楼的走廊比平时安静，只有翻书声和脚步声',
+  '操场上的人不多，跑道被风吹得很干净',
+  '湖边的长椅上落了几片叶子，没有人急着坐上去',
+  '宿舍楼下的被褥排成一排，像一场小型展览',
+  '校医院门口多了几个来看感冒的人，队伍慢慢往前挪',
+  '快递站门口的纸箱被挪到屋檐下，取件的人挤成一团',
+  '自习室的窗玻璃上蒙着一层水汽，有人随手画了个笑脸',
+  '林荫道上的落叶被扫成几堆，又很快被风吹散',
+]
+
+WEATHER_LINES.push(
+  ...EXTRA_WEATHER_OPENINGS.flatMap((opening) =>
+    EXTRA_WEATHER_ENDINGS.map((ending) => `${opening}。${ending}。`),
+  ),
+)
+
 // ---------- B 库：300 条校园事件 ----------
 
 const CAMPUS_PLACES = [
@@ -198,10 +241,10 @@ const HOLIDAYS: HolidayDef[] = [
     eveLine: '劳动节快到了，教室里已经有人偷偷查起了出行攻略。',
   },
   {
-    name: '浙江大学校庆日',
+    name: '渐江大学校庆日',
     month: 5,
     day: 21,
-    line: '5 月 21 日是浙江大学校庆日。校园里挂起了校旗，老校友陆续回来，在曾经上课的楼前拍照。',
+    line: '5 月 21 日是渐江大学校庆日。校园里挂起了校旗，老校友陆续回来，在曾经上课的楼前拍照。',
     eveLine: '5 月 21 日校庆日快到了，校园里开始布置展板和横幅，空气里有一种要过节的热闹。',
   },
   {
@@ -269,9 +312,9 @@ function holidayMonth(holiday: HolidayDef, year: number): number {
 export function getHolidayBroadcast(year: number, month: number): string {
   const current = HOLIDAYS.filter((holiday) => holidayMonth(holiday, year) === month)
   if (current.length > 0) {
-    const zju = current.find((holiday) => holiday.name === '浙江大学校庆日')
+    const zju = current.find((holiday) => holiday.name === '渐江大学校庆日')
     if (zju && current.some((holiday) => holiday.name === '劳动节')) {
-      return '这个月既有劳动节，也迎来了 5 月 21 日浙江大学校庆日。校园里挂起了校旗，老校友陆续回来，在曾经上课的楼前拍照。'
+      return '这个月既有劳动节，也迎来了 5 月 21 日渐江大学校庆日。校园里挂起了校旗，老校友陆续回来，在曾经上课的楼前拍照。'
     }
     return current[0].line
   }
@@ -304,12 +347,13 @@ export interface CampusBroadcast {
 
 export function getCampusBroadcast(state: GameState): CampusBroadcast {
   const { year, month } = gameDate(state)
+  const dayIndex = Math.max(0, Math.min(6, Math.floor(state.weekSlot / 3)))
   const seed = hashString(
-    `${state.season.id}-${state.week}-${year}-${month}-${state.player?.name ?? ''}`,
+    `${state.season.id}-${state.week}-${dayIndex}-${year}-${month}-${state.player?.name ?? ''}`,
   )
   const weather = WEATHER_LINES[seed % WEATHER_LINES.length]
   const campus =
-    CAMPUS_EVENT_LINES[(seed * 7 + state.week) % CAMPUS_EVENT_LINES.length]
+    CAMPUS_EVENT_LINES[(seed * 7 + dayIndex) % CAMPUS_EVENT_LINES.length]
   const holiday = getHolidayBroadcast(year, month)
   return { weather, campus, holiday }
 }

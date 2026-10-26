@@ -14829,3 +14829,47 @@ body.day-transitioning .skip-rules-overlay {
     scrollbar-width: thin;
   }
 }
+
+/* Campus broadcast: a slow, calm 6s background breath. */
+.campus-broadcast {
+  position: relative;
+  overflow: hidden;
+}
+
+.campus-broadcast::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    rgba(207, 229, 202, 0.32),
+    rgba(255, 250, 236, 0.1) 45%,
+    rgba(194, 220, 193, 0.28)
+  );
+  background-size: 200% 200%;
+  animation: campus-broadcast-breathe 6s ease-in-out infinite;
+}
+
+.campus-broadcast > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes campus-broadcast-breathe {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 0.55;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campus-broadcast::before {
+    animation: none;
+  }
+}
