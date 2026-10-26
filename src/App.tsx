@@ -3210,6 +3210,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       weekSlotSkipped: true,
+      stress: success ? game.stress : clamp(game.stress + 5, 0, 100),
       skipCaught: success
         ? game.skipCaught
         : {

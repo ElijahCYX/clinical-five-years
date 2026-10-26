@@ -234,7 +234,7 @@ export function SkipClassModal({
           <div className={`skip-result-zone ${result.success ? 'is-success' : 'is-fail'}`}>
             <p className="random-event-text">{result.text}</p>
             <div className="skip-result-stamp">
-              {result.success ? '本次翘课未被发现' : '翘课失败 · 平时分 -20%'}
+              {result.success ? '本次翘课未被发现' : '翘课失败 · 平时分 -20% · 压力 +5'}
             </div>
             <footer className="random-event-footer">
               <p>
