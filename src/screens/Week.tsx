@@ -1329,17 +1329,15 @@ export function WeekScreen({
                 )}
 
                 {courses.length > 1 && state.weekFocus && (
-                  <div className="week-focus-bar">
+                  <button
+                    type="button"
+                    className="week-focus-bar"
+                    onClick={() => setFocusPrompt('adjust')}
+                  >
                     <span>本周主攻</span>
                     <strong>{focusLabel}</strong>
-                    <button
-                      type="button"
-                      className="text-btn"
-                      onClick={() => setFocusPrompt('adjust')}
-                    >
-                      调整
-                    </button>
-                  </div>
+                    <span className="week-focus-adjust">点击调整 →</span>
+                  </button>
                 )}
 
                 <div className="actions-grid">
