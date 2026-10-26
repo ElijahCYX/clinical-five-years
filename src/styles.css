@@ -14779,9 +14779,9 @@ body.day-transitioning .skip-rules-overlay {
   }
 
   .week-overview-dot.is-current {
-    width: 9px;
-    height: 9px;
-    border-radius: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     border-color: var(--time-accent, var(--green));
     background: transparent;
     animation: week-overview-current-breathe 1s ease-in-out infinite;
