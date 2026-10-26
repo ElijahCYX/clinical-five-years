@@ -127,6 +127,17 @@ function reactionRoll(reaction: ReactionKey): { success: boolean; text: string }
   return { success: false, text: FAIL_TEXTS.friendAnswer[Math.floor(Math.random() * 2)] }
 }
 
+const SUSPENSE_LINES = [
+  '老师清了清嗓子，教室里突然安静下来。',
+  '前排有人悄悄把手机扣在桌上，假装自己很忙。',
+  '你听见自己的心跳，比上课铃还响。',
+  '老师的目光在名单上停了一下，又慢慢移开。',
+  '你已经开始后悔刚才为什么没去教室。',
+  '群里没人说话，只有一个人发了个“？”。',
+  '你盯着屏幕，感觉这三秒比一整个早八还长。',
+  '老师的笔尖在签到表上方悬着，像一把小小的刀。',
+]
+
 export function SkipClassModal({
   course,
   onResolved,
@@ -137,6 +148,7 @@ export function SkipClassModal({
   const method = useMemo(() => drawMethod(course), [course])
   const [rolling, setRolling] = useState(true)
   const [reelIndex, setReelIndex] = useState(0)
+  const [suspenseIndex, setSuspenseIndex] = useState(0)
   const [stage, setStage] = useState<'roll' | 'choose' | 'result'>('roll')
   const [result, setResult] = useState<{ success: boolean; text: string } | null>(null)
   const correctReaction = REACTIONS.find((item) => item.matches === method.key) ?? null
@@ -145,8 +157,12 @@ export function SkipClassModal({
     const tick = window.setInterval(() => {
       setReelIndex((current) => (current + 1) % METHODS.length)
     }, 75)
+    const suspenseTick = window.setInterval(() => {
+      setSuspenseIndex((current) => (current + 1) % SUSPENSE_LINES.length)
+    }, 520)
     const stop = window.setTimeout(() => {
       window.clearInterval(tick)
+      window.clearInterval(suspenseTick)
       setRolling(false)
       setStage(method.key === 'none' ? 'result' : 'choose')
       if (method.key === 'none') {
@@ -155,9 +171,10 @@ export function SkipClassModal({
           text: SUCCESS_TEXTS.none[Math.floor(Math.random() * SUCCESS_TEXTS.none.length)],
         })
       }
-    }, 1250)
+    }, 3000)
     return () => {
       window.clearInterval(tick)
+      window.clearInterval(suspenseTick)
       window.clearTimeout(stop)
     }
   }, [method])
@@ -172,7 +189,7 @@ export function SkipClassModal({
   return (
     <div className="random-event-overlay skip-class-overlay" role="dialog" aria-modal="true">
       <div className="random-event-backdrop" />
-      <section className="random-event-modal skip-class-modal">
+      <section className={`random-event-modal skip-class-modal ${stage === 'roll' ? 'is-rolling' : ''}`}>
         <header className="random-event-head">
           <div className="random-event-kind-row">
             <span className="research-notice-tag">SKIP CLASS / 翘课判定</span>
@@ -189,15 +206,27 @@ export function SkipClassModal({
 
         {stage === 'roll' && (
           <div className="skip-reel-zone">
+            <div className="skip-tension-head">
+              <span className="skip-heart">♥</span>
+              <span>命运抽查中</span>
+              <em>HOLD YOUR BREATH</em>
+            </div>
             <p className="random-event-text">
               你刚在宿舍坐下，教室里突然安静下来。你盯着手机，等待命运给出今天的抽查方式。
             </p>
             <div className={`skip-reel ${rolling ? 'is-rolling' : ''}`}>
-              <span className="skip-reel-label">抽查方式</span>
+              <span className="skip-reel-scan" aria-hidden="true" />
+              <span className="skip-reel-label">本次抽查方式</span>
               <strong>{METHODS[reelIndex].label}</strong>
               <small>{METHODS[reelIndex].hint}</small>
             </div>
-            <p className="skip-reel-note">老虎机正在转动……</p>
+            <div className="skip-progress">
+              <i />
+            </div>
+            <p className="skip-suspense-line" key={suspenseIndex}>
+              {SUSPENSE_LINES[suspenseIndex]}
+            </p>
+            <p className="skip-reel-note">老虎机还有三秒揭晓……</p>
           </div>
         )}
 
