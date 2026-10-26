@@ -1,10 +1,11 @@
-export type ExplanationCategory = 'page' | 'card' | 'rule'
+export type ExplanationCategory = 'page' | 'card' | 'rule' | 'value'
 
 export interface ExplanationSettings {
   master: boolean
   page: boolean
   card: boolean
   rule: boolean
+  value: boolean
 }
 
 const STORAGE_KEY = 'clinical-five-years-explanations-v1'
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: ExplanationSettings = {
   page: true,
   card: true,
   rule: true,
+  value: true,
 }
 
 function readSettings(): ExplanationSettings {
@@ -26,6 +28,7 @@ function readSettings(): ExplanationSettings {
       page: parsed.page !== false,
       card: parsed.card !== false,
       rule: parsed.rule !== false,
+      value: parsed.value !== false,
     }
   } catch {
     return { ...DEFAULT_SETTINGS }
@@ -50,6 +53,7 @@ function writeRootAttributes() {
   root.dataset.explainPage = current.page ? 'on' : 'off'
   root.dataset.explainCard = current.card ? 'on' : 'off'
   root.dataset.explainRule = current.rule ? 'on' : 'off'
+  root.dataset.explainValue = current.value ? 'on' : 'off'
 }
 
 function persist() {
@@ -144,9 +148,27 @@ const SELECTORS: Record<ExplanationCategory, string[]> = {
     '.stat-sub',
     '.slot-free-note',
   ],
+  value: [
+    '.action-effect',
+    '.plan-effects',
+    '.habit-effect',
+    '.review-effect',
+    '.review-meta',
+    '.prep-gain',
+    '.random-event-effects',
+    '.random-event-effect',
+    '.travel-effect-list',
+    '.delta-row',
+    '.boost-deltas',
+    '.memo-deltas',
+    '.scholarship-reward',
+    '.slot-course-actions .btn small',
+    '.daily-action-btn small',
+    '.action-repeat',
+  ],
 }
 
-const CATEGORY_ORDER: ExplanationCategory[] = ['page', 'rule', 'card']
+const CATEGORY_ORDER: ExplanationCategory[] = ['value', 'page', 'rule', 'card']
 
 function isHidden(category: ExplanationCategory): boolean {
   return !current.master || !current[category]
@@ -167,6 +189,7 @@ const CARD_SELECTORS = [
   '.club-picker-item',
   '.locked-panel',
   '.review-card',
+  '.daily-action-btn',
   '.research-panel',
   '.research-locked-card',
   '.result-stress-card',
@@ -398,9 +421,11 @@ function scan() {
       button.setAttribute('role', 'button')
       button.tabIndex = 0
       button.setAttribute('aria-label', '查看说明')
+      button.textContent = 'i'
       heading.appendChild(button)
       attachButtonEvents(button)
     }
+    button.textContent = 'i'
     button.dataset.explainText = text
     button.title = '查看说明'
   }

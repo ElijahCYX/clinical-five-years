@@ -59,6 +59,7 @@ const EXPLAIN_CATEGORIES: Array<{
   { id: 'page', label: '页面导语', detail: '页面标题下的介绍与开场说明' },
   { id: 'card', label: '卡片描述', detail: '行动、计划与习惯卡上的说明文案' },
   { id: 'rule', label: '规则提示', detail: '注意事项、提醒与规则说明' },
+  { id: 'value', label: '数值变化', detail: '收益、消耗与数值变化说明' },
 ]
 
 function ExplanationToggle() {

@@ -15410,30 +15410,29 @@ html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .action-flavor 
 html[data-explain-master="off"] [data-explain-category],
 html[data-explain-master="on"][data-explain-page="off"] [data-explain-category="page"],
 html[data-explain-master="on"][data-explain-card="off"] [data-explain-category="card"],
-html[data-explain-master="on"][data-explain-rule="off"] [data-explain-category="rule"] {
+html[data-explain-master="on"][data-explain-rule="off"] [data-explain-category="rule"],
+html[data-explain-master="on"][data-explain-value="off"] [data-explain-category="value"] {
   display: none !important;
 }
 
 .explain-i {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  margin-left: 6px;
-  padding: 0;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin-left: 5px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   font-family: var(--serif);
-  font-size: 9px;
+  font-size: 14px;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1;
   vertical-align: middle;
   cursor: help;
-  opacity: 0.7;
+  opacity: 0.72;
   transition: opacity 0.15s ease, color 0.15s ease;
 }
 
