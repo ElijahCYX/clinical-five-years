@@ -1300,7 +1300,10 @@ export function WeekScreen({
                 </div>
 
                 <div className="week-controls-row">
-                  <div className="week-slot-strip" aria-label="本周时间段进度">
+                  <div
+                    className={`week-slot-strip palette-${weekPhaseClass}`}
+                    aria-label="本周时间段进度"
+                  >
                     {TIMETABLE_DAYS.map((day, dayIndex) => (
                       <div className="week-slot-day" key={day}>
                         {TIMETABLE_SLOTS.map((phase, slotIndex) => {
@@ -1308,16 +1311,10 @@ export function WeekScreen({
                           const cell = weekTimetable.cells[index]
                           const isPast = index < state.weekSlot
                           const isCurrent = index === state.weekSlot
-                          const slotPhase =
-                            slotIndex === 0
-                              ? 'morning'
-                              : slotIndex === 1
-                                ? 'afternoon'
-                                : 'evening'
                           return (
                             <div
                               key={`${day}-${phase}`}
-                              className={`week-slot-square slot-${slotPhase} ${
+                              className={`week-slot-square ${
                                 isPast
                                   ? 'is-past'
                                   : isCurrent
