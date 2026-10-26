@@ -65,20 +65,23 @@ export function courseK(course: Course, attrs: Record<AttrKey, number>): number 
 
 
 /** 早晨睡眠恢复：基础 35–45；高压按 30/45/60% 折减。 */
-export function sleepRecoveryFor(stress: number): {
+export function sleepRecoveryFor(stress: number, extraTier = 0): {
   base: number
   tier: 0 | 1 | 2 | 3
   reduction: number
   gain: number
+  coffeeBoosted: boolean
 } {
   const base = 35 + Math.floor(Math.random() * 11)
-  const tier = stress >= 70 ? 3 : stress >= 60 ? 2 : stress >= 50 ? 1 : 0
+  const stressTier = stress >= 70 ? 3 : stress >= 60 ? 2 : stress >= 50 ? 1 : 0
+  const tier = Math.min(3, stressTier + Math.max(0, extraTier)) as 0 | 1 | 2 | 3
   const reduction = tier === 3 ? 0.6 : tier === 2 ? 0.45 : tier === 1 ? 0.3 : 0
   return {
     base,
     tier,
     reduction,
     gain: Math.max(1, Math.round(base * (1 - reduction))),
+    coffeeBoosted: extraTier > 0 && stressTier < 3,
   }
 }
 
@@ -417,6 +420,7 @@ export function newGameState(player: Player): GameState {
     weekSlotActions: [],
     skipCaught: {},
     coffeeDayKey: null,
+    eveningCoffeeDayKey: null,
     campusRunDayKey: null,
     peRunCount: 0,
     logs: [],

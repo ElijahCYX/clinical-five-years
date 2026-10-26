@@ -325,6 +325,7 @@ function readSave(): GameState | null {
       weekSlotActions: game.weekSlotActions ?? [],
       skipCaught: game.skipCaught ?? {},
       coffeeDayKey: game.coffeeDayKey ?? null,
+      eveningCoffeeDayKey: game.eveningCoffeeDayKey ?? null,
       campusRunDayKey: game.campusRunDayKey ?? null,
       peRunCount: game.peRunCount ?? 0,
       romanceRisk: game.romanceRisk ?? 0,
@@ -664,16 +665,20 @@ function RealApp() {
   const announceSleep = (result: ReturnType<typeof sleepRecoveryFor>, stress: number) => {
     if (result.tier === 0) return
     const reduction = Math.round(result.reduction * 100)
+    const coffeeNote = result.coffeeBoosted
+      ? '今晚那杯咖啡还在起作用，你比平时更难进入深睡。\n\n'
+      : ''
     showResearchNotice({
       kind: 'sleep',
-      title:
-        result.tier === 3
+      title: result.coffeeBoosted
+        ? '咖啡因还没退'
+        : result.tier === 3
           ? '几乎没合眼'
           : result.tier === 2
             ? '一夜没睡好'
             : '睡得不踏实',
-      text: pickSleepText(result.tier as 1 | 2 | 3),
-      ruleText: `压力 ${stress} · 睡眠基础恢复 +${result.base} · 高压折减 -${reduction}% · 实际精力 +${result.gain}`,
+      text: coffeeNote + pickSleepText(result.tier as 1 | 2 | 3),
+      ruleText: `${result.coffeeBoosted ? '晚间喝咖啡导致睡眠影响 +1 级 · ' : ''}压力 ${stress} · 睡眠基础恢复 +${result.base} · 高压折减 -${reduction}% · 实际精力 +${result.gain}`,
       ruleLabel: '睡眠恢复',
     })
   }
@@ -1818,10 +1823,19 @@ function RealApp() {
           ? planDailyCost(state.plan, finishedDay)
           : { energy: 0, stress: 0 }
       const stressAfterDay = clamp(state.stress + daily.stress, 0, 100)
+      const dayKey = `${state.seasonIndex}-${state.week}-${finishedDay}`
+      const coffeeBoosted =
+        state.weekSlot % 3 === 2 && state.eveningCoffeeDayKey === dayKey
       const sleep =
         state.weekSlot % 3 === 2
-          ? sleepRecoveryFor(stressAfterDay)
-          : { base: 0, tier: 0 as const, reduction: 0, gain: 0 }
+          ? sleepRecoveryFor(stressAfterDay, coffeeBoosted ? 1 : 0)
+          : {
+              base: 0,
+              tier: 0 as const,
+              reduction: 0,
+              gain: 0,
+              coffeeBoosted: false,
+            }
       const advanced: GameState = {
         ...state,
         screen: 'week',
@@ -1831,6 +1845,8 @@ function RealApp() {
         selected: state.selected.filter((id) => id !== 'club'),
         energy: clamp(state.energy + daily.energy + sleep.gain, 0, 100),
         stress: stressAfterDay,
+        eveningCoffeeDayKey:
+          state.weekSlot % 3 === 2 ? null : state.eveningCoffeeDayKey,
       }
       if (nextSlot >= 21) {
         endWeek(advanced)
@@ -3253,10 +3269,19 @@ function RealApp() {
         ? planDailyCost(base.plan, finishedDay)
         : { energy: 0, stress: 0 }
     const stressAfterDay = clamp(base.stress + daily.stress, 0, 100)
+    const dayKey = `${base.seasonIndex}-${base.week}-${finishedDay}`
+    const coffeeBoosted =
+      base.weekSlot % 3 === 2 && base.eveningCoffeeDayKey === dayKey
     const sleep =
       base.weekSlot % 3 === 2
-        ? sleepRecoveryFor(stressAfterDay)
-        : { base: 0, tier: 0 as const, reduction: 0, gain: 0 }
+        ? sleepRecoveryFor(stressAfterDay, coffeeBoosted ? 1 : 0)
+        : {
+            base: 0,
+            tier: 0 as const,
+            reduction: 0,
+            gain: 0,
+            coffeeBoosted: false,
+          }
     return {
       state: {
         ...base,
@@ -3265,6 +3290,8 @@ function RealApp() {
         weekSlotActions: base.weekSlotActions,
         energy: clamp(base.energy + daily.energy + sleep.gain, 0, 100),
         stress: stressAfterDay,
+        eveningCoffeeDayKey:
+          base.weekSlot % 3 === 2 ? null : base.eveningCoffeeDayKey,
       },
       sleep,
     }
@@ -3339,6 +3366,8 @@ function RealApp() {
       energy: clamp(game.energy + 10, 0, 100),
       money: Math.max(0, game.money - 10),
       coffeeDayKey: key,
+      eveningCoffeeDayKey:
+        game.weekSlot % 3 === 2 ? key : game.eveningCoffeeDayKey,
     }
     setGame(next)
     persist(next)

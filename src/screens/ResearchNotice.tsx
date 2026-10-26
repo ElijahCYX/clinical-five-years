@@ -85,7 +85,7 @@ function ResearchNoticeModal({
               : notice.kind === 'stress'
                 ? '这是一次状态提醒，与科研进度无关。'
                 : notice.kind === 'sleep'
-                  ? '睡眠状态已记录，这会影响下一次清晨的恢复。'
+                  ? '睡眠状态已记录。今晚别再靠咖啡硬撑。'
                 : notice.kind === 'club'
                   ? '组织事务记录已归档。'
                   : '这是科研系统的重要节点。'}
