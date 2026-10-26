@@ -413,6 +413,8 @@ export function WeekScreen({
   const dailyKey = `${state.seasonIndex}-${state.week}-${Math.floor(weekSlot / 3)}`
   const coffeeUsedToday = state.coffeeDayKey === dailyKey
   const runUsedToday = state.campusRunDayKey === dailyKey
+  const morningActivityDone =
+    currentSlotIsMorning && (coffeeUsedToday || runUsedToday)
   const hasPeCourse = Boolean(state.pendingPeCourseId)
   const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
@@ -1513,12 +1515,18 @@ export function WeekScreen({
                 <div className="actions-grid">
                   {currentSlotIsMorning ? (
                     <div
-                      className="action-card sleep-in-card"
+                      className={`action-card sleep-in-card ${
+                        morningActivityDone ? 'is-locked' : ''
+                      }`}
                       role="button"
-                      tabIndex={0}
-                      onClick={() => onSleepIn?.()}
+                      tabIndex={morningActivityDone ? -1 : 0}
+                      aria-disabled={morningActivityDone}
+                      onClick={() => !morningActivityDone && onSleepIn?.()}
                       onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
+                        if (
+                          !morningActivityDone &&
+                          (event.key === 'Enter' || event.key === ' ')
+                        ) {
                           event.preventDefault()
                           onSleepIn?.()
                         }
@@ -1529,11 +1537,33 @@ export function WeekScreen({
                         <span className="action-no">ZZZ</span>
                       </div>
                       <h3>睡懒觉</h3>
-                      <p className="action-flavor">把闹钟按掉，再睡一个回笼觉。</p>
-                      <p className="action-effect">精力 +20 · 压力 -10</p>
+                      <p className="action-flavor">
+                        {morningActivityDone
+                          ? coffeeUsedToday && runUsedToday
+                            ? '早上已经喝过咖啡、也跑完步了，现在躺下大概只会睁着眼。'
+                            : coffeeUsedToday
+                              ? '早上那杯咖啡还在起作用，回笼觉已经睡不回去了。'
+                              : '早上已经跑过步，身体醒过来了，回笼觉接不上。'
+                          : '把闹钟按掉，再睡一个回笼觉。'}
+                      </p>
+                      <p className="action-effect">
+                        {morningActivityDone
+                          ? '当前不可用'
+                          : '精力 +20 · 压力 -10'}
+                      </p>
                       <div className="action-bottom">
                         <span className="action-en">SLEEP IN</span>
-                        <span className="action-repeat">消耗 1 个时间段</span>
+                        {morningActivityDone ? (
+                          <span className="action-locked">
+                            {coffeeUsedToday && runUsedToday
+                              ? '早上已喝咖啡并跑完步'
+                              : coffeeUsedToday
+                                ? '早上已喝咖啡'
+                                : '早上已校园跑'}
+                          </span>
+                        ) : (
+                          <span className="action-repeat">消耗 1 个时间段</span>
+                        )}
                       </div>
                     </div>
                   ) : (

@@ -3405,6 +3405,13 @@ function RealApp() {
   const sleepInCurrentSlot = () => {
     if (!game || game.weekSlot % 3 !== 0) return
     if (!game.weekSlotSkipped && timetableCourseAt(game, game.weekSlot)) return
+    const dayKey = `${game.seasonIndex}-${game.week}-${Math.floor(game.weekSlot / 3)}`
+    if (
+      game.coffeeDayKey === dayKey ||
+      game.campusRunDayKey === dayKey
+    ) {
+      return
+    }
     const next = {
       ...game,
       energy: clamp(game.energy + 20, 0, 100),
