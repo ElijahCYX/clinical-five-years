@@ -289,6 +289,10 @@ export function WeekScreen({
       return
     }
     if (id === 'club') {
+      if (canApplyClub && clubMemberships.length === 0) {
+        onApplyClub?.()
+        return
+      }
       if (clubMemberships.length === 1) {
         setSelectedClubOrgId(clubMemberships[0].orgId)
         setClubActivityOpen(true)
