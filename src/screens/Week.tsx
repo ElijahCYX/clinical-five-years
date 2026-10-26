@@ -27,6 +27,7 @@ import { CampusNoticeBoard } from './CampusNotice'
 import { BondScreen } from './Bond'
 import { SoloInviteModal } from './SoloInvite'
 import { SoloDateOverlay } from './SoloDate'
+import { ActionDoodle } from './ActionDoodle'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
@@ -1603,6 +1604,7 @@ export function WeekScreen({
                         }
                       }}
                     >
+                      <ActionDoodle kind="sleepIn" />
                       <div className="action-meta">
                         <span>生活</span>
                         <span className="action-no">ZZZ</span>
@@ -1654,6 +1656,7 @@ export function WeekScreen({
                         }
                       }}
                     >
+                      <ActionDoodle kind="rest" />
                       <div className="action-meta">
                         <span>生活</span>
                         <span className="action-no">04</span>
@@ -1683,6 +1686,7 @@ export function WeekScreen({
                             }
                           }}
                         >
+                          <ActionDoodle kind="soloInvite" />
                           <div className="action-meta">
                             <span>社交</span>
                             <span className="action-no">—</span>
@@ -1730,6 +1734,7 @@ export function WeekScreen({
                           }
                         }}
                       >
+                        <ActionDoodle kind={action.id} />
                         <div className="action-meta">
                           <span>{action.category}</span>
                           <span className="action-no">{action.no}</span>
