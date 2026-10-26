@@ -14255,3 +14255,18 @@ body.day-transitioning .skip-rules-overlay {
     aspect-ratio: 1;
   }
 }
+
+/* Final slot-strip sizing: remove the old horizontal scroll container so the
+   breathing glow is not clipped vertically, and distribute the spare width
+   between days/slots so the row fills the Week column. */
+.week-slot-strip {
+  overflow: visible;
+  justify-content: space-between;
+}
+
+@media (min-width: 1000px) and (orientation: landscape) {
+  .week-slot-strip {
+    overflow: visible;
+    justify-content: space-between;
+  }
+}
