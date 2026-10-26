@@ -14987,3 +14987,28 @@ body.day-transitioning .skip-rules-overlay {
   background: var(--time-accent, var(--green));
   color: #fffdf6;
 }
+
+/* Weekly overview dots: filled color uses the darkest edge of each phase gradient. */
+.week-overview-dot.overview-morning.has-plan {
+  background: hsl(40 50% 27%);
+}
+
+.week-overview-dot.overview-afternoon.has-plan {
+  background: hsl(154 26% 18%);
+}
+
+.week-overview-dot.overview-evening.has-plan {
+  background: hsl(257 25% 22%);
+}
+
+.week-overview-dot.overview-morning.is-current.has-plan {
+  background: hsl(40 50% 27%);
+}
+
+.week-overview-dot.overview-afternoon.is-current.has-plan {
+  background: hsl(154 26% 18%);
+}
+
+.week-overview-dot.overview-evening.is-current.has-plan {
+  background: hsl(257 25% 22%);
+}

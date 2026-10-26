@@ -1287,11 +1287,15 @@ export function WeekScreen({
                           return (
                             <span
                               key={`${day}-${phase}`}
-                              className={`week-overview-dot ${
-                                hasPlan ? 'has-plan' : 'is-free'
-                              } ${isPast ? 'is-past' : ''} ${
-                                isCurrent ? 'is-current' : ''
-                              }`}
+                              className={`week-overview-dot overview-${
+                                slotIndex === 0
+                                  ? 'morning'
+                                  : slotIndex === 1
+                                    ? 'afternoon'
+                                    : 'evening'
+                              } ${hasPlan ? 'has-plan' : 'is-free'} ${
+                                isPast ? 'is-past' : ''
+                              } ${isCurrent ? 'is-current' : ''}`}
                               title={`${day} · ${phase} · ${
                                 cell.course?.name ??
                                 cell.activity?.name ??
