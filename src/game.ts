@@ -1151,7 +1151,7 @@ export function energyEffectText(
 }
 
 
-export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 50
+export const SCHOLARSHIP_COMPOSITE_BENCHMARK = 120
 
 export const SCHOLARSHIP_REWARDS: Record<Award, number> = {
   national: 5000,
