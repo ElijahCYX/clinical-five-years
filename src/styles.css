@@ -12806,3 +12806,52 @@ body.dinner-open {
     margin-left: 6px;
   }
 }
+
+/* Group every three slots into one weekday for clearer weekly rhythm. */
+.week-slot-strip {
+  display: flex;
+  gap: 7px;
+}
+
+.week-slot-day {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+}
+
+.week-slot-day + .week-slot-day {
+  margin-left: 1px;
+}
+
+.week-slot-square {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.week-slot-square.is-past {
+  background-image: linear-gradient(135deg, #2a4d3f, #587665);
+  border-color: transparent;
+  color: #f4eedc;
+}
+
+@media (max-width: 820px) {
+  .week-slot-strip {
+    gap: 6px;
+  }
+
+  .week-slot-day {
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+
+  .week-slot-square {
+    flex: 0 0 34px;
+    width: 34px;
+  }
+}
+
+.week-slot-strip {
+  gap: 9px;
+}

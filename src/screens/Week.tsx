@@ -1178,27 +1178,39 @@ export function WeekScreen({
                 </div>
 
                 <div className="week-slot-strip" aria-label="本周时间段进度">
-                  {Array.from({ length: 21 }, (_, index) => {
-                    const day = TIMETABLE_DAYS[Math.floor(index / 3)]
-                    const phase = TIMETABLE_SLOTS[index % 3]
-                    const cell = weekTimetable.cells[index]
-                    return (
-                      <div
-                        key={`${day}-${phase}`}
-                        className={`week-slot-square ${
-                          index < state.weekSlot
-                            ? 'is-past'
-                            : index === state.weekSlot
-                              ? 'is-current'
-                              : 'is-future'
-                        } ${cell.course ? 'has-course' : ''}`}
-                        title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
-                      >
-                        <span>{index + 1}</span>
-                        <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
-                      </div>
-                    )
-                  })}
+                  {TIMETABLE_DAYS.map((day, dayIndex) => (
+                    <div className="week-slot-day" key={day}>
+                      {TIMETABLE_SLOTS.map((phase, slotIndex) => {
+                        const index = dayIndex * 3 + slotIndex
+                        const cell = weekTimetable.cells[index]
+                        const isPast = index < state.weekSlot
+                        const isCurrent = index === state.weekSlot
+                        // 过去的时间格从深绿逐渐过渡到浅苔绿，像时间被一格一格用掉。
+                        const pastFill = isPast
+                          ? {
+                              background: `linear-gradient(135deg, hsl(158 28% ${20 + index * 0.9}%), hsl(148 22% ${27 + index * 0.9}%))`,
+                            }
+                          : undefined
+                        return (
+                          <div
+                            key={`${day}-${phase}`}
+                            className={`week-slot-square ${
+                              isPast
+                                ? 'is-past'
+                                : isCurrent
+                                  ? 'is-current'
+                                  : 'is-future'
+                            } ${cell.course ? 'has-course' : ''}`}
+                            style={pastFill}
+                            title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
+                          >
+                            <span>{index + 1}</span>
+                            <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
                 </div>
 
                 {currentSlotActivity ? (
