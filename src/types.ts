@@ -594,6 +594,7 @@ export interface GameState {
   stress: number
   money: number
   english: number
+  englishGrowth: number
   composite: number
   research: number
   cet4Score: number | null

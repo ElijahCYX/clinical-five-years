@@ -46,7 +46,6 @@ import {
   libraryCosts,
   labChoreEnergyCost,
   researchGainForComprehension,
-  englishGainForMemory,
   estimateRange,
   generateElectiveOffers,
   estimateScore,
@@ -65,6 +64,7 @@ import {
   examCoffeeMultiplier,
   examReviewTalentMultiplier,
 } from './game'
+import { applyGrowthCarry } from './growth'
 import type {
   AttrKey,
   DemoName,
@@ -294,6 +294,7 @@ function readSave(): GameState | null {
     return ensureMentor({
       ...game,
       screen: game.screen === 'randomEvent' ? 'week' : game.screen,
+      englishGrowth: game.englishGrowth ?? 0,
       player: game.player
         ? { ...game.player, orientation: game.player.orientation ?? 'heterosexual' }
         : null,
@@ -615,33 +616,38 @@ function growAttributes(
   constitutionGrowth: number,
   appearanceGrowth: number,
   socialGrowth: number,
+  english: number,
+  englishGrowth: number,
 ) {
-  let nextAttrs = attrs
-  if (constitutionGrowth >= 100) {
-    if (attrs.constitution < 10) {
-      nextAttrs = { ...attrs, constitution: attrs.constitution + 1 }
-      constitutionGrowth -= 100
-    } else {
-      constitutionGrowth = 100
-    }
+  return applyGrowthCarry({
+    attrs,
+    english,
+    constitutionGrowth,
+    appearanceGrowth,
+    socialGrowth,
+    englishGrowth,
+  })
+}
+
+function carryGrowthState(state: GameState): GameState {
+  if (!state.player) return state
+  const grown = applyGrowthCarry({
+    attrs: state.player.attrs,
+    english: state.english,
+    englishGrowth: state.englishGrowth,
+    constitutionGrowth: state.constitutionGrowth,
+    appearanceGrowth: state.appearanceGrowth,
+    socialGrowth: state.socialGrowth,
+  })
+  return {
+    ...state,
+    player: { ...state.player, attrs: grown.attrs },
+    english: grown.english,
+    englishGrowth: grown.englishGrowth,
+    constitutionGrowth: grown.constitutionGrowth,
+    appearanceGrowth: grown.appearanceGrowth,
+    socialGrowth: grown.socialGrowth,
   }
-  if (appearanceGrowth >= 100) {
-    if (attrs.appearance < 10) {
-      nextAttrs = { ...nextAttrs, appearance: attrs.appearance + 1 }
-      appearanceGrowth -= 100
-    } else {
-      appearanceGrowth = 100
-    }
-  }
-  if (socialGrowth >= 100) {
-    if (nextAttrs.social < 10) {
-      nextAttrs = { ...nextAttrs, social: nextAttrs.social + 1 }
-      socialGrowth -= 100
-    } else {
-      socialGrowth = 100
-    }
-  }
-  return { attrs: nextAttrs, constitutionGrowth, appearanceGrowth, socialGrowth }
 }
 
 function getCount(selected: string[], id: string): number {
@@ -2087,14 +2093,14 @@ function RealApp() {
       money: Math.max(0, base.money + (scaled(effects.money) ?? 0)),
       composite: Math.max(0, base.composite + (scaled(effects.composite) ?? 0)),
       socialGrowth: Math.max(0, base.socialGrowth + (scaled(effects.socialGrowth) ?? 0)),
-      english: Math.max(0, base.english + (scaled(effects.english) ?? 0)),
+      englishGrowth: base.englishGrowth + (scaled(effects.english) ?? 0),
     }
     if (effects.energy) lines.push(`精力 ${effects.energy > 0 ? '+' : ''}${scaled(effects.energy)}`)
     if (effects.stress) lines.push(`压力 ${effects.stress > 0 ? '+' : ''}${scaled(effects.stress)}`)
     if (effects.money) lines.push(`生活费 ${effects.money > 0 ? '+' : ''}${scaled(effects.money)}`)
     if (effects.composite) lines.push(`综测 +${scaled(effects.composite)}`)
     if (effects.socialGrowth) lines.push(`人际成长 +${scaled(effects.socialGrowth)}`)
-    if (effects.english) lines.push(`英语 +${scaled(effects.english)}`)
+    if (effects.english) lines.push(`英语成长 +${scaled(effects.english)}%`)
     if (effects.prep) {
       const courses = base.season.courses
       if (courses.length > 0) {
@@ -2129,6 +2135,25 @@ function RealApp() {
           ),
         }
         lines.push(`与${relation.name}亲密度 +${gain}`)
+      }
+    }
+    if (next.player) {
+      const grown = applyGrowthCarry({
+        attrs: next.player.attrs,
+        english: next.english,
+        englishGrowth: next.englishGrowth,
+        constitutionGrowth: next.constitutionGrowth,
+        appearanceGrowth: next.appearanceGrowth,
+        socialGrowth: next.socialGrowth,
+      })
+      next = {
+        ...next,
+        player: { ...next.player, attrs: grown.attrs },
+        english: grown.english,
+        englishGrowth: grown.englishGrowth,
+        constitutionGrowth: grown.constitutionGrowth,
+        appearanceGrowth: grown.appearanceGrowth,
+        socialGrowth: grown.socialGrowth,
       }
     }
     return { next, lines }
@@ -2915,6 +2940,8 @@ function RealApp() {
       sim.constitutionGrowth,
       sim.appearanceGrowth,
       sim.socialGrowth,
+      sim.english,
+      sim.englishGrowth,
     )
     const prepTotal = Object.values(sim.prep).reduce((sum, value) => sum + value, 0)
     const log = buildWeekLog(base, {
@@ -3012,7 +3039,8 @@ function RealApp() {
       energy: sim.energy + (!shouldPrepare ? 5 : 0),
       stress: sim.stress,
       money: sim.money,
-      english: sim.english,
+      english: grown.english,
+      englishGrowth: grown.englishGrowth,
       composite: sim.composite,
       research: sim.research,
       prep: sim.prep,
@@ -3077,6 +3105,7 @@ function RealApp() {
     let stress = base.stress
     let money = base.money
     let english = base.english
+    let englishGrowth = base.englishGrowth
     let composite = base.composite
     let research = base.research
     let kaoyanPrep = base.kaoyanPrep
@@ -3093,7 +3122,7 @@ function RealApp() {
       const nominal = Object.fromEntries(
         base.season.courses.map((course) => [
           course.id,
-          6 *
+          1 *
             courseK(course, player.attrs) *
             prepGainMultiplier(base) *
             coursePrepTalentMultiplier(base, course) *
@@ -3128,12 +3157,12 @@ function RealApp() {
       stress += action.stress
       for (const course of base.season.courses) {
         if (!course.electiveType) continue
-        const gain = course.electiveType === 'politics' ? 15 : 20
+        const gain = course.electiveType === 'politics' ? 8 : 10
         prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
       }
     } else if (action.id === 'social') {
       energy += 8
-      stress -= 8
+      stress -= 20
       money -= 50
     } else if (action.id === 'club') {
       energy += effectiveEnergyCost(action.energy, base.energy)
@@ -3144,11 +3173,7 @@ function RealApp() {
       energy += effectiveEnergyCost(action.energy, base.energy)
       stress += action.stress
       money += action.money
-      if (action.id === 'english') {
-        english += englishGainForMemory(player.attrs.memory)
-      } else {
-        english += action.english ?? 0
-      }
+      englishGrowth += action.english ?? 0
       composite += action.composite ?? 0
       research += action.research ?? 0
       kaoyanPrep += action.kaoyanPrep ?? 0
@@ -3157,20 +3182,31 @@ function RealApp() {
       }
     }
 
+    const grown = applyGrowthCarry({
+      attrs: player.attrs,
+      english,
+      englishGrowth,
+      constitutionGrowth,
+      appearanceGrowth,
+      socialGrowth,
+    })
+
     return {
       ...base,
+      player: { ...player, attrs: grown.attrs },
       energy: clamp(energy, 0, 100),
       stress: clamp(stress, 0, 100),
       money: Math.max(0, money),
-      english,
+      english: grown.english,
+      englishGrowth: grown.englishGrowth,
       composite,
       research,
       kaoyanPrep,
       prep,
       researchProgress,
-      constitutionGrowth,
-      appearanceGrowth,
-      socialGrowth,
+      constitutionGrowth: grown.constitutionGrowth,
+      appearanceGrowth: grown.appearanceGrowth,
+      socialGrowth: grown.socialGrowth,
     }
   }
 
@@ -3189,11 +3225,12 @@ function RealApp() {
   }
 
   const finishWeekSlot = (base: GameState, actionId?: string) => {
+    const normalized = carryGrowthState(base)
     const advanced = advanceWeekSlot({
-      ...base,
+      ...normalized,
       weekSlotActions: actionId
-        ? [...base.weekSlotActions, actionId]
-        : base.weekSlotActions,
+        ? [...normalized.weekSlotActions, actionId]
+        : normalized.weekSlotActions,
     })
     if (advanced.weekSlot >= 21) {
       endWeek(advanced)
@@ -3263,20 +3300,21 @@ function RealApp() {
     if (game.energy < 20 || game.peRunCount >= 24) return
     const key = dailyActionKey()
     if (game.campusRunDayKey === key) return
-    const next: GameState = {
+    const next = carryGrowthState({
       ...game,
       energy: clamp(game.energy - 20, 0, 100),
       constitutionGrowth: game.constitutionGrowth + 1,
       weekSlotActions: [...game.weekSlotActions, 'campusRun'],
       peRunCount: game.peRunCount + 1,
       campusRunDayKey: key,
-    }
+    })
     setGame(next)
     persist(next)
   }
 
   const performWeekSlotAction = (actionId: string) => {
     if (!game) return
+    if (actionId === 'rest' && game.weekSlot % 3 === 0) return
     if (game.weekSlotSkipped) {
       // current slot was skipped and is now free
     } else if (timetableCourseAt(game, game.weekSlot)) {
@@ -3291,8 +3329,8 @@ function RealApp() {
     if (!game.weekSlotSkipped && timetableCourseAt(game, game.weekSlot)) return
     const next = {
       ...game,
-      energy: clamp(game.energy + 10, 0, 100),
-      stress: clamp(game.stress - 5, 0, 100),
+      energy: clamp(game.energy + 20, 0, 100),
+      stress: clamp(game.stress - 10, 0, 100),
     }
     finishWeekSlot(next, 'sleepIn')
   }
@@ -3374,7 +3412,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       energy: clamp(game.energy + 8, 0, 100),
-      stress: clamp(game.stress - 8, 0, 100),
+      stress: clamp(game.stress - 20, 0, 100),
       money: Math.max(0, game.money - cost),
       dinnerPlan: {
         acceptedIds,
@@ -3413,9 +3451,9 @@ function RealApp() {
     const intimacyGain = Math.round(5 * roleMultiplier)
     let next: GameState = {
       ...game,
-      energy: clamp(game.energy - 12, 0, 100),
-      stress: clamp(game.stress + 5, 0, 100),
-      money: Math.max(0, game.money - 20),
+      energy: clamp(game.energy - 8, 0, 100),
+      stress: clamp(game.stress + 3, 0, 100),
+      money: Math.max(0, game.money - 5),
       socialGrowth: game.socialGrowth + socialGain,
       clubMemberships: game.clubMemberships.map((item) =>
         item.orgId === orgId
@@ -3787,12 +3825,23 @@ function RealApp() {
       ...game,
       energy: clamp(game.energy + effectiveEnergyCost(-10, game.energy), 0, 100),
       stress: clamp(game.stress + 5, 0, 100),
-      english: game.english + 5,
+      englishGrowth: game.englishGrowth + 5,
       cetAttemptBonus: game.cetWindow
         ? Math.min(0.5, game.cetAttemptBonus + 0.1)
         : game.cetAttemptBonus,
       examEnglishPrep: true,
     }
+    const grown = applyGrowthCarry({
+      attrs: game.player!.attrs,
+      english: next.english,
+      englishGrowth: next.englishGrowth,
+      constitutionGrowth: next.constitutionGrowth,
+      appearanceGrowth: next.appearanceGrowth,
+      socialGrowth: next.socialGrowth,
+    })
+    next.english = grown.english
+    next.englishGrowth = grown.englishGrowth
+    next.player = { ...game.player!, attrs: grown.attrs }
     setGame(next)
     persist(next)
   }
@@ -3812,8 +3861,9 @@ function RealApp() {
       prep,
       examAllNighter: true,
     }
-    setGame(next)
-    persist(next)
+    const normalized = carryGrowthState(next)
+    setGame(normalized)
+    persist(normalized)
   }
 
   const handleCetRegister4 = () => {
@@ -4248,13 +4298,13 @@ function RealApp() {
         energy: Math.max(0, Math.min(100, next.energy + round(org.benefit.energy ?? 0))),
         composite: Math.max(0, next.composite + round(org.benefit.composite ?? 0)),
         socialGrowth: Math.max(0, next.socialGrowth + round(org.benefit.socialGrowth ?? 0)),
-        english: Math.max(0, next.english + round(org.benefit.english ?? 0)),
+        englishGrowth: Math.max(0, next.englishGrowth + round(org.benefit.english ?? 0)),
       }
       if (org.benefit.stress) lines.push(`${prefix}压力 ${round(org.benefit.stress)}`)
       if (org.benefit.energy) lines.push(`${prefix}精力 +${round(org.benefit.energy)}`)
       if (org.benefit.composite) lines.push(`${prefix}综测 +${round(org.benefit.composite)}`)
       if (org.benefit.socialGrowth) lines.push(`${prefix}人际成长 +${round(org.benefit.socialGrowth)}`)
-      if (org.benefit.english) lines.push(`${prefix}英语 +${round(org.benefit.english)}`)
+      if (org.benefit.english) lines.push(`${prefix}英语成长 +${round(org.benefit.english)}%`)
       if (org.benefit.allPrep) {
         const prep = { ...next.prep }
         for (const course of base.season.courses) {
@@ -4310,8 +4360,9 @@ function RealApp() {
       }
     }
     if (lines.length === 0) return { next: draft }
+    const grownNext = carryGrowthState(next)
     return {
-      next,
+      next: grownNext,
       notice: {
         title: '组织学期福利',
         text:
@@ -4335,6 +4386,7 @@ function RealApp() {
     let stress = game.stress
     let money = game.money
     let english = game.english
+    let englishGrowth = game.englishGrowth
     let composite = game.composite
     let research = game.research
     let researchProgress = game.researchProgress
@@ -4356,7 +4408,7 @@ function RealApp() {
       } else {
         money += action.money
       }
-      english += action.english ?? 0
+      englishGrowth += action.english ?? 0
       composite += action.composite ?? 0
       research += action.research ?? 0
       if (
@@ -4379,7 +4431,7 @@ function RealApp() {
         energy += habitDef.energy ?? 0
         stress += habitDef.stress ?? 0
         money += habitDef.money ?? 0
-        english += habitDef.english ?? 0
+        englishGrowth += habitDef.english ?? 0
         research += habitDef.research ?? 0
         if (habitDef.growth === 'constitution') {
           constitutionGrowth += habitDef.growthAmount ?? 0
@@ -4394,7 +4446,7 @@ function RealApp() {
     stress = clamp(stress, 0, 100)
     // 假期在家，不扣学期内的每周固定开销
 
-    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth)
+    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth, english, englishGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied })
     const isLastWeek = game.vacation.week >= game.vacation.totalWeeks
     const vacationPublished =
@@ -4426,7 +4478,8 @@ function RealApp() {
       energy,
       stress,
       money,
-      english,
+      english: grown.english,
+      englishGrowth: grown.englishGrowth,
       composite,
       research,
       researchProgress,

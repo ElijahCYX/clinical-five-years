@@ -79,7 +79,7 @@ export function DinnerModal({
         <header className="dinner-head">
           <div>
             <span className="dinner-eyebrow">DINNER INVITATION / 本周社交</span>
-            <h2>今晚，和谁吃饭？</h2>
+            <h2>今晚，组个什么局？</h2>
             <p>选一位或多位朋友。赴约概率由你们之间的亲密度决定。</p>
           </div>
           <Pill tone="gold">生活费 ¥{money}</Pill>
@@ -87,7 +87,7 @@ export function DinnerModal({
 
         {friends.length === 0 ? (
           <p className="dinner-empty">
-            还没有可以一起吃饭的朋友。去认识一些人，再回来约饭。
+            还没有能叫出来组局的人。去认识一些人，再回来约局。
           </p>
         ) : (
           <div className="dinner-list">

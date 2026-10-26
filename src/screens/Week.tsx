@@ -10,7 +10,6 @@ import {
   energyEffectText,
   labChoreEnergyCost,
   libraryCosts,
-  englishGainForMemory,
   estimateRange,
   courseDifficulty,
   simulateWeek,
@@ -51,7 +50,6 @@ const VISIBLE_ACTIONS = [
   'electiveHomework',
   'research',
   'club',
-  'rest',
   'selfCare',
   'social',
   'partTime',
@@ -337,14 +335,11 @@ export function WeekScreen({
 
   const actionEffectText = (action: ActionDef) => {
     if (action.id === 'english') {
-      return action.effectText.replace(
-        '英语进度 +5',
-        `英语进度 +${englishGainForMemory(player.attrs.memory)}`,
-      )
+      return '英语成长值 +50% · 精力 -6 · 压力 +2'
     }
     if (action.id === 'library') {
       const costs = libraryCosts(state)
-      return `所有课程：准备度 +6 × K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
+      return `所有课程：准备度 +K${state.energy < 40 ? '（低精力减半）' : ''} · 精力 ${costs.energy}${state.energy < 40 ? '（减半）' : ''} · 压力 +${costs.stress} · 当前 ${costs.count} 门计费课程（消耗按 ${costs.costCount} 门封顶）`
     }
     if (action.id === 'club') {
       if (canApplyClub && clubMemberships.length === 0) {
@@ -352,12 +347,12 @@ export function WeekScreen({
       }
       if (selectedMembership) {
         const role = selectedMembership.role
-        return `人际成长 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
+        return `人际成长值 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))}% · 精力 -8 · 压力 +3 · 生活费 -5`
       }
-      if (clubMemberships.length > 1) return '精力 -12 · 压力 +5 · 生活费 -20 · 先选择参加哪个社团'
+      if (clubMemberships.length > 1) return '精力 -8 · 压力 +3 · 生活费 -5 · 先选择参加哪个社团'
       if (clubMemberships.length === 1) {
         const role = clubMemberships[0].role
-        return `人际成长 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))} · 精力 -12 · 压力 +5 · 生活费 -20`
+        return `人际成长值 +${Math.round(5 * (role === 'officer' ? 1.15 : role === 'president' || role === 'honorary' ? 1.3 : 1))}% · 精力 -8 · 压力 +3 · 生活费 -5`
       }
       return '目前无法加入新的组织'
     }
@@ -475,7 +470,7 @@ export function WeekScreen({
     }
     if (action.id === 'social') {
       if (!state.relationships.some((relation) => isDinnerFriend(relation))) {
-        return '还没有可以一起吃饭的朋友'
+        return '还没有能叫出来组局的人'
       }
       if (state.money < 50) return '生活费不足'
     }
@@ -1516,7 +1511,7 @@ export function WeekScreen({
                 )}
 
                 <div className="actions-grid">
-                  {currentSlotIsMorning && (
+                  {currentSlotIsMorning ? (
                     <div
                       className="action-card sleep-in-card"
                       role="button"
@@ -1535,9 +1530,34 @@ export function WeekScreen({
                       </div>
                       <h3>睡懒觉</h3>
                       <p className="action-flavor">把闹钟按掉，再睡一个回笼觉。</p>
-                      <p className="action-effect">精力 +10 · 压力 -5</p>
+                      <p className="action-effect">精力 +20 · 压力 -10</p>
                       <div className="action-bottom">
                         <span className="action-en">SLEEP IN</span>
+                        <span className="action-repeat">消耗 1 个时间段</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="action-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSlotActionClick('rest')}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          handleSlotActionClick('rest')
+                        }
+                      }}
+                    >
+                      <div className="action-meta">
+                        <span>生活</span>
+                        <span className="action-no">04</span>
+                      </div>
+                      <h3>躺平</h3>
+                      <p className="action-flavor">把手机调成静音，今天不追任何进度。</p>
+                      <p className="action-effect">精力 +15 · 压力 -10</p>
+                      <div className="action-bottom">
+                        <span className="action-en">REST</span>
                         <span className="action-repeat">消耗 1 个时间段</span>
                       </div>
                     </div>

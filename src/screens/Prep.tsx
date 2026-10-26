@@ -481,7 +481,7 @@ export function PrepScreen({
                     <h4>英语备考</h4>
                     <p>用考试周的一部分时间背单词、刷 CET 真题，给下一场四六级加一点底。</p>
                     <small>
-                      精力 -10 · 压力 +5 · 英语进度 +5 · 本次复习收益 -10%
+                      精力 -10 · 压力 +5 · 英语成长值 +5% · 本次复习收益 -10%
                       {state.cetWindow ? ' · CET 通过率 +10%' : ' · 本季未报名 CET，通过率加成不生效'}
                     </small>
                     {state.examEnglishPrep ? (
@@ -507,8 +507,8 @@ export function PrepScreen({
                           </b>
                         </div>
                         <div>
-                          <span>英语</span>
-                          <b>{state.english} → {state.english + 5}</b>
+                          <span>英语成长</span>
+                          <b>{state.englishGrowth}% → {state.englishGrowth + 5}%</b>
                         </div>
                       </div>
                     )}

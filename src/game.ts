@@ -10,6 +10,7 @@ import {
   TALENTS,
   TALENT_BY_ID,
 } from './data'
+import { applyGrowthCarry } from './growth'
 import type {
   AttrKey,
   Award,
@@ -331,6 +332,7 @@ export function newGameState(player: Player): GameState {
     stress: 22,
     money: startingMoney(player),
     english: 0,
+    englishGrowth: 0,
     composite: 0,
     research: 0,
     prep: Object.fromEntries(FIRST_SEASON.courses.map((course) => [course.id, 0])),
@@ -542,7 +544,7 @@ export function cetHint(cet4Score: number | null, cet6Score: number | null): str
   return '已合格'
 }
 
-/** 四六级赋分：英语进度保证下限，记忆力提高上限与期望。 */
+/** 四六级赋分：英语能力保证下限，记忆力提高上限与期望。 */
 export function cetScore(
   kind: 'cet4' | 'cet6',
   english: number,
@@ -669,6 +671,7 @@ export interface WeekSimulation {
   stress: number
   money: number
   english: number
+  englishGrowth: number
   composite: number
   research: number
   researchProgressGain: number
@@ -728,6 +731,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   let stress = state.stress
   let money = state.money
   let english = state.english
+  let englishGrowth = state.englishGrowth
   let composite = state.composite
   let research = state.research
   let researchProgressGain = 0
@@ -770,10 +774,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     if (action.id === 'social' && !state.dinnerPlan?.committed) {
       money -= state.dinnerPlan?.cost ?? 50
     }
-    english +=
-      action.id === 'english'
-        ? englishGainForMemory(attrs.memory)
-        : action.english ?? 0
+    englishGrowth += action.english ?? 0
     composite += action.composite ?? 0
     research += action.research ?? 0
     kaoyanPrep += (action.kaoyanPrep ?? 0) * kaoyanPrepMultiplier(state)
@@ -794,7 +795,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     if (action.id === 'electiveHomework') {
       for (const course of state.season.courses) {
         if (!course.electiveType) continue
-        const gain = course.electiveType === 'politics' ? 15 : 20
+        const gain = course.electiveType === 'politics' ? 8 : 10
         prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
       }
     }
@@ -803,7 +804,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
       const nominal = Object.fromEntries(
         state.season.courses.map((course) => [
           course.id,
-          6 *
+          1 *
             courseK(course, attrs) *
             (1 + studyBonus) *
             prepMultiplier *
@@ -858,7 +859,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
       energy += habit.energy ?? 0
       stress += habit.stress ?? 0
       money += habit.money ?? 0
-      english += habit.english ?? 0
+      englishGrowth += habit.english ?? 0
       if (habit.id === 'reading' && !state.labEntered) {
         if (state.relationships.some((relation) => relation.kind === 'mentor')) {
           mentorIntimacyGain += 2
@@ -900,11 +901,21 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
   money = Math.max(0, money - WEEKLY_FIXED_COST)
 
+  const grown = applyGrowthCarry({
+    attrs,
+    english,
+    englishGrowth,
+    constitutionGrowth,
+    appearanceGrowth,
+    socialGrowth,
+  })
+
   return {
     energy,
     stress,
     money,
-    english,
+    english: grown.english,
+    englishGrowth: grown.englishGrowth,
     composite,
     research,
     researchProgressGain,
@@ -912,10 +923,10 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     familyAffectionGain,
     prep,
     kaoyanPrep,
-    constitutionGrowth,
-    appearanceGrowth,
-    socialGrowth,
-    attrs,
+    constitutionGrowth: grown.constitutionGrowth,
+    appearanceGrowth: grown.appearanceGrowth,
+    socialGrowth: grown.socialGrowth,
+    attrs: grown.attrs,
     studyCount,
     habitApplied,
   }
@@ -1071,20 +1082,16 @@ export function libraryCosts(state: GameState): {
   // 兴趣类课程不计入泡图书馆的计费课程数。
   // 消耗最多按 3 门课计算，超过 3 门不再继续增加。
   const costCount = Math.min(3, count)
-  const baseEnergy = -(5 + costCount * 5)
-  const baseStress = 5 + costCount * 5
-  const energyAttr = state.player?.attrs.energy ?? 5
-  const resilienceAttr = state.player?.attrs.resilience ?? 5
-  const energyFactor = clamp(1.25 - energyAttr * 0.05, 0.75, 1.2)
-  const stressFactor = clamp(1.25 - resilienceAttr * 0.05, 0.75, 1.2)
+  // 固定基础值 -15，保留多课程成本与低精力减半。
+  const baseEnergy = -(10 + costCount * 5)
   return {
     count,
     costCount,
     energy:
       state.energy < 40
-        ? Math.round(effectiveEnergyCost(baseEnergy * energyFactor, state.energy) / 2)
-        : effectiveEnergyCost(baseEnergy * energyFactor, state.energy),
-    stress: Math.round(baseStress * stressFactor),
+        ? Math.round(effectiveEnergyCost(baseEnergy, state.energy) / 2)
+        : effectiveEnergyCost(baseEnergy, state.energy),
+    stress: 5,
   }
 }
 

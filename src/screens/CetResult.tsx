@@ -45,7 +45,7 @@ export function CetResultScreen({ state, nextLabel = '下一学年', onContinue,
 
             <p className="event-lede">
               成绩单在开学前寄到。英语这件事，努力和记忆力都会算数。
-              当前英语进度 {state.english}（{cetHint(state.cet4Score, state.cet6Score)}）。
+              当前英语能力 {state.english}（{cetHint(state.cet4Score, state.cet6Score)}）。
             </p>
 
             <div className="cet-result-grid">
@@ -80,7 +80,7 @@ export function CetResultScreen({ state, nextLabel = '下一学年', onContinue,
                 <p>你没有参加这次四六级考试。之后仍可以在夏学期报名。</p>
               )}
               {cet4Taken && !cet4Passed && (
-                <p>CET-4 没有通过。下一年夏天可以再次报名；英语进度越高，保底分越高。</p>
+                <p>CET-4 没有通过。下一年夏天可以再次报名；英语能力越高，保底分越高。</p>
               )}
               {cet4Passed && !cet6Taken && (
                 <p>CET-4 已通过。下一次夏学期可以报名 CET-6；毕业要求是 CET-6 ≥ 550。</p>

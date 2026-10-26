@@ -212,10 +212,10 @@ export function VacationScreen({
                   <strong>{state.composite}</strong>
                 </div>
                 <div>
-                  <span>英语进度</span>
+                  <span>英语能力</span>
                   <strong>{state.english}</strong>
                   <small className="stat-hint">
-                    {cetHint(state.cet4Score, state.cet6Score)}
+                    成长 {Math.round(state.englishGrowth)}% · {cetHint(state.cet4Score, state.cet6Score)}
                   </small>
                 </div>
                 <div>

@@ -6,6 +6,7 @@ import type {
   Player,
   Relationship,
 } from './types'
+import { applyGrowthCarry } from './growth'
 import {
   createEventFriend,
   isStaffRelation,
@@ -277,7 +278,7 @@ function effectLines(effect: EventEffect): string[] {
   push('人际成长', effect.socialGrowth)
   push('建模成长', effect.appearanceGrowth)
   push('科研', effect.research)
-  push('英语', effect.english)
+  if (effect.english) lines.push(`英语成长值 +${effect.english}%`)
   push('综测', effect.composite)
   push('考研准备', effect.kaoyanPrep)
   push('交际', effect.socialAttr)
@@ -349,7 +350,7 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
       state.appearanceGrowth + (effect.appearanceGrowth ?? 0),
     ),
     research: Math.max(0, state.research + (effect.research ?? 0)),
-    english: clamp(state.english + (effect.english ?? 0), 0, 100),
+    englishGrowth: state.englishGrowth + (effect.english ?? 0),
     composite: Math.max(0, state.composite + (effect.composite ?? 0)),
     kaoyanPrep: clamp(state.kaoyanPrep + (effect.kaoyanPrep ?? 0), 0, 100),
     socialModuleUnlocked:
@@ -484,6 +485,22 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
       ...next.relationships,
       { ...createEventFriend(state.player), metAbsWeek: progressWeek(state) },
     ]
+  }
+  if (next.player) {
+    const grown = applyGrowthCarry({
+      attrs: next.player.attrs,
+      english: next.english,
+      englishGrowth: next.englishGrowth,
+      constitutionGrowth: next.constitutionGrowth,
+      appearanceGrowth: next.appearanceGrowth,
+      socialGrowth: next.socialGrowth,
+    })
+    next.player = { ...next.player, attrs: grown.attrs }
+    next.english = grown.english
+    next.englishGrowth = grown.englishGrowth
+    next.constitutionGrowth = grown.constitutionGrowth
+    next.appearanceGrowth = grown.appearanceGrowth
+    next.socialGrowth = grown.socialGrowth
   }
   return next
 }

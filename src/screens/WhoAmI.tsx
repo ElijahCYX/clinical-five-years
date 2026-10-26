@@ -193,8 +193,9 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   <strong>{state.composite}</strong>
                 </div>
                 <div>
-                  <span>英语进度</span>
+                  <span>英语能力</span>
                   <strong>{state.english}</strong>
+                  <small className="stat-hint">成长 {Math.round(state.englishGrowth)}%</small>
                 </div>
                 <div>
                   <span>科研进度</span>

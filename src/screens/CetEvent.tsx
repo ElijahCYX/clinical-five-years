@@ -65,9 +65,9 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
 
             <div className="event-info">
               <div>
-                <span>英语进度</span>
+                <span>英语能力</span>
                 <strong>{state.english}</strong>
-                <small>{cetHint(state.cet4Score, state.cet6Score)}</small>
+                <small>成长 {Math.round(state.englishGrowth)}% · {cetHint(state.cet4Score, state.cet6Score)}</small>
               </div>
               <div>
                 <span>记忆力</span>
@@ -94,7 +94,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
                 <h3>报名四级</h3>
                 <p>总分 750，425 分通过。</p>
                 <ul>
-                  <li>英语进度 ≥ 25：四级保底 425</li>
+                  <li>英语能力 ≥ 25：四级保底 425</li>
                   <li>报名费 {CET.registrationCost} 元</li>
                 </ul>
                 <small>
@@ -116,8 +116,8 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
                 <h3>报名六级</h3>
                 <p>总分 750，425 分通过。</p>
                 <ul>
-                  <li>英语进度 ≥ 60：六级保底 425</li>
-                  <li>英语进度 ≥ 100：六级保底 550</li>
+                  <li>英语能力 ≥ 60：六级保底 425</li>
+                  <li>英语能力 ≥ 100：六级保底 550</li>
                   <li>报名费 {CET.registrationCost} 元</li>
                 </ul>
                 <small>
@@ -142,7 +142,7 @@ export function CetEventScreen({ state, onRegister, onSkip, onTitle }: CetEventS
 
             <p className="cet-note">
               只有 CET-4 ≥ 425 才能报名 CET-6；CET-6 ≥ 550 才算达到毕业英语要求。
-              英语进度可以超过 100，继续学没有坏处。
+              英语能力可以超过 100，继续学没有坏处。
             </p>
 
             <div className="event-actions">
