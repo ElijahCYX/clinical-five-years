@@ -13820,3 +13820,80 @@ body.dinner-open {
     font-size: 32px;
   }
 }
+
+/* Hold the winning method for one second before the response screen. */
+.skip-class-modal.is-settled {
+  animation: skip-settled-pulse 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  box-shadow:
+    0 0 0 2px rgba(166, 79, 55, 0.22),
+    0 0 48px rgba(166, 79, 55, 0.18),
+    0 28px 70px -26px rgba(41, 27, 18, 0.62);
+}
+
+.skip-reel.is-settled {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(227, 177, 91, 0.2), transparent 44%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(39, 39, 31, 0.98) 0 31px,
+      rgba(145, 118, 79, 0.22) 31px 32px
+    );
+}
+
+.skip-reel.is-settled .skip-reel-item.is-current strong {
+  color: #ffe8b8;
+  font-size: 58px;
+  animation: skip-winning-method 1s cubic-bezier(0.16, 0.82, 0.25, 1) both;
+  text-shadow:
+    0 0 18px rgba(235, 184, 96, 0.42),
+    0 0 46px rgba(235, 184, 96, 0.18);
+}
+
+.skip-reel.is-settled .skip-reel-item.is-current small {
+  color: rgba(255, 235, 194, 0.82);
+}
+
+.skip-reel.is-settled .skip-reel-item.is-next,
+.skip-reel.is-settled .skip-reel-item.is-prev,
+.skip-reel.is-settled .skip-reel-item.is-hidden {
+  opacity: 0;
+  transition-duration: 0.35s;
+}
+
+.skip-reel.is-settled .skip-reel-label::after {
+  content: "  /  结果锁定";
+  color: #e8bc76;
+}
+
+@keyframes skip-winning-method {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.5;
+    filter: blur(1.4px);
+  }
+  42% {
+    transform: scale(1.2);
+    opacity: 1;
+    filter: blur(0);
+  }
+  64% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1.14);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes skip-settled-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  22% { transform: scale(1.018); filter: brightness(1.05); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (max-width: 820px) {
+  .skip-reel.is-settled .skip-reel-item.is-current strong {
+    font-size: 42px;
+  }
+}

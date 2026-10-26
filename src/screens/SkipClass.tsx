@@ -181,7 +181,7 @@ export function SkipClassModal({
             ],
           })
         }
-      }, 160)
+      }, 1000)
     }
 
     // 转速从快到慢：每一次切换的间隔逐渐拉长，最后停在结果上。
@@ -224,6 +224,8 @@ export function SkipClassModal({
     }
   }, [method])
 
+  const isSettled = !rolling && stage === 'roll'
+
   const chooseReaction = (reaction: ReactionInfo) => {
     if (reaction.key !== correctReaction?.key) return
     const outcome = reactionRoll(reaction.key)
@@ -234,8 +236,18 @@ export function SkipClassModal({
   return (
     <div className="random-event-overlay skip-class-overlay" role="dialog" aria-modal="true">
       <div className="random-event-backdrop" />
-      <section className={`random-event-modal skip-class-modal ${stage === 'roll' ? 'is-rolling' : ''}`}>
-        {stage === 'roll' && <div className="skip-adrenaline-flash" aria-hidden="true" />}
+      <section
+        className={`random-event-modal skip-class-modal ${
+          stage === 'roll' && rolling
+            ? 'is-rolling'
+            : stage === 'roll' && isSettled
+              ? 'is-settled'
+              : ''
+        }`}
+      >
+        {stage === 'roll' && rolling && (
+          <div className="skip-adrenaline-flash" aria-hidden="true" />
+        )}
         <header className="random-event-head">
           <div className="random-event-kind-row">
             <span className="research-notice-tag">SKIP CLASS / 翘课判定</span>
@@ -260,7 +272,9 @@ export function SkipClassModal({
             <p className="random-event-text">
               你刚在宿舍坐下，教室里突然安静下来。你盯着手机，等待命运给出今天的抽查方式。
             </p>
-            <div className={`skip-reel ${rolling ? 'is-rolling' : ''}`}>
+            <div
+              className={`skip-reel ${rolling ? 'is-rolling' : ''} ${isSettled ? 'is-settled' : ''}`}
+            >
               <span className="skip-reel-scan" aria-hidden="true" />
               <span className="skip-reel-label">本次抽查方式</span>
               <div className="skip-reel-window">
@@ -294,7 +308,9 @@ export function SkipClassModal({
             <p className="skip-suspense-line" key={suspenseIndex}>
               {SUSPENSE_LINES[suspenseIndex]}
             </p>
-            <p className="skip-reel-note">转盘正在减速……四秒后揭晓</p>
+            <p className="skip-reel-note">
+              {isSettled ? '结果锁定……老师正在看你。' : '转盘正在减速……四秒后揭晓'}
+            </p>
           </div>
         )}
 
