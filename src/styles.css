@@ -16817,3 +16817,38 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+
+/* Comic ink weights for the action-card doodles. */
+.action-doodle .d-thick {
+  stroke-width: 3.2;
+}
+
+.action-doodle .d-main {
+  stroke-width: 2.1;
+}
+
+.action-doodle .d-fine {
+  stroke-width: 1.1;
+}
+
+.action-doodle .d-fill {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.2;
+}
+
+.action-doodle {
+  opacity: 0.18;
+}
+
+.action-card:hover .action-doodle {
+  opacity: 0.25;
+}
+
+.action-card.is-selected .action-doodle {
+  opacity: 0.21;
+}
+
+.action-card.is-locked .action-doodle {
+  opacity: 0.1;
+}

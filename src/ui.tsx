@@ -355,8 +355,8 @@ export function InterfaceNav({
 
   return (
     <nav className={`interface-nav is-${variant}`} aria-label="界面切换">
-      {item('main', '主界面', onMain)}
       {item('who', '我是谁', onWho)}
+      {item('main', '主界面', onMain)}
       {item('ta', 'TA 是谁', onTA)}
     </nav>
   )
