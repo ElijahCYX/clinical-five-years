@@ -64,19 +64,21 @@ export function courseK(course: Course, attrs: Record<AttrKey, number>): number 
 }
 
 export function planPassive(plan: PlanId): number {
-  return { A: 10, B: 6, C: 2 }[plan]
+  return { A: 5, B: 2, C: 0 }[plan]
 }
 
-export function planEnergyCost(plan: PlanId): number {
-  return { A: 10, B: 6, C: 3 }[plan]
-}
-
-export function planStress(plan: PlanId): number {
-  return { A: 1, B: 0, C: 0 }[plan]
+/** 学期计划的每日结算：A 每天、B 仅周六周日、C 平时不产生消耗。 */
+export function planDailyCost(
+  plan: PlanId,
+  dayIndex: number,
+): { energy: number; stress: number } {
+  if (plan === 'A') return { energy: -5, stress: 2 }
+  if (plan === 'B' && dayIndex >= 5) return { energy: -10, stress: 3 }
+  return { energy: 0, stress: 0 }
 }
 
 export function reviewMultiplier(plan: PlanId): number {
-  return { A: 1, B: 1.1, C: 1.25 }[plan]
+  return { A: 1, B: 1.1, C: 1.5 }[plan]
 }
 
 export function reviewStress(plan: PlanId): number {
@@ -879,9 +881,6 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     }
   }
 
-  const planCost = state.plan
-    ? -effectiveEnergyCost(-planEnergyCost(state.plan), state.energy)
-    : 0
   if (!hasFitnessHabit && !hasSportAction) {
     constitutionGrowth = Math.max(0, constitutionGrowth - 5)
   }
@@ -897,8 +896,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     }
   }
 
-  energy = clamp(energy + 15 - planCost, 0, 100)
-  stress = clamp(stress + (state.plan ? planStress(state.plan) : 0), 0, 100)
+  energy = clamp(energy + 15, 0, 100)
   money = Math.max(0, money - WEEKLY_FIXED_COST)
 
   const grown = applyGrowthCarry({

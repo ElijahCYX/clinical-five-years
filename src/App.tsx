@@ -51,9 +51,8 @@ import {
   estimateScore,
   prepGainMultiplier,
   stressReliefForScore,
-  planEnergyCost,
+  planDailyCost,
   planPassive,
-  planStress,
   simulateWeek,
   signed,
   WEEKLY_FIXED_COST,
@@ -1795,6 +1794,11 @@ function RealApp() {
     if (!org) return
     const completeApplication = (state: GameState) => {
       const nextSlot = state.weekSlot + 1
+      const finishedDay = Math.floor(state.weekSlot / 3)
+      const daily =
+        state.weekSlot % 3 === 2 && state.plan
+          ? planDailyCost(state.plan, finishedDay)
+          : { energy: 0, stress: 0 }
       const advanced: GameState = {
         ...state,
         screen: 'week',
@@ -1802,10 +1806,14 @@ function RealApp() {
         weekSlotSkipped: false,
         weekSlotActions: [...state.weekSlotActions, 'clubApplication'],
         selected: state.selected.filter((id) => id !== 'club'),
-        energy:
-          nextSlot < 21 && nextSlot % 3 === 0
-            ? clamp(state.energy + 5, 0, 100)
-            : state.energy,
+        energy: clamp(
+          state.energy +
+            daily.energy +
+            (nextSlot < 21 && nextSlot % 3 === 0 ? 5 : 0),
+          0,
+          100,
+        ),
+        stress: clamp(state.stress + daily.stress, 0, 100),
       }
       if (nextSlot >= 21) {
         endWeek(advanced)
@@ -3212,15 +3220,24 @@ function RealApp() {
 
   const advanceWeekSlot = (base: GameState): GameState => {
     const nextSlot = base.weekSlot + 1
+    const finishedDay = Math.floor(base.weekSlot / 3)
+    const daily =
+      base.weekSlot % 3 === 2 && base.plan
+        ? planDailyCost(base.plan, finishedDay)
+        : { energy: 0, stress: 0 }
     return {
       ...base,
       weekSlot: nextSlot,
       weekSlotSkipped: false,
       weekSlotActions: base.weekSlotActions,
-      energy:
-        nextSlot < 21 && nextSlot % 3 === 0
-          ? clamp(base.energy + 5, 0, 100)
-          : base.energy,
+      energy: clamp(
+        base.energy +
+          daily.energy +
+          (nextSlot < 21 && nextSlot % 3 === 0 ? 5 : 0),
+        0,
+        100,
+      ),
+      stress: clamp(base.stress + daily.stress, 0, 100),
     }
   }
 
