@@ -852,14 +852,6 @@ bullet('关系需要主动维护，但不需要每周都约。拍一拍是低成
 h2('写在最后')
 para('这份说明能告诉你规则，但不能替你过完五年。你会做出一些后来觉得愚蠢的决定，也会在某个普通的晚上因为一句回复而高兴很久。只要这些选择是你自己做的，它们就属于这个角色。')
 para('如果五年后你回头看，发现自己没有成为最优秀的那个学生，却成为了一个还愿意继续走下去的人，那也是一个很好的结局。')
-p = doc.add_paragraph()
-p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-p.paragraph_format.space_before = Pt(18)
-r = p.add_run('“五年很长，长到可以改变一个人；五年也很短，短到你只能认真过好今天。”')
-set_run_font(r, BODY_FONT, 10, False, MUTED)
-
-h2('文档说明')
-para('本说明对应游戏版本 v0.56.5，编写于 2026 年 10 月。游戏仍在持续迭代，具体数值、事件文本和界面可能随版本变化；以游戏内实际显示为准。《临床五年》中的学校、人物、病例与事件均为虚构，不构成医学建议。', 'Guide Small')
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
