@@ -368,9 +368,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
       ...next.player,
       attrs: {
         ...next.player.attrs,
-        social: clamp(next.player.attrs.social + effect.socialAttr, 2, 10),
+        social: clamp(next.player.attrs.social + effect.socialAttr, 2, 15),
       },
     }
+    if (next.player.attrs.social >= 15) next.socialGrowth = 0
   }
   if (effect.romanceBreak) {
     next.relationships = next.relationships.map((relation) =>

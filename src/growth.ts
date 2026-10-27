@@ -18,7 +18,7 @@ export interface GrowthCarryResult extends GrowthFields {
 }
 
 const ATTR_MIN = 1
-const ATTR_MAX = 10
+const ATTR_MAX = 15
 
 /**
  * Growth values are percentages: 100% converts into one panel point.
@@ -33,6 +33,9 @@ export function applyGrowthCarry(input: GrowthCarryInput): GrowthCarryResult {
   let englishGrowth = input.englishGrowth
 
   const carryAttr = (key: AttrKey, rawValue: number): number => {
+    // At the absolute panel cap, the corresponding growth is spent out:
+    // it displays 0% and cannot accumulate again.
+    if (attrs[key] >= ATTR_MAX) return 0
     let value = rawValue
     let guard = 0
     while (value >= 100 && attrs[key] < ATTR_MAX && guard < 100) {
@@ -45,7 +48,7 @@ export function applyGrowthCarry(input: GrowthCarryInput): GrowthCarryResult {
       value += 100
       guard += 1
     }
-    if (value >= 100 && attrs[key] >= ATTR_MAX) value = 100
+    if (attrs[key] >= ATTR_MAX) value = 0
     if (value < 0) value = 0
     return value
   }

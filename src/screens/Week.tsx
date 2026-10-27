@@ -593,7 +593,7 @@ export function WeekScreen({
               <small>{attr.en}</small>
             </div>
             <div className="segments">
-              {Array.from({ length: 10 }, (_, index) => (
+              {Array.from({ length: 15 }, (_, index) => (
                 <span
                   key={index}
                   className={`segment ${index < player.attrs[attr.key] ? 'segment-on' : ''}`}
@@ -604,6 +604,9 @@ export function WeekScreen({
           </div>
         ))}
       </div>
+      <p className="attr-cap-note">
+        进度条红线为 10 点，是入学时能带进大学的天赋上限；15 为成长上限，达到后对应成长值归零。
+      </p>
       <div className="people-meta">
         <div>
           <span>家庭背景</span>

@@ -175,7 +175,7 @@ export function CreateScreen({ initialPlayer, onBack, onConfirm }: CreateScreenP
 
               <div className="attr-tools">
                 <p>
-                  每项 2–10 点，共 {talent.points} 点；必须全部分配完才能领取学生证。
+                  每项 2–10 点，共 {talent.points} 点；必须全部分配完才能领取学生证。开学后八维可继续成长至 15；多出的部分只能靠大学阶段的努力获得。
                 </p>
                 <div>
                   <button

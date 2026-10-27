@@ -16905,3 +16905,44 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   font-size: 8px;
   letter-spacing: 0.04em;
 }
+
+/* Attribute panel: the red line marks the opening cap (10 of 15). */
+.dossier-attr-bar {
+  position: relative;
+  overflow: visible;
+}
+
+.dossier-attr-bar::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 66.6667%;
+  width: 1px;
+  background: var(--red);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.attr-readonly .segments {
+  position: relative;
+}
+
+.attr-readonly .segments::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: calc(66.6667% - 0.5px);
+  width: 1px;
+  background: var(--red);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.attr-cap-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.55;
+}

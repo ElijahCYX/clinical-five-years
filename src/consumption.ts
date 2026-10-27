@@ -123,9 +123,11 @@ export function addImmediateConsumptionEffects(
 
 export function applyWeeklyConsumptionEffects(state: GameState): GameState {
   let constitutionGrowth = state.constitutionGrowth
-  if (hasConsumption(state, 'cons-gym')) constitutionGrowth += 5
-  if (hasConsumption(state, 'cons-band')) constitutionGrowth += 5
-  if (hasConsumption(state, 'cons-mat')) constitutionGrowth += 4
+  if ((state.player?.attrs.constitution ?? 0) < 15) {
+    if (hasConsumption(state, 'cons-gym')) constitutionGrowth += 5
+    if (hasConsumption(state, 'cons-band')) constitutionGrowth += 5
+    if (hasConsumption(state, 'cons-mat')) constitutionGrowth += 4
+  }
   return { ...state, constitutionGrowth }
 }
 
@@ -179,7 +181,10 @@ export function applyDailyConsumptionEffects(
   let energy = state.energy + energyGain
   let stress = state.stress - stressReduction
   let appearanceGrowth = state.appearanceGrowth
-  if (active('cons-skincare')) {
+  if (
+    active('cons-skincare') &&
+    (state.player?.attrs.appearance ?? 0) < 15
+  ) {
     appearanceGrowth += 1 * consumptionAppearanceMultiplier(state)
   }
   let prep = { ...state.prep }

@@ -143,7 +143,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
 
           <div className="dossier-grid">
             <section className="paper-card dossier-block">
-              <SectionLabel right="2–10">01 / 面板属性</SectionLabel>
+              <SectionLabel right="开局 2–10 · 上限 15">01 / 面板属性</SectionLabel>
               <div className="dossier-attrs">
                 {ATTRS.map((attr) => (
                   <div className="dossier-attr" key={attr.key}>
@@ -152,12 +152,15 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                       <strong>{player.attrs[attr.key]}</strong>
                     </div>
                     <div className="dossier-attr-bar">
-                      <i style={{ width: `${player.attrs[attr.key] * 10}%` }} />
+                      <i style={{ width: `${(player.attrs[attr.key] / 15) * 100}%` }} />
                     </div>
                     <small>{attr.blurb}</small>
                   </div>
                 ))}
               </div>
+              <p className="attr-cap-note">
+                进度条红线为 10 点：这是入学时能带进大学的天赋上限，后 1/3 只能靠大学阶段的成长获得。属性达到 15 后，对应成长值归零并停止增长。
+              </p>
             </section>
 
             <section className="paper-card dossier-block">
@@ -192,15 +195,15 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
               <div className="dossier-growth">
                 <div>
                   <span>体质成长</span>
-                  <strong>{Math.round(state.constitutionGrowth)}%</strong>
+                  <strong>{Math.round(player.attrs.constitution >= 15 ? 0 : state.constitutionGrowth)}%</strong>
                 </div>
                 <div>
                   <span>建模成长</span>
-                  <strong>{Math.round(state.appearanceGrowth)}%</strong>
+                  <strong>{Math.round(player.attrs.appearance >= 15 ? 0 : state.appearanceGrowth)}%</strong>
                 </div>
                 <div>
                   <span>人际成长</span>
-                  <strong>{Math.round(state.socialGrowth)}%</strong>
+                  <strong>{Math.round(player.attrs.social >= 15 ? 0 : state.socialGrowth)}%</strong>
                 </div>
               </div>
             </section>
