@@ -140,6 +140,11 @@ export function ResultScreen({
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
                       </span>
+                      {result.course.makeup && (
+                        <span className="makeup-explain">
+                          补考最终绩点 = 原绩点与补考绩点的平均值，因此卷面分与最终绩点可能不同。
+                        </span>
+                      )}
                       {typeof result.usualScore === 'number' &&
                         typeof result.paperScore === 'number' && (
                           <span className="course-score-parts">

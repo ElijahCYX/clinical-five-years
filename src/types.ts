@@ -58,6 +58,7 @@ export type ScreenName =
   | 'graduation'
   | 'ending'
   | 'stressEnding'
+  | 'expulsion'
 
 export type ReviewChoice =
   | 'full'
@@ -264,6 +265,23 @@ export interface WeekLog {
   title: string
   text: string
   deltas: string[]
+}
+
+export interface SemesterStats {
+  library: number
+  attend: number
+  skip: number
+  sleepIn: number
+  coffee: number
+  selfCare: number
+  exercise: number
+  social: number
+  partTime: number
+  research: number
+  club: number
+  english: number
+  electiveHomework: number
+  date: number
 }
 
 export interface ExamResult {
@@ -667,6 +685,11 @@ export interface GameState {
   examEnglishPrep: boolean
   peResults: PeResult[]
   pendingMakeups: Course[]
+  outstandingFails: Record<string, number>
+  semesterStats: SemesterStats
+  expulsionText: string | null
+  expulsionCredits: number
+  expulsionCourses: string[]
   postgradChoice: PostgradChoice
   postgradChance: number | null
   baoyanResult: 'success' | 'fail' | null
@@ -797,3 +820,4 @@ export type DemoName =
   | 'yearend'
   | 'ending'
   | 'stressEnding'
+  | 'expulsion'

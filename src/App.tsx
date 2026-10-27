@@ -92,11 +92,13 @@ import type {
   WeekLog,
   SoloInvite,
   SoloChatRecord,
+  SemesterStats,
 } from './types'
 import { CetEventScreen } from './screens/CetEvent'
 import { CetResultScreen } from './screens/CetResult'
 import { CreateScreen } from './screens/Create'
 import { EndingScreen } from './screens/Ending'
+import { FailureReport } from './screens/FailureReport'
 import { PlanScreen } from './screens/Plan'
 import {
   BaoyanResultScreen,
@@ -132,6 +134,7 @@ import {
 import { EncounterProvider, useEncounter } from './screens/Encounter'
 import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
 import { pickTravelEvent } from './travelEvents'
+import { pickExpulsionText } from './expulsionTexts'
 import {
   CONSUMPTION_EVENTS,
   pickConsumptionEvent,
@@ -304,6 +307,28 @@ function earlySleepApplies(state: GameState, nextSlot: number): boolean {
   return nextDay <= 4
 }
 
+function deriveOutstandingFails(
+  game: GameState,
+): Record<string, number> {
+  if (game.outstandingFails) return game.outstandingFails
+  const entries: Array<[string, number]> = []
+  const pending = game.pendingMakeups ?? []
+  for (const course of pending) {
+    if (!course.electiveType) entries.push([baseCourseId(course.id), course.credits])
+  }
+  const currentMakeups = (game.season?.courses ?? []).filter(
+    (course) => course.makeup && !course.electiveType,
+  )
+  for (const course of currentMakeups) {
+    entries.push([baseCourseId(course.id), course.credits])
+  }
+  for (const id of game.pendingElectiveRetakes ?? []) {
+    const course = ELECTIVE_COURSE_BY_ID[id]
+    if (course?.electiveType === 'politics') entries.push([baseCourseId(id), course.credits])
+  }
+  return Object.fromEntries(entries)
+}
+
 function readSave(): GameState | null {
   try {
     const currentRaw = localStorage.getItem(SAVE_KEY)
@@ -407,6 +432,15 @@ function readSave(): GameState | null {
       clubHistory: game.clubHistory ?? [],
       clubInitialRecruitmentDone: game.clubInitialRecruitmentDone ?? false,
       clubInvites: game.clubInvites ?? null,
+      outstandingFails: deriveOutstandingFails(game),
+      semesterStats: game.semesterStats ?? {
+        library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
+        exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
+        english: 0, electiveHomework: 0, date: 0,
+      },
+      expulsionText: game.expulsionText ?? null,
+      expulsionCredits: game.expulsionCredits ?? 0,
+      expulsionCourses: game.expulsionCourses ?? [],
       clubActivityPlan: game.clubActivityPlan ?? null,
       clubLastBenefitSeason: game.clubLastBenefitSeason ?? null,
       clubLastPromotionSeason: game.clubLastPromotionSeason ?? null,
@@ -645,7 +679,12 @@ function prepareSeason(base: GameState, index: number): GameState {
     examCoffee: false,
     examAllNighter: false,
     examEnglishPrep: false,
-    pendingMakeups: [],
+    pendingMakeups: pending,
+    semesterStats: {
+      library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
+      exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
+      english: 0, electiveHomework: 0, date: 0,
+    },
   }
 }
 
@@ -712,6 +751,48 @@ function absoluteWeek(state: GameState): number {
   return state.seasonIndex * 4 + state.week
 }
 
+function baseCourseId(courseId: string): string {
+  return courseId.replace(/^makeup-/, '').replace(/-\d+$/, '')
+}
+
+function bumpSemesterStats(
+  stats: SemesterStats | undefined,
+  actionId: string,
+): SemesterStats {
+  const next: SemesterStats = {
+    library: 0,
+    attend: 0,
+    skip: 0,
+    sleepIn: 0,
+    coffee: 0,
+    selfCare: 0,
+    exercise: 0,
+    social: 0,
+    partTime: 0,
+    research: 0,
+    club: 0,
+    english: 0,
+    electiveHomework: 0,
+    date: 0,
+    ...(stats ?? {}),
+  }
+  if (actionId === 'library') next.library += 1
+  else if (actionId === 'skip') next.skip += 1
+  else if (actionId === 'exercise') next.exercise += 1
+  else if (actionId.startsWith('attend:')) next.attend += 1
+  else if (actionId === 'sleepIn') next.sleepIn += 1
+  else if (actionId === 'social') next.social += 1
+  else if (actionId === 'partTime') next.partTime += 1
+  else if (actionId === 'sport') next.exercise += 1
+  else if (actionId === 'research') next.research += 1
+  else if (actionId === 'english') next.english += 1
+  else if (actionId === 'club') next.club += 1
+  else if (actionId.startsWith('clubAttend:')) next.club += 1
+  else if (actionId === 'electiveHomework') next.electiveHomework += 1
+  else if (actionId.startsWith('soloDate:')) next.date += 1
+  return next
+}
+
 function RealApp() {
   const { showResearchNotice } = useResearchNotice()
   const announceSleep = (result: ReturnType<typeof sleepRecoveryFor>, stress: number) => {
@@ -746,6 +827,7 @@ function RealApp() {
   const publicationNoticeOpenRef = useRef(false)
   const walkAttemptDayRef = useRef('')
   const [noticeTick, setNoticeTick] = useState(0)
+  const [dismissedFailureKey, setDismissedFailureKey] = useState<string | null>(null)
 
   const openPublicationNotice = (
     journal: string,
@@ -3436,7 +3518,10 @@ function RealApp() {
   }
 
   const finishWeekSlot = (base: GameState, actionId?: string) => {
-    const normalized = carryGrowthState(base)
+    const withStats = actionId
+      ? { ...base, semesterStats: bumpSemesterStats(base.semesterStats, actionId) }
+      : base
+    const normalized = carryGrowthState(withStats)
     const advancedResult = advanceWeekSlot({
       ...normalized,
       weekSlotActions: actionId
@@ -3536,6 +3621,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       weekSlotSkipped: true,
+      semesterStats: bumpSemesterStats(game.semesterStats, 'skip'),
       stress: success ? game.stress : clamp(game.stress + 5, 0, 100),
       skipCaught: success
         ? game.skipCaught
@@ -3564,6 +3650,7 @@ function RealApp() {
       energy: clamp(game.energy + 10, 0, 100),
       money: Math.max(0, game.money - coffeeCost),
       coffeeDayKey: key,
+      semesterStats: bumpSemesterStats(game.semesterStats, 'coffee'),
       eveningCoffeeDayKey:
         game.weekSlot % 3 === 2 ? key : game.eveningCoffeeDayKey,
     }
@@ -3581,6 +3668,7 @@ function RealApp() {
       energy: clamp(game.energy - 20, 0, 100),
       constitutionGrowth: game.constitutionGrowth + 1,
       weekSlotActions: [...game.weekSlotActions, 'campusRun'],
+      semesterStats: bumpSemesterStats(game.semesterStats, 'exercise'),
       peRunCount: game.peRunCount + 1,
       campusRunDayKey: key,
     })
@@ -4008,6 +4096,15 @@ function RealApp() {
       .map((result) => result.course.id)
     const nextSkipCaught = { ...game.skipCaught }
     for (const result of results) delete nextSkipCaught[result.course.id]
+    const outstandingFails = { ...(game.outstandingFails ?? {}) }
+    for (const result of results) {
+      const key = baseCourseId(result.course.id)
+      const counts =
+        !result.course.electiveType || result.course.electiveType === 'politics'
+      if (!counts) continue
+      if (result.gpa > 0) delete outstandingFails[key]
+      else outstandingFails[key] = result.course.credits
+    }
     const next: GameState = {
       ...game,
       skipCaught: nextSkipCaught,
@@ -4020,6 +4117,7 @@ function RealApp() {
       prep,
       results,
       pendingMakeups,
+      outstandingFails,
       everFailed: game.everFailed || failed.length > 0,
       yearFailed: game.yearFailed || failed.length > 0,
       cumulativeCredits: game.cumulativeCredits + creditGain,
@@ -4130,6 +4228,7 @@ function RealApp() {
       stress: clamp(game.stress - 15, 0, 100),
       constitutionGrowth: game.constitutionGrowth - 5,
       selfCareDayKey: key,
+      semesterStats: bumpSemesterStats(game.semesterStats, 'selfCare'),
     })
     setGame(next)
     persist(next)
@@ -5188,15 +5287,51 @@ function RealApp() {
   }
 
   if (view === 'result') {
+    const failedResults = game.results.filter((result) => result.score < 60)
+    const resultKey = `${game.season.id}|${game.results
+      .map((result) => `${result.course.id}:${result.score}`)
+      .join(',')}`
+    const outstandingCredits = Object.values(game.outstandingFails ?? {}).reduce(
+      (sum, value) => sum + value,
+      0,
+    )
+    const willExpel = outstandingCredits >= 20
+    const acknowledgeFailure = () => {
+      setDismissedFailureKey(resultKey)
+      if (willExpel) {
+        const expulsion = pickExpulsionText()
+        commit(
+          {
+            ...game,
+            screen: 'expulsion',
+            expulsionText: expulsion.text,
+            expulsionCredits: outstandingCredits,
+            expulsionCourses: failedResults.map((result) => result.course.name),
+          },
+          'expulsion',
+        )
+      }
+    }
     return (
-      <ResultScreen
-        state={game}
-        nextLabel={resultNextLabel(game.seasonIndex)}
-        onContinue={handleResultContinue}
-        onSave={saveNow}
-        onAbandonElective={abandonElective}
-        onTitle={goTitle}
-      />
+      <>
+        <ResultScreen
+          state={game}
+          nextLabel={resultNextLabel(game.seasonIndex)}
+          onContinue={handleResultContinue}
+          onSave={saveNow}
+          onAbandonElective={abandonElective}
+          onTitle={goTitle}
+        />
+        {failedResults.length > 0 && dismissedFailureKey !== resultKey && (
+          <FailureReport
+            state={game}
+            results={game.results}
+            outstandingCredits={outstandingCredits}
+            willExpel={willExpel}
+            onAcknowledge={acknowledgeFailure}
+          />
+        )}
+      </>
     )
   }
 
@@ -5243,6 +5378,29 @@ function RealApp() {
         note={notes[completedYear]}
         continueLabel={nextSeason ? `继续：${nextSeason.seasonLabel}` : undefined}
         onContinue={nextSeason ? handleYearEndContinue : undefined}
+        onRestart={handleRestart}
+        onTitle={goTitle}
+      />
+    )
+  }
+
+  if (view === 'expulsion') {
+    return (
+      <EndingScreen
+        state={game}
+        eyebrow="ACADEMIC DISMISSAL / 学业终止"
+        titleMain="这一局，"
+        titleAccent="退学了"
+        description={
+          game.expulsionText ??
+          '累计未通过学分达到了学校的退学线。你的五年，在这里提前结束。'
+        }
+        tone="danger"
+        note={`累计未通过学分：${game.expulsionCredits} 分。${
+          game.expulsionCourses.length > 0
+            ? `本次涉及课程：${game.expulsionCourses.join('、')}。`
+            : ''
+        }这不是一次补考，而是学业处理结果。`}
         onRestart={handleRestart}
         onTitle={goTitle}
       />

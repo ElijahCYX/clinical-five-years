@@ -708,7 +708,10 @@ export function WeekScreen({
                         </>
                       ) : course && soloInvite ? (
                         <>
-                          <strong>{course.name}</strong>
+                          <strong>
+                            {course.name}
+                            {course.makeup && <span className="makeup-tag">补考</span>}
+                          </strong>
                           <small>{course.credits} 学分</small>
                           <strong className="timetable-solo-event">
                             翘课{soloInvite.eventName}
@@ -722,7 +725,10 @@ export function WeekScreen({
                         </>
                       ) : course ? (
                         <>
-                          <strong>{course.name}</strong>
+                          <strong>
+                            {course.name}
+                            {course.makeup && <span className="makeup-tag">补考</span>}
+                          </strong>
                           <small>{course.credits} 学分</small>
                         </>
                       ) : (

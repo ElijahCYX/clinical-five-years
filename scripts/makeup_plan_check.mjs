@@ -1,0 +1,21 @@
+import { chromium } from 'playwright-core'
+const browser = await chromium.launch({ executablePath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', headless: true, args: ['--no-sandbox'] })
+const page = await browser.newPage({ viewport: { width: 1624, height: 1048 } })
+page.on('pageerror', e => console.log('ERR', e.message))
+await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' })
+await page.evaluate(async () => {
+  const g = await import('/src/game.ts'); const d = await import('/src/data.ts'); const demo = await import('/src/demo.ts')
+  const s = g.newGameState(demo.demoPlayer)
+  s.screen = 'prep'; s.seasonIndex = 0; s.season = d.SEASONS[0]; s.week = 4; s.plan = 'C'; s.habits = ['earlySleep', 'familyCall']; s.electiveSelectionDone = true; s.electiveOffers = []; s.energy = 100; s.stress = 20; s.money = 1500; s.pendingEvent = null; s.eventWeek = 4; s.weekSlot = 0; s.weekFocus = 'balanced'; s.prep = { math: 0, introMedicine: 0 }; s.results = []; s.pendingMakeups = []; s.pendingElectiveRetakes = []; s.courseRecords = []; s.cumulativeCredits = 0; s.cumulativePoints = 0; s.everFailed = false; s.yearFailed = false
+  localStorage.setItem('clinical-five-years-save-v44', JSON.stringify({ game: s, savedAt: Date.now() }))
+})
+await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(250); await page.locator('.title-actions .btn-ghost').click(); await page.waitForTimeout(400)
+await page.locator('.review-card', { hasText: '休息调整' }).click(); await page.waitForTimeout(150); await page.locator('button', { hasText: '走进考场' }).click(); await page.waitForTimeout(600)
+await page.locator('button', { hasText: /继续|下一/ }).first().click(); await page.waitForTimeout(600)
+console.log('elective initial', await page.evaluate(()=>({pe:document.querySelector('.review-card')!=null, buttons:[...document.querySelectorAll('button')].map(b=>({t:b.innerText.trim(),d:b.disabled})).filter(x=>/体育|提交|计划/.test(x.t))})))
+await page.locator('button', { hasText: '选择这门体育课' }).click(); await page.waitForTimeout(200)
+const submit = page.locator('button', { hasText: '提交选课' }); console.log('submit', await submit.count(), await submit.isDisabled().catch(()=>null)); if(await submit.count() && !(await submit.isDisabled())) await submit.click(); await page.waitForTimeout(500)
+const enter = page.locator('button', { hasText: '进入学期计划' }); console.log('enter', await enter.count()); if(await enter.count()) await enter.click(); await page.waitForTimeout(500)
+console.log('plan', await page.evaluate(()=>({hasPlan:document.querySelector('.plan-screen')!=null, text:document.body.innerText.slice(0,1200), game:(()=>{const g=JSON.parse(localStorage.getItem('clinical-five-years-save-v44')).game;return {screen:g.screen, courses:g.season.courses.map(c=>({id:c.id,name:c.name,makeup:!!c.makeup,credits:c.credits})), pending:g.pendingMakeups, electiveDone:g.electiveSelectionDone, pe:g.pendingPeCourseId}})()})))
+await page.screenshot({path:'/tmp/makeup-plan.png'})
+await browser.close()

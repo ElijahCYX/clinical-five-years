@@ -13,6 +13,7 @@ interface EndingScreenProps {
   eyebrow?: string
   description?: string
   note?: string
+  tone?: 'default' | 'danger'
 }
 
 export function EndingScreen({
@@ -26,6 +27,7 @@ export function EndingScreen({
   eyebrow = 'END OF YEAR ONE / PROTOTYPE 001',
   description,
   note,
+  tone = 'default',
 }: EndingScreenProps) {
   const player = state.player
   if (!player) return null
@@ -35,7 +37,7 @@ export function EndingScreen({
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : 0
 
   return (
-    <div className="screen ending-screen">
+    <div className={`screen ending-screen ${tone === 'danger' ? 'is-danger' : ''}`}>
       <div className="shell">
         <TopBar
           onTitle={onTitle}

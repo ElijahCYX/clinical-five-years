@@ -106,7 +106,10 @@ export function PlanScreen({
                         <span>{course.electiveType === 'pe' ? '体育课' : course.examType}</span>
                         <span>{course.credits} 学分</span>
                       </div>
-                      <h3>{course.name}</h3>
+                      <h3>
+                        {course.name}
+                        {course.makeup && <span className="makeup-tag">补考</span>}
+                      </h3>
                       <p>
                         {course.electiveType === 'pe'
                           ? '无准备度 · 按体质与考试周精力评分'
