@@ -93,7 +93,7 @@ export function ResultScreen({
                 <span className="result-gpa-sub">本学期平均绩点</span>
               </div>
               <div className="result-badge">
-                <span>{state.results.length > 1 ? '卷面合计' : '卷面总分'}</span>
+                <span>{state.results.length > 1 ? '总分合计' : '总分'}</span>
                 <strong>{state.results.reduce((sum, item) => sum + item.score, 0)}</strong>
                 <span>{passed ? '全部通过' : '有课程未通过'}</span>
               </div>
@@ -117,9 +117,11 @@ export function ResultScreen({
               <thead>
                 <tr>
                   <th>课程</th>
-                  <th>类型</th>
-                  <th>学分</th>
-                  <th>卷面</th>
+                  <th className="result-type-col">类型</th>
+                  <th className="result-credit-col">学分</th>
+                  <th>平时分</th>
+                  <th>卷面分</th>
+                  <th>总分</th>
                   <th>绩点</th>
                   <th>降压</th>
                 </tr>
@@ -148,17 +150,6 @@ export function ResultScreen({
                           补考最终绩点 = 原绩点与补考绩点的平均值，因此卷面分与最终绩点可能不同。
                         </span>
                       )}
-                      {typeof result.usualScore === 'number' &&
-                        typeof result.paperScore === 'number' && (
-                          <span className="course-score-parts">
-                            平时分 {result.usualScore} + 卷面 {result.paperScore} =
-                            总评 {result.score}
-                            {typeof result.scoreCap === 'number' &&
-                              result.scoreCap < 100 && (
-                                <em> · 校园跑成绩上限 {result.scoreCap}</em>
-                              )}
-                          </span>
-                        )}
                       {(result.course.electiveType === 'water' ||
                         result.course.electiveType === 'interest') &&
                         result.score < 60 && (
@@ -180,9 +171,16 @@ export function ResultScreen({
                           </span>
                         )}
                     </td>
-                    <td>{result.course.examType}</td>
-                    <td>{result.course.credits}</td>
-                    <td className={result.score < 60 ? 'score-fail' : ''}>{result.score}</td>
+                    <td className="result-type-col">{result.course.examType}</td>
+                    <td className="result-credit-col">{result.course.credits}</td>
+                    <td className="score-part-cell">{result.usualScore}</td>
+                    <td className="score-part-cell">{result.paperScore}</td>
+                    <td className={`total-cell ${result.score < 60 ? 'score-fail' : ''}`}>
+                      {result.score}
+                      {typeof result.scoreCap === 'number' && result.scoreCap < 100 && (
+                        <small className="score-cap-note">上限 {result.scoreCap}</small>
+                      )}
+                    </td>
                     <td className="gpa-cell">{result.gpa.toFixed(1)}</td>
                     <td className="stress-cell">
                       {result.stressRelief > 0 ? (

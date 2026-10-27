@@ -291,7 +291,7 @@ hp.paragraph_format.space_after = Pt(0)
 r = hp.add_run('临床五年  /  新玩家规则说明')
 set_run_font(r, HEAD_FONT, 8, False, MUTED)
 hp.add_run('\t\t')
-r2 = hp.add_run('v0.56.5')
+r2 = hp.add_run('v0.56.6')
 set_run_font(r2, BODY_FONT, 8, False, MUTED)
 add_rule(hp, LINE, 4, 2)
 
@@ -349,7 +349,7 @@ meta.alignment = WD_TABLE_ALIGNMENT.LEFT
 meta.autofit = False
 meta.columns[0].width = Cm(3.4); meta.columns[1].width = Cm(11.8)
 for i, (k, v) in enumerate([
-    ('适用版本', 'v0.56.5'),
+    ('适用版本', 'v0.56.6'),
     ('适用对象', '第一次游玩本作的新玩家'),
     ('游戏类型', '医学本科生五年生活文字模拟'),
     ('在线地址', 'https://elijahcyx.github.io/clinical-five-years/'),
@@ -622,7 +622,7 @@ table(['复习方式', '效果', '适合'], [
 ], widths=[4.0, 8.0, 4.0])
 para('考试周的额外操作不占行动次数，但不可撤销：喝咖啡（生活费 -50、精力 +10、压力 +5、准备度收益 +15%，每场一次）、刷夜（精力 -10、体质成长 -10、压力 +10、准备度 +15，但本次成绩下调 5%，每场一次）、英语备考（精力 -10、压力 +5、英语 +5，并影响当次 CET 概率）。')
 h2('成绩、补考与奖学金')
-para('成绩由平时分和卷面分组成，按 5 分制绩点记录。挂科会在下一学期作为补考课程出现；补考通过后学分只算一次，绩点按原绩点和补考绩点平均。每门课出分后还会按预计区间结算一次压力奖励。')
+para('成绩由平时分和卷面分组成，按 5 分制绩点记录。成绩单会按课程依次列出：平时分、卷面分、总分、绩点、降压。普通必修课为平时分 20 + 卷面分 80%，思政课为 40 + 60%，兴趣/水课为 50 + 50%；卷面分为 0–100，总分四舍五入并限制在 0–100。挂科会在下一学期作为补考课程出现；补考通过后学分只算一次，绩点按原绩点和补考绩点平均。每门课出分后还会按预计区间结算一次压力奖励。')
 para('每学年秋季开学评审上一学年奖学金：成绩、综测、科研、面试和履历共同决定国奖/省奖/校奖。挂科会永久锁定国奖，并取消当年省奖；校奖不受影响。')
 h2('挂科警告、补考与退学线')
 para('如果成绩单上出现挂科课程，结算页会先弹出一份橙红色学习报告，列出本次未通过课程、学分和本学期行为统计，例如去过几次图书馆、上了多少节课、翘课、睡懒觉、运动与社交次数。这不是装饰性提示：它同时会告诉你，目前累计还有多少学分没有通过。')
@@ -855,11 +855,11 @@ para('如果五年后你回头看，发现自己没有成为最优秀的那个�
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
-doc.core_properties.subject = '《临床五年》v0.56.5 新玩家规则说明'
+doc.core_properties.subject = '《临床五年》v0.56.6 新玩家规则说明'
 doc.core_properties.author = '临床五年项目组'
 doc.core_properties.comments = '面向第一次游玩《临床五年》的规则说明文档。'
 doc.core_properties.category = '游戏规则说明'
 doc.core_properties.keywords = '临床五年, 新玩家, 规则说明, 医学模拟'
-out = '临床五年_新玩家规则说明_v0.56.5.docx'
+out = '临床五年_新玩家规则说明_v0.56.6.docx'
 doc.save(out)
 print(out)
