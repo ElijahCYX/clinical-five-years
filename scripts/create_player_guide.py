@@ -858,8 +858,7 @@ r = p.add_run('“五年很长，长到可以改变一个人；五年也很短�
 set_run_font(r, BODY_FONT, 10, False, MUTED)
 
 h2('文档说明')
-para('本说明对应游戏版本 v0.56.4，编写于 2026 年 10 月。游戏仍在持续迭代，具体数值、事件文本和界面可能随版本变化；以游戏内实际显示为准。', 'Guide Small')
-para('《临床五年》中的学校、人物、病例与事件均为虚构，不构成医学建议。', 'Guide Small')
+para('本说明对应游戏版本 v0.56.4，编写于 2026 年 10 月。游戏仍在持续迭代，具体数值、事件文本和界面可能随版本变化；以游戏内实际显示为准。《临床五年》中的学校、人物、病例与事件均为虚构，不构成医学建议。', 'Guide Small')
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
