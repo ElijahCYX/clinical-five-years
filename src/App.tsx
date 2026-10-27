@@ -2033,6 +2033,12 @@ function RealApp() {
       setView('plan')
       return
     }
+    // WhoAmI / WhoIsTA are overlays reached from both the semester and the
+    // vacation screen; returning must restore the originating screen.
+    if (game?.screen === 'vacation') {
+      setView('vacation')
+      return
+    }
     setView('week')
   }
 
@@ -2502,7 +2508,11 @@ function RealApp() {
         })
       }
     } else {
-      if (Math.random() < 0.2) {
+      const onVacation =
+        current.screen === 'vacation' || Boolean(current.vacation)
+      // Course-note handouts assume an active semester and are unavailable
+      // while the player is on vacation.
+      if (!onVacation && Math.random() < 0.2) {
         const courses = current.season.courses
         if (courses.length > 0) {
           const course = courses[Math.floor(Math.random() * courses.length)]
