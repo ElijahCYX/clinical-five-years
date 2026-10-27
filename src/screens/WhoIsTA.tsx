@@ -373,7 +373,18 @@ export function WhoIsTAScreen({
                         type="button"
                         className="whois-action"
                         disabled={!patAvailable}
-                        onClick={() => handlePatResult(onPat(relation.id))}
+                        onClick={(event) => {
+                          // The row itself marks the relation as seen. Without
+                          // stopping propagation, that row handler writes a
+                          // pre-pat state snapshot back and can wipe the +prep
+                          // (and even an earlier week) gained by this action.
+                          event.stopPropagation()
+                          const result = onPat(relation.id)
+                          // Preserve the row's "new relation" behavior without
+                          // letting the row click overwrite the pat result.
+                          onViewRelation?.(relation.id)
+                          handlePatResult(result)
+                        }}
                       >
                         {patBlocked
                           ? '心结未解'
@@ -391,7 +402,13 @@ export function WhoIsTAScreen({
                           relation.intimacy < 60 ||
                           bondOptions.length === 0
                         }
-                        onClick={() => setBondPickerTarget(relation)}
+                        onClick={(event) => {
+                          // Same reason as the pat button: this is an action,
+                          // not a request to mark the row as seen.
+                          event.stopPropagation()
+                          onViewRelation?.(relation.id)
+                          setBondPickerTarget(relation)
+                        }}
                       >
                         {bondButtonLabel}
                       </button>

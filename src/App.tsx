@@ -2154,23 +2154,36 @@ function RealApp() {
   }
 
   const markRelationSeen = (relationshipId: string) => {
-    if (!game || game.seenRelationIds.includes(relationshipId)) return
-    const next: GameState = {
-      ...game,
-      seenRelationIds: [...game.seenRelationIds, relationshipId],
-    }
-    setGame(next)
-    persist(next)
+    // Use the functional form so a bubbled row click can never overwrite a
+    // newer pat/event state (including week and course prep) with an old
+    // render snapshot.
+    setGame((previous) => {
+      if (!previous || previous.seenRelationIds.includes(relationshipId)) {
+        return previous
+      }
+      const next: GameState = {
+        ...previous,
+        seenRelationIds: [...previous.seenRelationIds, relationshipId],
+      }
+      persist(next)
+      return next
+    })
   }
 
   const markAllRelationsSeen = () => {
-    if (!game) return
-    const next: GameState = {
-      ...game,
-      seenRelationIds: game.relationships.map((relation) => relation.id),
-    }
-    setGame(next)
-    persist(next)
+    setGame((previous) => {
+      if (!previous) return previous
+      const seen = previous.relationships.map((relation) => relation.id)
+      if (seen.every((id) => previous.seenRelationIds.includes(id))) {
+        return previous
+      }
+      const next: GameState = {
+        ...previous,
+        seenRelationIds: seen,
+      }
+      persist(next)
+      return next
+    })
   }
 
   const giveBirthdayGift = (
