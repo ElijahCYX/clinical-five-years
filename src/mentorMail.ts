@@ -69,24 +69,24 @@ export function currentGpa(state: GameState): number {
     : 0.5
 }
 
-/** 积极回复判定：40% 基础 + 最多 40% 的阶段/GPA/人际加权。 */
+/** 积极回复判定：30% 基础 + 最多 40% 的阶段/GPA/人际加权。 */
 export function positiveReplyProbability(state: GameState): number {
   const year = currentYear(state)
   const stageScore = clamp((year - 1) / 4, 0, 1)
   const gpaScore = clamp(currentGpa(state) / 5, 0, 1)
   const socialScore = clamp(((state.player?.attrs.social ?? 2) - 2) / 13, 0, 1)
   const judge = 40 * (0.3 * stageScore + 0.4 * gpaScore + 0.3 * socialScore)
-  return Math.min(80, 40 + judge)
+  return Math.min(70, 30 + judge)
 }
 
 export type ReplyRoll = 'positive' | 'negative' | 'none'
 
-/** 消极固定 10%，不回复吸收剩余概率。 */
+/** 消极固定 20%，不回复吸收剩余概率。 */
 export function rollMentorReply(state: GameState): ReplyRoll {
   const positive = positiveReplyProbability(state) / 100
   const roll = Math.random()
   if (roll < positive) return 'positive'
-  if (roll < positive + 0.1) return 'negative'
+  if (roll < positive + 0.2) return 'negative'
   return 'none'
 }
 
