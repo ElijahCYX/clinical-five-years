@@ -27,6 +27,10 @@ interface EventSeed {
   condition?: (state: GameState) => boolean
 }
 
+/** Content involving wards, patients, or clinical skills becomes available
+ * only after the third-year preclinical term (index 12) has ended. */
+const afterPreclinical = (s: GameState) => s.seasonIndex >= 13
+
 const EVENTS: EventSeed[] = [
   // 场景触发型（30）
   { id: 'ev-scene-01', kind: 'scene', title: '健身房大佬', text: '你在健身房对着镜子研究深蹲，旁边一位练得像解剖图的大佬终于走过来，把你的膝盖掰向正确方向。他说你这动作不像健身，像在给地板磕头。', effects: {stress: -5, constitutionGrowth: 3}, condition: (s) => s.habits.includes('fitness') },
@@ -50,8 +54,8 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-scene-19', kind: 'scene', title: '冬雨没伞', text: '冬雨来得毫无预告，你顶着书包跑回宿舍，像一颗有学历的落汤鸡。洗完热水澡后你决定以后在教室常备一把伞。', effects: {energy: -4, stress: 2}, condition: (s) => s.season.id.includes('winter') },
   { id: 'ev-scene-20', kind: 'scene', title: '夏日冰粉', text: '夏天食堂新出冰粉，你排了二十分钟才买到。冰粉很甜，肚子也很诚实，下午的课你上得格外清醒。', effects: {energy: -3, stress: -2, money: -20}, condition: (s) => s.season.id.includes('summer') },
   { id: 'ev-scene-21', kind: 'scene', title: '社团招新', text: '三个社团同时邀请你加入，你挑了传单最多的那个。第一次例会上你发现大家都在等别人干活，你决定先观察一学期。', effects: {composite: 3, socialGrowth: 5}, condition: (s) => Math.floor(s.seasonIndex/4)+1===2 },
-  { id: 'ev-scene-22', kind: 'scene', title: '见习第一天', text: '你第一次穿白大褂进病房，老师让你问病史，你开口先问您哪里不舒服。病人愣了一下，说你不是医生吗，你解释自己还在学。', effects: {prep: 2, stress: 3}, condition: (s) => Math.floor(s.seasonIndex/4)+1>=4 },
-  { id: 'ev-scene-23', kind: 'scene', title: '护士站社交', text: '你帮护士姐姐搬了一箱液体，顺便听完了三个科室的八卦。她们说以后有事可以来找她们，你第一次觉得医院不只有考试。', effects: {socialGrowth: 5, energy: -4}, condition: (s) => Math.floor(s.seasonIndex/4)+1>=5 },
+  { id: 'ev-scene-22', kind: 'scene', title: '见习第一天', text: '你第一次穿白大褂进病房，老师让你问病史，你开口先问您哪里不舒服。病人愣了一下，说你不是医生吗，你解释自己还在学。', effects: {prep: 2, stress: 3}, condition: afterPreclinical },
+  { id: 'ev-scene-23', kind: 'scene', title: '护士站社交', text: '你帮护士姐姐搬了一箱液体，顺便听完了三个科室的八卦。她们说以后有事可以来找她们，你第一次觉得医院不只有考试。', effects: {socialGrowth: 5, energy: -4}, condition: afterPreclinical },
   { id: 'ev-scene-24', kind: 'scene', title: '兼职群', text: '你在兼职群接了个发传单的活，第一张发给了自己的室友。室友认真看完后问你能不能帮他带一份，你决定这活其实也不算太亏。', effects: {money: 80, energy: -5}, condition: (s) => s.plan==='C'&&s.money<500 },
   { id: 'ev-scene-25', kind: 'scene', title: '实验室门禁', text: '导师给了你一张实验室门禁卡，你第一次觉得自己像正经科研人。刷卡进门时机器响了三声，你站在门口反复确认自己不是非法入侵。', effects: {research: 4}, condition: (s) => s.mentorContactUnlocked },
   { id: 'ev-scene-26', kind: 'scene', title: '宿舍夜谈', text: '熄灯后室友关掉游戏语音，认真听你吐槽了半小时。最后他说实在不行就早点睡，你虽然没得到解决方案，但确实舒服了一点。', effects: {stress: -4, socialGrowth: 5}, condition: (s) => s.roommateBond },
@@ -62,8 +66,8 @@ const EVENTS: EventSeed[] = [
   // 属性触发型（30）
   { id: 'ev-attr-01', kind: 'attribute', title: '被要微信', text: '{npc}在教学楼门口拦住你，举着手机问能不能加个微信。你的大脑同时闪过要冷静和我今天的头发是不是很乱，开口时声音比平时高了半个调。', effects: (s) => s.player !== null && s.player.attrs.social >= 7 ? {socialGrowth: 10, socialUnlock: true} : {stress: 5}, condition: (s) => s.player !== null && s.player.attrs.appearance>=8 },
   { id: 'ev-attr-02', kind: 'attribute', title: '教授记住了你', text: '教授在走廊叫出你的名字，你感动得差点把书掉进水池。他说上次课上的回答不错，你其实已经忘了自己回答过什么。', effects: {prep: 2, stress: -2}, condition: (s) => s.player !== null && s.player.attrs.memory>=8 },
-  { id: 'ev-attr-03', kind: 'attribute', title: '病例讨论高光', text: '病例讨论时你一句先查体让全场安静。老师问你是不是偷看过答案，你说没有，只是书上正好写了这一页。', effects: {prep: 3, stress: -2}, condition: (s) => s.player !== null && s.player.attrs.comprehension>=8 },
-  { id: 'ev-attr-04', kind: 'attribute', title: '第一次缝合', text: '第一次缝合练习，你手稳得像在给豆腐做美容。带教老师默默把剪刀收回去，说你以前是不是干过针线活。', effects: {prep: 2, stress: -2}, condition: (s) => s.player !== null && s.player.attrs.dexterity>=8 },
+  { id: 'ev-attr-03', kind: 'attribute', title: '病例讨论高光', text: '病例讨论时你一句先查体让全场安静。老师问你是不是偷看过答案，你说没有，只是书上正好写了这一页。', effects: {prep: 3, stress: -2}, condition: (s) => afterPreclinical(s) && s.player !== null && s.player.attrs.comprehension>=8 },
+  { id: 'ev-attr-04', kind: 'attribute', title: '第一次缝合', text: '第一次缝合练习，你手稳得像在给豆腐做美容。带教老师默默把剪刀收回去，说你以前是不是干过针线活。', effects: {prep: 2, stress: -2}, condition: (s) => afterPreclinical(s) && s.player !== null && s.player.attrs.dexterity>=8 },
   { id: 'ev-attr-05', kind: 'attribute', title: '社交悍匪', text: '你走进食堂，三个桌的人同时招呼你。你端着一份饭在中间站了三秒，第一次体会到人缘太好也会造成选择困难。', effects: {composite: 2, socialGrowth: 5}, condition: (s) => s.player !== null && s.player.attrs.social>=8 },
   { id: 'ev-attr-06', kind: 'attribute', title: '铁人体质', text: '换季流感扫楼，宿舍倒下一片，只有你还能去上课。室友问你是不是吃了什么药，你说没有，可能只是命硬。', effects: {stress: -4, energy: 3}, condition: (s) => s.player !== null && s.player.attrs.constitution>=8 },
   { id: 'ev-attr-07', kind: 'attribute', title: '抗压阀', text: '小组崩盘时你还能笑出来，组员怀疑你偷偷吃了抗压药。你只是突然觉得，事情再坏也坏不过明天还有早八。', effects: {stress: -5}, condition: (s) => s.player !== null && s.player.attrs.resilience>=8 },
@@ -122,7 +126,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-random-029', kind: 'random', title: '体测前夜', text: '体测前夜，你突然开始做仰卧起坐，做了三个。你躺回床上，觉得至少自己努力过，然后心安理得地睡了。', effects: {energy: -5, stress: 3} },
   { id: 'ev-random-030', kind: 'random', title: '体测超常', text: '体测成绩超常，你怀疑仪器坏了，但没敢问。室友说你今天像被什么附体，你决定把这次成绩写进简历。', effects: {constitutionGrowth: 3, stress: -3} },
   { id: 'ev-random-031', kind: 'random', title: '献血车进校', text: '你走上献血车，下来时收获一张证书和一整天的困意。室友问你疼不疼，你说不疼，只是有点想躺着上完这周的课。', effects: {energy: -10, composite: 2} },
-  { id: 'ev-random-032', kind: 'random', title: '义诊志愿', text: '你去社区义诊，量血压量出了三位疑似高血压的阿姨。她们围着你问了一下午养生问题，你第一次觉得自己离医生这个称呼近了一点。', effects: {composite: 3, energy: -8} },
+  { id: 'ev-random-032', kind: 'random', title: '义诊志愿', text: '你去社区义诊，量血压量出了三位疑似高血压的阿姨。她们围着你问了一下午养生问题，你第一次觉得自己离医生这个称呼近了一点。', effects: {composite: 3, energy: -8}, condition: afterPreclinical },
   { id: 'ev-random-033', kind: 'random', title: '宣讲会凑数', text: '你被拉去听宣讲会，结束时只记住欢迎投递。回宿舍后你认真想了想未来，然后打开外卖软件，决定先解决今晚。', effects: {composite: 1, stress: 2} },
   { id: 'ev-random-034', kind: 'random', title: '食堂插队', text: '有人插队，你刚想开口，对方回头说我赶时间。你看着他的背影，决定让他赶，毕竟你也不确定自己赶不赶。', effects: {stress: 4} },
   { id: 'ev-random-035', kind: 'random', title: '被锁门外', text: '宿舍门锁了，你在门口等了半小时。室友在三楼打游戏，接到电话后说马上，你听着电话里的游戏音效，决定今晚不帮他带饭。', effects: {energy: -5, stress: 3} },
@@ -175,7 +179,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-random-082', kind: 'random', title: '自行车掉链子', text: '你骑自行车去上课，链条在半路掉了。你蹲在路边修了十分钟，手上沾满机油，路过的同学纷纷投来需要帮忙吗但没有人停下来的目光。', effects: {energy: -4, stress: 3} },
   { id: 'ev-random-083', kind: 'random', title: '体测抽血', text: '体测前的抽血环节，你看着针头突然有点紧张。护士姐姐说你以后不是要给别人扎针吗，你咬牙伸出手，心里默默把这句话记成了职业阴影。', effects: {energy: -4, stress: 3} },
   { id: 'ev-random-084', kind: 'random', title: '献血', text: '献血车进校，你被同学拉着去排队。护士问你早饭吃了没，你说吃了，其实只喝了一杯水。献血证拿到手时，你觉得自己至少做了一件不用复习的好事。', effects: {energy: -8, composite: 2} },
-  { id: 'ev-random-085', kind: 'random', title: '义诊志愿', text: '你去社区义诊帮忙量血压，一位大爷坚持说自己身体好得很，血压计却发出了不赞同的声音。你耐心解释，他最后问你是不是实习医生，你说差不多。', effects: {composite: 3, energy: -5} },
+  { id: 'ev-random-085', kind: 'random', title: '义诊志愿', text: '你去社区义诊帮忙量血压，一位大爷坚持说自己身体好得很，血压计却发出了不赞同的声音。你耐心解释，他最后问你是不是实习医生，你说差不多。', effects: {composite: 3, energy: -5}, condition: afterPreclinical },
   { id: 'ev-random-086', kind: 'random', title: '讲座占座', text: '你提前半小时去讲座占座，结果被同学请求帮忙占一排。讲座开始后，那一排人只来了两个，你一个人守着五个空座位，像在经营一家亏损的影院。', effects: {socialGrowth: 3, stress: 2} },
   { id: 'ev-random-087', kind: 'random', title: '招聘会', text: '校园招聘会上，你投了几份简历，发现每个岗位都写着有经验者优先。你站在展位前认真思考：医学生到底哪里来的经验？', effects: {composite: 1, stress: 3} },
   { id: 'ev-random-088', kind: 'random', title: '忘带笔', text: '考试前你翻遍书包，发现笔袋安静地躺在宿舍桌上。你硬着头皮向旁边同学借笔，对方递来两支，说怕你一支不够断水。', effects: {stress: 4, socialGrowth: 2} },
@@ -196,7 +200,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-social-scene-02', kind: 'scene', title: '宿舍火锅局', text: '室友突然提议在宿舍煮火锅，五个人围着一口小锅，筷子在汤里打架。吃完后你们花了半小时收拾，却都觉得这顿饭比食堂好吃十倍。', effects: {socialGrowth: 6, stress: -4, money: -40, energy: 3}, condition: (s) => s.roommateBond },
   { id: 'ev-social-scene-03', kind: 'scene', title: '兴趣课搭子', text: '兴趣课上老师让你们自由组队，你旁边的人小声问要不要一起。你们从五线谱聊到食堂新品，下课时已经约好下次一起练。', effects: {socialGrowth: 6, stress: -3}, condition: (s) => s.season.courses.some(c=>c.electiveType==='interest') },
   { id: 'ev-social-scene-04', kind: 'scene', title: '小组课团建', text: '小组作业课结束后，组员提议去校门口吃烧烤。你本来只想回宿舍躺平，结果在饭桌上听到了三个科室的八卦，最后主动加了所有人好友。', effects: {socialGrowth: 5, composite: 2, money: -35}, condition: (s) => s.season.courses.some(c=>c.electiveType==='group') },
-  { id: 'ev-social-scene-05', kind: 'scene', title: '见习搭话', text: '见习时你站在病房门口不知道该做什么，一位护士姐姐主动教你怎么和病人开口。你照着说了第一句话，病人居然笑了。', effects: {socialGrowth: 5, stress: -2}, condition: (s) => Math.floor(s.seasonIndex/4)+1>=4 },
+  { id: 'ev-social-scene-05', kind: 'scene', title: '见习搭话', text: '见习时你站在病房门口不知道该做什么，一位护士姐姐主动教你怎么和病人开口。你照着说了第一句话，病人居然笑了。', effects: {socialGrowth: 5, stress: -2}, condition: afterPreclinical },
   { id: 'ev-social-scene-06', kind: 'scene', title: '图书馆邻座', text: '你在图书馆坐下，旁边的{npc}小声问能不能借支笔。还笔时对方顺手推来一包纸巾，你们从“谢谢”聊到“你也考这门”，最后交换了微信。', effects: {socialGrowth: 5, stress: -2, prep: 1}, condition: (s) => s.habits.includes('timeManagement') || s.plan==='B' },
   { id: 'ev-social-scene-07', kind: 'scene', title: '食堂拼桌', text: '食堂人满为患，一位端着餐盘的{npc}在你对面坐下。你们从“这个菜好吃吗”聊到“你也是学医的”，最后发现彼此都在假装不后悔。', effects: {socialGrowth: 5, energy: 2}, condition: (s) => s.season.id.includes('summer') },
   { id: 'ev-social-scene-08', kind: 'scene', title: '社团夜跑', text: '社团组织夜跑，你被安排在队伍最后，负责陪跑得最慢的{npc}。你们边跑边聊，最后都忘了自己本来打算跑几圈。', effects: {socialGrowth: 5, constitutionGrowth: 2, energy: -2}, condition: (s) => Math.floor(s.seasonIndex/4)+1>=2 },
