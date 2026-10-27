@@ -1121,7 +1121,8 @@ function RealApp() {
     ) {
       return
     }
-    if (game.consumptionEventWeek !== game.week) {
+    const consumptionKey = absoluteWeek(game)
+    if (game.consumptionEventWeek !== consumptionKey) {
       if (Math.random() < 0.25) {
         const consumptionEvent = pickConsumptionEvent(
           consumptionExcludedIds(game),
@@ -1130,7 +1131,7 @@ function RealApp() {
         const next: GameState = {
           ...game,
           pendingConsumption: consumptionEvent,
-          consumptionEventWeek: game.week,
+          consumptionEventWeek: consumptionKey,
           pendingEvent: null,
           pendingConfession: null,
           screen: 'week',
@@ -1621,7 +1622,7 @@ function RealApp() {
     let next: GameState = {
       ...game,
       pendingConsumption: null,
-      consumptionEventWeek: game.week,
+      consumptionEventWeek: absoluteWeek(game),
     }
     if (accept) {
       const installment = consumption.installment
