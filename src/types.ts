@@ -485,6 +485,15 @@ export interface MentorInterview {
   prompted: boolean
 }
 
+export interface MentorInterviewRecord {
+  mentorId: string
+  seasonIndex: number
+  week: number
+  weekSlot: number
+  label: string
+  success: boolean
+}
+
 export interface MentorApplication {
   mentorId: string
   sentAtAbs: number
@@ -818,6 +827,7 @@ export interface GameState {
   researchStage: ResearchStage
   mentorApplication: MentorApplication | null
   mentorInterview: MentorInterview | null
+  mentorInterviewHistory: MentorInterviewRecord[]
   failedMentorIds: string[]
   emails: GameEmail[]
   mailSentWeekKey: string | null

@@ -33,6 +33,10 @@ import { ClubActivityModal } from './ClubActivity'
 import { CampusNoticeBoard } from './CampusNotice'
 import { Mailbox } from './Mailbox'
 import { ResearchHub } from './ResearchHub'
+import {
+  MentorInterviewScene,
+  type MentorInterviewSceneData,
+} from './MentorInterview'
 import { BondScreen } from './Bond'
 import { SoloInviteModal } from './SoloInvite'
 import { SoloDateOverlay } from './SoloDate'
@@ -125,6 +129,8 @@ interface WeekScreenProps {
   onSendMentorMail: (draft: GameEmail) => { ok: boolean; error?: string }
   onReadMentorEmail: (emailId: string) => void
   onAcceptMentorProject: (emailId: string) => void
+  interviewScene: MentorInterviewSceneData | null
+  onConfirmMentorInterview: () => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -167,6 +173,8 @@ export function WeekScreen({
   onSendMentorMail,
   onReadMentorEmail,
   onAcceptMentorProject,
+  interviewScene,
+  onConfirmMentorInterview,
   onSave,
   onTitle,
 }: WeekScreenProps) {
@@ -448,15 +456,29 @@ export function WeekScreen({
     : VISIBLE_ACTIONS
   const weekTimetable = buildTimetable(state)
   const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
-  const mentorInterviewSlot =
+  const activeMentorInterview =
     state.mentorInterview &&
     state.mentorInterview.seasonIndex === state.seasonIndex &&
     state.mentorInterview.week === state.week
-      ? state.mentorInterview.weekSlot
-      : -1
-  const mentorInterviewName = state.mentorInterview
-    ? MENTOR_BY_ID[state.mentorInterview.mentorId]?.alias ?? '导师'
-    : '导师'
+      ? state.mentorInterview
+      : null
+  const completedMentorInterview = [...state.mentorInterviewHistory]
+    .reverse()
+    .find(
+      (interview) =>
+        interview.seasonIndex === state.seasonIndex &&
+        interview.week === state.week,
+    ) ?? null
+  const mentorInterviewSlot =
+    activeMentorInterview?.weekSlot ?? completedMentorInterview?.weekSlot ?? -1
+  const mentorInterviewName = MENTOR_BY_ID[
+    activeMentorInterview?.mentorId ??
+      completedMentorInterview?.mentorId ??
+      ''
+  ]?.alias ?? '导师'
+  const mentorInterviewCompleted = Boolean(
+    completedMentorInterview && !activeMentorInterview,
+  )
   const mentorInterviewDay =
     mentorInterviewSlot >= 0
       ? TIMETABLE_DAYS[Math.floor(mentorInterviewSlot / 3)]
@@ -745,7 +767,10 @@ export function WeekScreen({
                       {cellIndex === mentorInterviewSlot ? (
                         <>
                           <strong>导师面谈</strong>
-                          <small>{mentorInterviewName} · 面谈</small>
+                          <small>
+                            {mentorInterviewName} ·{' '}
+                            {mentorInterviewCompleted ? '面谈已结束' : '面谈'}
+                          </small>
                           {(course || activity) && (
                             <small className="mentor-interview-conflict">
                               与{activity?.name ?? course?.name}时间冲突
@@ -1416,6 +1441,7 @@ export function WeekScreen({
                       {mentorInterviewSlot >= 0 ? (
                         <small className="week-overview-mentor-hint">
                           导师面谈 · {mentorInterviewDay.replace('周', '')}{mentorInterviewPhase.slice(0, 1)}
+                          {mentorInterviewCompleted ? ' · 已结束' : ''}
                         </small>
                       ) : (
                         <small>7 日 × 3 段</small>
@@ -1445,7 +1471,9 @@ export function WeekScreen({
                               } ${isCurrent ? 'is-current' : ''}`}
                               title={`${day} · ${phase} · ${
                                 isMentorInterview
-                                  ? `导师面谈 · ${mentorInterviewName}`
+                                  ? `导师面谈 · ${mentorInterviewName}${
+                                      mentorInterviewCompleted ? ' · 已结束' : ''
+                                    }`
                                   : cell.course?.name ??
                                     cell.activity?.name ??
                                     cell.soloInvite?.eventName ??
@@ -1492,7 +1520,9 @@ export function WeekScreen({
                               style={pastFill}
                               title={`${day} · ${phase}${
                                 index === mentorInterviewSlot
-                                  ? ` · 导师面谈 · ${mentorInterviewName}`
+                                  ? ` · 导师面谈 · ${mentorInterviewName}${
+                                      mentorInterviewCompleted ? ' · 已结束' : ''
+                                    }`
                                   : cell.course
                                     ? ` · ${cell.course.name}`
                                     : ''
@@ -2252,6 +2282,14 @@ export function WeekScreen({
           state={state}
           invite={activeSoloInvite}
           onFinish={() => onResolveSoloDate?.(activeSoloInvite.id)}
+        />
+      )}
+
+      {interviewScene && (
+        <MentorInterviewScene
+          key={`${interviewScene.interview.mentorId}-${interviewScene.interview.atAbs}`}
+          data={interviewScene}
+          onConfirm={onConfirmMentorInterview}
         />
       )}
     </div>

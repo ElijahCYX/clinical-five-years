@@ -291,7 +291,7 @@ hp.paragraph_format.space_after = Pt(0)
 r = hp.add_run('临床五年  /  新玩家规则说明')
 set_run_font(r, HEAD_FONT, 8, False, MUTED)
 hp.add_run('\t\t')
-r2 = hp.add_run('v0.58.2')
+r2 = hp.add_run('v0.58.3')
 set_run_font(r2, BODY_FONT, 8, False, MUTED)
 add_rule(hp, LINE, 4, 2)
 
@@ -349,7 +349,7 @@ meta.alignment = WD_TABLE_ALIGNMENT.LEFT
 meta.autofit = False
 meta.columns[0].width = Cm(3.4); meta.columns[1].width = Cm(11.8)
 for i, (k, v) in enumerate([
-    ('适用版本', 'v0.58.2'),
+    ('适用版本', 'v0.58.3'),
     ('适用对象', '第一次游玩本作的新玩家'),
     ('游戏类型', '医学本科生五年生活文字模拟'),
     ('在线地址', 'https://elijahcyx.github.io/clinical-five-years/'),
@@ -707,7 +707,7 @@ para('在科研页的教师名录中选择一位导师，查看 TA 的性别、�
 para('积极回复概率 = 基础 40% + 判定概率（最多 40%），上限 80%。判定概率由当前年级（30%）、累计 GPA（40%）和人际（30%）共同决定；消极回复固定 10%，不回复吸收剩余概率（最低 10%）。没有回复时，会在下一个正常学期周开始时弹出提醒，玩家可以在那一周继续联系其他导师。')
 para('积极回复在本周稍后的空闲时间段到达；如果本周已没有合适的空闲时间，则顺延到下一个可行动周。积极回复只在被阅读后才进入阶段 2；如果一直未读，面谈不会激活。')
 h3('面谈')
-para('积极回复会指定一个玩家空闲时间段进行面谈，面谈占用整个时间段；约定时间会同步显示在课表格子和「本周概览」卡片中。时间到时会弹出「去面谈」提示。若读信时约定时间已过，会自动改约一次；错过面谈也会自动改约一次。')
+para('积极回复会指定一个玩家空闲时间段进行面谈，面谈占用整个时间段；约定时间会同步显示在课表格子和「本周概览」卡片中。时间到时会弹出「去面谈」提示。点击后播放约 5 秒的面试动画，再显示面谈结果窗口；只有确认结果后才会进入下一时间段。面谈结束后，该时间段仍会以「面谈已结束」保留在课表和本周概览中。若读信时约定时间已过，会自动改约一次；错过面谈也会自动改约一次。')
 para('面谈成功率由悟性（4）、操作（3）、建模（2）、交际（1）加权计算，换算到 30%–100%。面谈成功后进入阶段 4；失败则回到阶段 1，该导师不能再申请。若本周还没有给新导师发过邮件，失败后会保留/补充一次本周联系机会。')
 h3('实验室与课题')
 para('阶段 4 后导师亲密度从 20 开始。达到 40 时导师会发来实验室门禁邮件；邮件已读后的下一个游戏日进入阶段 5。阶段 5 可以做实验室学习/打杂行动，但只增加导师亲密度，不累计科研进度。')
@@ -899,11 +899,11 @@ para('如果五年后你回头看，发现自己没有成为最优秀的那个�
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
-doc.core_properties.subject = '《临床五年》v0.58.2 新玩家规则说明'
+doc.core_properties.subject = '《临床五年》v0.58.3 新玩家规则说明'
 doc.core_properties.author = '临床五年项目组'
 doc.core_properties.comments = '面向第一次游玩《临床五年》的规则说明文档。'
 doc.core_properties.category = '游戏规则说明'
 doc.core_properties.keywords = '临床五年, 新玩家, 规则说明, 医学模拟'
-out = '临床五年_新玩家规则说明_v0.58.2.docx'
+out = '临床五年_新玩家规则说明_v0.58.3.docx'
 doc.save(out)
 print(out)

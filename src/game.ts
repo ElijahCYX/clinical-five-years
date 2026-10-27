@@ -502,6 +502,7 @@ export function newGameState(player: Player): GameState {
     researchStage: 1,
     mentorApplication: null,
     mentorInterview: null,
+    mentorInterviewHistory: [],
     failedMentorIds: [],
     emails: [],
     mailSentWeekKey: null,

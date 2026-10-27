@@ -106,6 +106,10 @@ import { CetResultScreen } from './screens/CetResult'
 import { CreateScreen } from './screens/Create'
 import { EndingScreen } from './screens/Ending'
 import { FailureReport } from './screens/FailureReport'
+import {
+  MentorInterviewScene,
+  type MentorInterviewSceneData,
+} from './screens/MentorInterview'
 import { PlanScreen } from './screens/Plan'
 import {
   BaoyanResultScreen,
@@ -416,6 +420,7 @@ function readSave(): GameState | null {
       mentorInterview: game.mentorInterview
         ? { ...game.mentorInterview, prompted: false }
         : null,
+      mentorInterviewHistory: game.mentorInterviewHistory ?? [],
       failedMentorIds: game.failedMentorIds ?? [],
       emails: game.emails ?? [],
       mailSentWeekKey: game.mailSentWeekKey ?? null,
@@ -862,6 +867,8 @@ function RealApp() {
   const walkAttemptDayRef = useRef('')
   const [noticeTick, setNoticeTick] = useState(0)
   const [dismissedFailureKey, setDismissedFailureKey] = useState<string | null>(null)
+  const [mentorInterviewScene, setMentorInterviewScene] =
+    useState<MentorInterviewSceneData | null>(null)
 
   const openPublicationNotice = (
     journal: string,
@@ -5073,15 +5080,37 @@ function RealApp() {
     }
   }
 
-  const resolveMentorInterview = (interview: MentorInterview) => {
+  const beginMentorInterview = (interview: MentorInterview) => {
     if (!game) return
     const mentor = mentorProfileOf(interview.mentorId)
     if (!mentor) return
     const chance = interviewSuccessChance(game)
     const success = Math.random() < chance
+    setMentorInterviewScene({
+      interview,
+      mentorName: mentor.alias,
+      success,
+      chance,
+    })
+  }
+
+  const confirmMentorInterview = () => {
+    if (!game || !mentorInterviewScene) return
+    const { interview, success, chance } = mentorInterviewScene
+    const mentor = mentorProfileOf(interview.mentorId)
+    if (!mentor) return
+    const record = {
+      mentorId: interview.mentorId,
+      seasonIndex: interview.seasonIndex,
+      week: interview.week,
+      weekSlot: interview.weekSlot,
+      label: interview.label,
+      success,
+    }
     let next: GameState = {
       ...game,
       mentorInterview: null,
+      mentorInterviewHistory: [...game.mentorInterviewHistory, record],
       mentorApplication: null,
     }
     if (success) {
@@ -5108,16 +5137,8 @@ function RealApp() {
         seniorsGenerated: false,
       }
     }
+    setMentorInterviewScene(null)
     finishWeekSlot(next, 'mentorInterview')
-    showResearchNotice({
-      kind: 'mentor',
-      title: success ? '面谈通过' : '面谈没有通过',
-      text: success
-        ? `${mentor.alias}老师听完你的自我介绍，又问了几个关于课程和科研兴趣的问题。最后 TA 说：“先来组会听听吧，下周开始。”你走出办公室时，走廊的灯刚好亮起来。`
-        : `${mentor.alias}老师很礼貌地听完了你的话，但最终没有同意你加入课题组。TA 说：“你现在的准备还不够，我们再看看。”你点点头，把没说完的话收了回去。本周你还可以再联系其他导师。`,
-      ruleText: `面谈成功率 ${Math.round(chance * 100)}% · ${success ? '进入阶段4' : '回到阶段1，可换导师'}`,
-      ruleLabel: '面谈结果',
-    })
   }
 
   const acceptMentorProject = (emailId: string) => {
@@ -5479,7 +5500,7 @@ function RealApp() {
         {
           label: '去面谈',
           primary: true,
-          onClick: () => resolveMentorInterview(prompted),
+          onClick: () => beginMentorInterview(prompted),
         },
       ],
     })
@@ -5728,6 +5749,8 @@ function RealApp() {
           onSendMentorMail={sendMentorMail}
           onReadMentorEmail={readMentorEmail}
           onAcceptMentorProject={acceptMentorProject}
+          interviewScene={mentorInterviewScene}
+          onConfirmMentorInterview={confirmMentorInterview}
           onSave={saveNow}
           onTitle={goTitle}
         />
@@ -5940,6 +5963,8 @@ function DemoWeek() {
       onSendMentorMail={() => ({ ok: false, error: '演示模式不能发邮件。' })}
       onReadMentorEmail={() => undefined}
       onAcceptMentorProject={() => undefined}
+      interviewScene={null}
+      onConfirmMentorInterview={() => undefined}
       onSave={() => undefined}
       onTitle={() => goDemo('title')}
     />
