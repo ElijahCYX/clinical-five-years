@@ -348,6 +348,7 @@ export type RelationshipKind =
   | 'counselor'
   | 'romance'
   | 'club'
+  | 'senior'
 
 export interface RelationshipStats {
   talent: TalentId
@@ -459,6 +460,58 @@ export interface Hypothesis {
   id: string
   mentorId: string
   title: string
+}
+
+export type ResearchStage = 1 | 2 | 3 | 4 | 5 | 6
+
+export type GameEmailKind =
+  | 'application'
+  | 'positiveReply'
+  | 'negativeReply'
+  | 'welcome'
+  | 'labAccess'
+  | 'projectOffer'
+  | 'medicalGreeting'
+  | 'medicalAcceptance'
+
+export interface MentorInterview {
+  mentorId: string
+  atAbs: number
+  seasonIndex: number
+  week: number
+  weekSlot: number
+  label: string
+  rescheduled: boolean
+  prompted: boolean
+}
+
+export interface MentorApplication {
+  mentorId: string
+  sentAtAbs: number
+  sentWeekKey: string
+  replyKind: 'positive' | 'negative' | 'none' | null
+  replyAtAbs: number | null
+  replyEmailId: string | null
+  noReplyWeekKey: string | null
+}
+
+export interface GameEmail {
+  id: string
+  direction: 'inbox' | 'sent'
+  kind: GameEmailKind
+  mentorId: string | null
+  senderName: string
+  recipientName: string
+  subject: string
+  body: string
+  sentAtAbs: number
+  timeLabel: string
+  read: boolean
+  interview?: MentorInterview
+  project?: {
+    hypothesisId: string
+    title: string
+  }
 }
 
 export interface EncounterChatOption {
@@ -762,6 +815,19 @@ export interface GameState {
   teacherScandalRisk: number
   pendingConfession: PendingConfession | null
   mentorProfileId: string | null
+  researchStage: ResearchStage
+  mentorApplication: MentorApplication | null
+  mentorInterview: MentorInterview | null
+  failedMentorIds: string[]
+  emails: GameEmail[]
+  mailSentWeekKey: string | null
+  medicalFamilyMentorId: string | null
+  medicalFamilyAcceptanceAtAbs: number | null
+  welcomeMailSent: boolean
+  seniorsGenerated: boolean
+  labAccessMailSent: boolean
+  labAccessPendingAtAbs: number | null
+  projectOfferMailSent: boolean
   researchProgress: number
   researchPublished: boolean
   researchJournal: string | null

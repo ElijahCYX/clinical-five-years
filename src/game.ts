@@ -499,6 +499,19 @@ export function newGameState(player: Player): GameState {
     teacherScandalRisk: 0,
     pendingConfession: null,
     mentorProfileId: null,
+    researchStage: 1,
+    mentorApplication: null,
+    mentorInterview: null,
+    failedMentorIds: [],
+    emails: [],
+    mailSentWeekKey: null,
+    medicalFamilyMentorId: null,
+    medicalFamilyAcceptanceAtAbs: null,
+    welcomeMailSent: false,
+    seniorsGenerated: false,
+    labAccessMailSent: false,
+    labAccessPendingAtAbs: null,
+    projectOfferMailSent: false,
     researchProgress: 0,
     researchPublished: false,
     researchJournal: null,
@@ -710,7 +723,6 @@ export function applyOpeningTalent(
   let mentorContactUnlocked = next.mentorContactUnlocked
   for (const talent of talents) {
     if (talent === 'accent') english += 25
-    if (talent === 'medicalFamily') mentorContactUnlocked = true
     if (talent === 'modelMonster') {
       attrs = { ...attrs, appearance: Math.min(10, attrs.appearance + 1) }
     }

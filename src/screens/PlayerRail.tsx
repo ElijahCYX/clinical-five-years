@@ -146,8 +146,9 @@ export function PlayerRail({
           <div>
             <span>科研进度</span>
             <strong>
-              {state.researchProgress}
-              {preview &&
+              {state.researchStage < 6 ? '—' : state.researchProgress}
+              {state.researchStage >= 6 &&
+                preview &&
                 state.researchStarted &&
                 Math.min(
                   100,

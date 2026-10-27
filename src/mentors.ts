@@ -354,6 +354,48 @@ export const MENTOR_LIBRARY: MentorProfile[] = [
   },
 ]
 
+const MENTOR_GENDERS: Record<string, Gender> = {
+  'mentor-01': '女',
+  'mentor-02': '男',
+  'mentor-03': '女',
+  'mentor-04': '女',
+  'mentor-05': '男',
+  'mentor-06': '男',
+  'mentor-07': '女',
+  'mentor-08': '女',
+  'mentor-09': '男',
+  'mentor-10': '男',
+  'mentor-11': '男',
+  'mentor-12': '男',
+  'mentor-13': '男',
+  'mentor-14': '男',
+  'mentor-15': '女',
+  'mentor-16': '男',
+  'mentor-17': '男',
+  'mentor-18': '女',
+  'mentor-19': '女',
+  'mentor-20': '男',
+  'mentor-21': '女',
+  'mentor-22': '男',
+  'mentor-23': '男',
+  'mentor-24': '男',
+  'mentor-25': '女',
+  'mentor-26': '女',
+  'mentor-27': '男',
+  'mentor-28': '女',
+  'mentor-29': '男',
+  'mentor-30': '男',
+  'mentor-31': '男',
+  'mentor-32': '女',
+  'mentor-33': '女',
+  'mentor-34': '女',
+  'mentor-35': '男',
+}
+
+export function mentorGender(profile: MentorProfile): Gender {
+  return MENTOR_GENDERS[profile.id] ?? '男'
+}
+
 export const MENTOR_BY_ID = Object.fromEntries(MENTOR_LIBRARY.map((mentor) => [mentor.id, mentor])) as Record<string, MentorProfile>
 
 function randInt(min: number, max: number): number {
@@ -396,19 +438,12 @@ export function createMentorRelationship(
   return {
     id: `rel-mentor-${profile.id}-${Math.random().toString(36).slice(2, 7)}`,
     name: profile.alias,
-    gender: (Math.random() < 0.5 ? '女' : '男') as Gender,
+    gender: mentorGender(profile),
     orientation: randomOrientation(),
     kind: 'mentor',
     identity: `${profile.department} · ${profile.title}`,
-    // 初始亲密度 0-40：悟性 : 交际 = 3 : 1，不参考建模。
-    intimacy: Math.max(
-      0,
-      Math.min(
-        40,
-        Math.round((player.attrs.comprehension * 3 + player.attrs.social) * 1.25) -
-          10,
-      ),
-    ),
+    // 正式进入课题组后，导师亲密度固定从 20 开始。
+    intimacy: 20,
     statsKnown: false,
     knownStats: null,
     stats: randomStats(),

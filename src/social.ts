@@ -202,6 +202,21 @@ export function createClubRelationship(
   }
 }
 
+export function createSeniorRelationship(
+  player: Player,
+  mentorName: string,
+): Relationship {
+  const gender: Gender = Math.random() < 0.5 ? '女' : '男'
+  const role = gender === '男' ? '同门师兄' : '同门师姐'
+  return makeRelationship(
+    player,
+    'senior',
+    `${mentorName}课题组 · ${role}`,
+    gender,
+    randInt(10, 20),
+  )
+}
+
 export function relationshipKindLabel(kind: Relationship['kind']): string {
   switch (kind) {
     case 'roommate':
@@ -214,6 +229,8 @@ export function relationshipKindLabel(kind: Relationship['kind']): string {
       return '导师'
     case 'club':
       return '社团成员'
+    case 'senior':
+      return '同门前辈'
     case 'counselor':
       return '辅导员'
     default:
@@ -301,6 +318,7 @@ function clampPeerBirthYear(kind: Relationship['kind'], year: number): number {
 function randomBirthYear(kind: Relationship['kind']): number {
   if (kind === 'mentor') return GAME_START_YEAR - randInt(38, 58)
   if (kind === 'counselor') return GAME_START_YEAR - randInt(28, 42)
+  if (kind === 'senior') return GAME_START_YEAR - randInt(17, 23)
   // 2021 年入学：2003 年为主，2002 年通常为延迟入学，2004 年为提早入学。
   const roll = Math.random()
   if (roll < 0.2) return 2002

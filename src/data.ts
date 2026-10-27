@@ -129,7 +129,7 @@ export const OPENING_TALENTS: OpeningTalentDef[] = [
     name: '医学世家',
     en: 'MEDICAL FAMILY',
     desc: '家族群里一半是主任，一半是护士长。电话一打，导师先问你爸妈好。',
-    effectText: '直接成功联系导师（导师系统待开发）',
+    effectText: '开局随机导师主动发邮件；下一天正式接纳进入课题组',
     implemented: true,
   },
   {

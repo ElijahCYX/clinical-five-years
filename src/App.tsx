@@ -78,6 +78,11 @@ import type {
   OpeningTalentId,
   PatEvent,
   PatResult,
+  GameEmail,
+  MentorApplication,
+  MentorInterview,
+  MentorProfile,
+  ResearchStage,
   PlanId,
   Player,
   BirthdayGiftResult,
@@ -123,7 +128,6 @@ import { setSaveHandler } from './saveBridge'
 import {
   applyEvent,
   createFamilyReliefEvent,
-  createMentorEncounterEvent,
   rollRelationshipWeekly,
   rollWeeklyEvent,
 } from './events'
@@ -167,7 +171,32 @@ import {
   pickStressEnding,
 } from './stressTalks'
 import { ENCOUNTER_CHATS } from './encounters'
-import { MENTOR_BY_ID, ensureMentor } from './mentors'
+import {
+  MENTOR_BY_ID,
+  MENTOR_LIBRARY,
+  createMentorRelationship,
+  mentorGender,
+  pickMentorProfile,
+} from './mentors'
+import {
+  absoluteSlot,
+  chooseFreeSlotAfter,
+  currentMailTimeLabel,
+  decodeAbs,
+  formatAbsTime,
+  interviewSuccessChance,
+  nextGameDayStartAbs,
+  nextNormalWeek,
+  nextNormalWeekKey,
+  rollMentorReply,
+  createApplicationEmail,
+  createLabAccessEmail,
+  createMedicalFamilyAcceptance,
+  createMedicalFamilyGreeting,
+  createProjectOfferEmail,
+  createReplyEmail,
+  createWelcomeEmail,
+} from './mentorMail'
 import { ClubRecruitment } from './screens/ClubRecruitment'
 import { pushCampusNotice } from './campusBroadcast'
 import { pickConfessionText } from './confessionOutcomes'
@@ -203,6 +232,7 @@ import {
   createCourseFriend,
   createEventFriend,
   createInitialRelationships,
+  createSeniorRelationship,
   nextRoommateAction,
   normalizeRelationships,
   adjustIntimacyDelta,
@@ -224,34 +254,24 @@ import {
   isYearFinalSeasonIndex,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v44'
-const LEGACY_SAVE_KEYS = [
-  'clinical-five-years-save-v43',
-  'clinical-five-years-save-v42',
-  'clinical-five-years-save-v41',
-  'clinical-five-years-save-v40',
-  'clinical-five-years-save-v39',
-  'clinical-five-years-save-v38',
-  'clinical-five-years-save-v37',
-  'clinical-five-years-save-v36',
-  'clinical-five-years-save-v35',
-  'clinical-five-years-save-v34',
-  'clinical-five-years-save-v33',
-  'clinical-five-years-save-v32',
-  'clinical-five-years-save-v31',
-  'clinical-five-years-save-v30',
-  'clinical-five-years-save-v29',
-  'clinical-five-years-save-v28',
-  'clinical-five-years-save-v27',
-  'clinical-five-years-save-v26',
-  'clinical-five-years-save-v25',
-  'clinical-five-years-save-v24',
-  'clinical-five-years-save-v23',
-  'clinical-five-years-save-v22',
-  'clinical-five-years-save-v21',
-  'clinical-five-years-save-v20',
-  'clinical-five-years-save-v19',
-]
+const SAVE_KEY = 'clinical-five-years-save-v45'
+const GAME_SAVE_PREFIX = 'clinical-five-years-save-'
+
+/** 新科研/邮箱系统上线后，旧版本存档全部作废，避免半迁移状态。 */
+function clearOldGameSaves() {
+  try {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index)
+      if (key && key.startsWith(GAME_SAVE_PREFIX) && key !== SAVE_KEY) {
+        localStorage.removeItem(key)
+      }
+    }
+  } catch {
+    /* localStorage may be unavailable */
+  }
+}
+
+clearOldGameSaves()
 
 type View = ScreenName | 'crisis' | 'whoami' | 'whois'
 
@@ -336,15 +356,10 @@ function deriveOutstandingFails(
 function readSave(): GameState | null {
   try {
     const currentRaw = localStorage.getItem(SAVE_KEY)
-    const legacyRaw =
-      currentRaw ??
-      LEGACY_SAVE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean)
-    if (!legacyRaw) return null
-    const parsed = JSON.parse(legacyRaw) as { game?: GameState }
+    if (!currentRaw) return null
+    const parsed = JSON.parse(currentRaw) as { game?: GameState }
     if (!parsed.game) return null
-    const game = currentRaw
-      ? parsed.game
-      : migrateLegacySeasonLayout(parsed.game)
+    const game = parsed.game
     const legacyMembership = (
       game as GameState & { clubMembership?: GameState['clubMemberships'][number] | null }
     ).clubMembership
@@ -355,7 +370,7 @@ function readSave(): GameState | null {
       inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
       semesterLeaves: membership.semesterLeaves ?? 0,
     }))
-    return ensureMentor({
+    return {
       ...game,
       screen: game.screen === 'randomEvent' ? 'week' : game.screen,
       englishGrowth: game.englishGrowth ?? 0,
@@ -396,6 +411,21 @@ function readSave(): GameState | null {
       teacherScandalRisk: game.teacherScandalRisk ?? 0,
       pendingConfession: game.pendingConfession ?? null,
       mentorProfileId: game.mentorProfileId ?? null,
+      researchStage: game.researchStage ?? 1,
+      mentorApplication: game.mentorApplication ?? null,
+      mentorInterview: game.mentorInterview
+        ? { ...game.mentorInterview, prompted: false }
+        : null,
+      failedMentorIds: game.failedMentorIds ?? [],
+      emails: game.emails ?? [],
+      mailSentWeekKey: game.mailSentWeekKey ?? null,
+      medicalFamilyMentorId: game.medicalFamilyMentorId ?? null,
+      medicalFamilyAcceptanceAtAbs: game.medicalFamilyAcceptanceAtAbs ?? null,
+      welcomeMailSent: game.welcomeMailSent ?? false,
+      seniorsGenerated: game.seniorsGenerated ?? false,
+      labAccessMailSent: game.labAccessMailSent ?? false,
+      labAccessPendingAtAbs: game.labAccessPendingAtAbs ?? null,
+      projectOfferMailSent: game.projectOfferMailSent ?? false,
       researchProgress: game.researchProgress ?? 0,
       researchPublished: game.researchPublished ?? false,
       researchJournal: game.researchJournal ?? null,
@@ -455,7 +485,7 @@ function readSave(): GameState | null {
       stressHeartBreakWeek: game.stressHeartBreakWeek ?? 0,
       stressEndingText: game.stressEndingText ?? null,
       stressEndingMethod: game.stressEndingMethod ?? null,
-    })
+    }
   } catch {
     return null
   }
@@ -1230,147 +1260,8 @@ function RealApp() {
     const mentorRelation = game.relationships.find(
       (relation) => relation.kind === 'mentor',
     )
-    if (
-      mentorRelation &&
-      game.mentorContactUnlocked &&
-      !game.labEntered &&
-      mentorRelation.intimacy >= 40
-    ) {
-      const mentorName = mentorRelation.name
-      const next: GameState = {
-        ...game,
-        eventWeek: game.week,
-        pendingEvent: null,
-        pendingConfession: null,
-        screen: 'week',
-      }
-      setGame(next)
-      persist(next)
-      showResearchNotice({
-        kind: 'lab',
-        title: '导师的通知',
-        text: `${mentorName}在群里艾特你：“下周起跟着组会听一听，实验室门禁我帮你开好了。先别碰贵重仪器，先学会给移液枪装枪头。”你盯着这条消息看了三遍，确定自己没有看错。`,
-        onAcknowledge: () => {
-          setGame((previous) => {
-            if (!previous) return previous
-            const updated = { ...previous, labEntered: true }
-            persist(updated)
-            return updated
-          })
-        },
-      })
-      return
-    }
     const mentor = mentorRelation
     const currentAbsoluteWeek = absoluteWeek(game)
-    const isAutumn = game.season.seasonLabel.includes('秋')
-    const ideaThresholdDue =
-      mentor !== undefined &&
-      mentor.intimacy >= 60 &&
-      game.lastHypothesisOfferSeason === null
-    const ideaAutumnDue =
-      mentor !== undefined &&
-      mentor.intimacy >= 60 &&
-      isAutumn &&
-      game.lastHypothesisOfferSeason !== game.season.id
-    // 实验室打杂期间额外 +10% 概率收到导师分配课题的通知；
-    // 接取课题后 researchStarted 为 true，该加成自然撤除。
-    const ideaChoreBoostDue =
-      mentor !== undefined &&
-      game.labEntered &&
-      !game.researchStarted &&
-      Math.random() < 0.1
-    if (
-      mentor &&
-      game.labEntered &&
-      !game.researchStarted &&
-      !game.researchPublished &&
-      (ideaThresholdDue || ideaAutumnDue || ideaChoreBoostDue)
-    ) {
-      const hypothesis = game.mentorProfileId
-        ? pickHypothesis(game.mentorProfileId)
-        : null
-      if (hypothesis) {
-        const offerNext: GameState = {
-          ...game,
-          eventWeek: game.week,
-          lastHypothesisOfferSeason: game.season.id,
-          pendingEvent: null,
-          pendingConfession: null,
-          screen: 'week',
-        }
-        setGame(offerNext)
-        persist(offerNext)
-        showResearchNotice({
-          kind: 'idea',
-          title: '导师的 idea',
-          text: `${mentor.name}在组会结束后叫住你：“我最近想到一个题目——‘${hypothesis.title}’。有点冒险，但值得一试。你要不要接？”`,
-          choices: [
-            {
-              label: '接下课题',
-              primary: true,
-              onClick: () => {
-                setGame((previous) => {
-                  if (!previous) return previous
-                  const updated: GameState = {
-                    ...previous,
-                    researchStarted: true,
-                    activeHypothesisId: hypothesis.id,
-                    activeHypothesisTitle: hypothesis.title,
-                    researchProgress: 0,
-                    researchPublished: false,
-                    lastResearchWeek: currentAbsoluteWeek,
-                    lastResearchWarningWeek: currentAbsoluteWeek,
-                    relationships: previous.relationships.map((relation) =>
-                      relation.kind === 'mentor'
-                        ? {
-                            ...relation,
-                            intimacy: Math.min(
-                              100,
-                              relation.intimacy +
-                                adjustIntimacyDelta(previous, relation, 5),
-                            ),
-                          }
-                        : relation,
-                    ),
-                  }
-                  persist(updated)
-                  return updated
-                })
-              },
-            },
-            {
-              label: '暂时不接',
-              onClick: () => {
-                setGame((previous) => {
-                  if (!previous) return previous
-                  const updated: GameState = {
-                    ...previous,
-                    relationships: previous.relationships.map((relation) =>
-                      relation.kind === 'mentor'
-                        ? {
-                            ...relation,
-                            intimacy: Math.max(
-                              0,
-                              relation.intimacy +
-                                adjustIntimacyDelta(previous, relation, -3),
-                            ),
-                          }
-                        : relation,
-                    ),
-                    stress: Math.min(100, previous.stress + 2),
-                  }
-                  persist(updated)
-                  return updated
-                })
-              },
-            },
-          ],
-        })
-        return
-      }
-    }
-
     if (
       mentor &&
       game.researchStarted &&
@@ -1418,18 +1309,6 @@ function RealApp() {
         eventWeek: game.week,
         familyReliefWeek: absoluteWeek(game),
         pendingEvent: createFamilyReliefEvent(game.familyAffection),
-        pendingConfession: null,
-        screen: 'week',
-      }
-      setGame(next)
-      persist(next)
-      return
-    }
-    if (!game.mentorContactUnlocked && Math.random() < 0.28) {
-      const next: GameState = {
-        ...game,
-        eventWeek: game.week,
-        pendingEvent: createMentorEncounterEvent(),
         pendingConfession: null,
         screen: 'week',
       }
@@ -1677,7 +1556,24 @@ function RealApp() {
   const handleOpeningTalent = (talents: OpeningTalentId[]) => {
     if (!game) return
     let next = applyOpeningTalent({ ...game, screen: 'plan' }, talents)
-    next = ensureMentor(next)
+    if (talents.includes('medicalFamily') && next.player) {
+      const mentor = pickMentorProfile()
+      const background = next.player.background
+      const parentHint =
+        background === 'affluent'
+          ? '你家里长辈和我很熟，说你从小就在医院走廊里长大。'
+          : background === 'middle'
+            ? '你父母托我多关照你，说你一直想学医。'
+            : '你家里人和我提过你，说你读书很用功。'
+      const greeting = createMedicalFamilyGreeting(next, mentor, parentHint)
+      next = {
+        ...next,
+        mentorProfileId: mentor.id,
+        medicalFamilyMentorId: mentor.id,
+        medicalFamilyAcceptanceAtAbs: nextGameDayStartAbs(next),
+        emails: [...next.emails, greeting],
+      }
+    }
     if (talents.includes('modelMonster') && next.player) {
       const chance = Math.min(0.75, next.player.attrs.appearance * 0.08)
       if (Math.random() < chance) {
@@ -5060,6 +4956,535 @@ function RealApp() {
     setView('create')
   }
 
+  const mentorProfileOf = (mentorId: string | null | undefined) =>
+    mentorId ? MENTOR_BY_ID[mentorId] ?? null : null
+
+  const mentorRelationOf = (source: GameState) =>
+    source.relationships.find((relation) => relation.kind === 'mentor') ?? null
+
+  const canComposeMentorMail = (mentorId: string): string | null => {
+    if (!game) return '现在还不能写邮件。'
+    if (game.researchStage !== 1) return '你已经进入导师联系流程。'
+    if (game.medicalFamilyMentorId) return '医学世家已经为你联系了导师，等导师的邮件即可。'
+    if (game.mentorApplication) return '上一封自荐信还在等待回复。'
+    if (game.mailSentWeekKey === currentWeekKey(game)) return '本周已经给导师发过一封邮件了。'
+    if (game.failedMentorIds.includes(mentorId)) return '这位导师已经拒绝过你的申请。'
+    if (!MENTOR_BY_ID[mentorId]) return '找不到这位导师。'
+    return null
+  }
+
+  const composeMentorMail = (mentorId: string): { draft: GameEmail | null; error: string | null } => {
+    const error = canComposeMentorMail(mentorId)
+    if (error) return { draft: null, error }
+    if (!game) return { draft: null, error: '现在还不能写邮件。' }
+    const mentor = MENTOR_BY_ID[mentorId]
+    if (!mentor) return { draft: null, error: '找不到这位导师。' }
+    return {
+      draft: createApplicationEmail(game, mentor),
+      error: null,
+    }
+  }
+
+  const sendMentorMail = (draft: GameEmail): { ok: boolean; error?: string } => {
+    if (!game || !draft.mentorId) return { ok: false, error: '邮件发送失败。' }
+    const error = canComposeMentorMail(draft.mentorId)
+    if (error) return { ok: false, error }
+    const replyKind = rollMentorReply(game)
+    const nowAbs = absoluteSlot(game)
+    const replyAtAbs =
+      replyKind === 'none' ? null : chooseFreeSlotAfter(game, nowAbs)
+    const sentEmail: GameEmail = {
+      ...draft,
+      sentAtAbs: nowAbs,
+      timeLabel: currentMailTimeLabel(game),
+      read: true,
+    }
+    const application: MentorApplication = {
+      mentorId: draft.mentorId,
+      sentAtAbs: nowAbs,
+      sentWeekKey: currentWeekKey(game),
+      replyKind,
+      replyAtAbs,
+      replyEmailId: null,
+      noReplyWeekKey:
+        replyKind === 'none'
+          ? nextNormalWeekKey(game) ?? currentWeekKey(game)
+          : null,
+    }
+    const next: GameState = {
+      ...game,
+      emails: [...game.emails, sentEmail],
+      mentorApplication: application,
+      mailSentWeekKey: currentWeekKey(game),
+    }
+    setGame(next)
+    persist(next)
+    return { ok: true }
+  }
+
+  const withMentorRelationship = (
+    source: GameState,
+    mentor: MentorProfile,
+  ): GameState => {
+    if (!source.player) return source
+    if (source.relationships.some((relation) => relation.kind === 'mentor')) {
+      return source
+    }
+    return {
+      ...source,
+      relationships: [
+        ...source.relationships,
+        createMentorRelationship(mentor, source.player),
+      ],
+    }
+  }
+
+  const withResearchSeniors = (
+    source: GameState,
+    mentor: MentorProfile,
+  ): GameState => {
+    if (source.seniorsGenerated || !source.player) return source
+    const seniors = Array.from({ length: 3 }, () =>
+      createSeniorRelationship(source.player!, mentor.alias),
+    )
+    return {
+      ...source,
+      relationships: [...source.relationships, ...seniors],
+      seniorsGenerated: true,
+    }
+  }
+
+  const makeMentorInterview = (
+    source: GameState,
+    mentorId: string,
+    fromAbs = absoluteSlot(source) + 1,
+  ): MentorInterview => {
+    const atAbs = chooseFreeSlotAfter(source, fromAbs)
+    const decoded = decodeAbs(atAbs)
+    return {
+      mentorId,
+      atAbs,
+      seasonIndex: decoded.seasonIndex,
+      week: decoded.week,
+      weekSlot: decoded.weekSlot,
+      label: formatAbsTime(source, atAbs),
+      rescheduled: false,
+      prompted: false,
+    }
+  }
+
+  const resolveMentorInterview = (interview: MentorInterview) => {
+    if (!game) return
+    const mentor = mentorProfileOf(interview.mentorId)
+    if (!mentor) return
+    const chance = interviewSuccessChance(game)
+    const success = Math.random() < chance
+    let next: GameState = {
+      ...game,
+      mentorInterview: null,
+      mentorApplication: null,
+    }
+    if (success) {
+      next = withMentorRelationship(
+        {
+          ...next,
+          researchStage: 4,
+          mentorContactUnlocked: true,
+          mentorProfileId: mentor.id,
+          welcomeMailSent: true,
+        },
+        mentor,
+      )
+      const welcome = createWelcomeEmail(next, mentor)
+      next = { ...next, emails: [...next.emails, welcome] }
+    } else {
+      next = {
+        ...next,
+        researchStage: 1,
+        mentorContactUnlocked: false,
+        mentorProfileId: null,
+        failedMentorIds: [...new Set([...next.failedMentorIds, mentor.id])],
+        welcomeMailSent: false,
+        seniorsGenerated: false,
+      }
+    }
+    finishWeekSlot(next, 'mentorInterview')
+    showResearchNotice({
+      kind: 'mentor',
+      title: success ? '面谈通过' : '面谈没有通过',
+      text: success
+        ? `${mentor.alias}老师听完你的自我介绍，又问了几个关于课程和科研兴趣的问题。最后 TA 说：“先来组会听听吧，下周开始。”你走出办公室时，走廊的灯刚好亮起来。`
+        : `${mentor.alias}老师很礼貌地听完了你的话，但最终没有同意你加入课题组。TA 说：“你现在的准备还不够，我们再看看。”你点点头，把没说完的话收了回去。本周你还可以再联系其他导师。`,
+      ruleText: `面谈成功率 ${Math.round(chance * 100)}% · ${success ? '进入阶段4' : '回到阶段1，可换导师'}`,
+      ruleLabel: '面谈结果',
+    })
+  }
+
+  const acceptMentorProject = (emailId: string) => {
+    if (!game) return
+    const email = game.emails.find(
+      (item) =>
+        item.id === emailId &&
+        item.direction === 'inbox' &&
+        item.kind === 'projectOffer',
+    )
+    if (!email || !email.project || game.researchStage < 5) return
+    const next: GameState = {
+      ...game,
+      researchStage: 6,
+      researchStarted: true,
+      researchProgress: 0,
+      activeHypothesisId: email.project.hypothesisId,
+      activeHypothesisTitle: email.project.title,
+      lastResearchWeek: absoluteWeek(game),
+      lastResearchWarningWeek: absoluteWeek(game),
+      researchPublished: false,
+      researchJournal: null,
+      awaitingNextProject: false,
+      emails: game.emails.map((item) =>
+        item.id === emailId ? { ...item, read: true } : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    showResearchNotice({
+      kind: 'mentor',
+      title: '课题开始',
+      text: `你回复了${MENTOR_BY_ID[email.mentorId ?? '']?.alias ?? '导师'}老师：愿意接这个课题。\n\n从今天起，你的科研进度开始从 0 累积。组会、文献、实验和返修，都会变成具体数字。`,
+      ruleText: '阶段6 · 科学研究',
+      ruleLabel: '课题已接受',
+    })
+  }
+
+  const readMentorEmail = (emailId: string) => {
+    if (!game) return
+    const email = game.emails.find((item) => item.id === emailId)
+    if (!email || email.direction !== 'inbox' || email.read) return
+    const mentor = mentorProfileOf(email.mentorId)
+    let next: GameState = {
+      ...game,
+      emails: game.emails.map((item) =>
+        item.id === emailId ? { ...item, read: true } : item,
+      ),
+    }
+    let notice: { title: string; text: string; ruleText?: string } | null = null
+
+    if (email.kind === 'positiveReply' && mentor) {
+      if (game.researchStage === 1) {
+        let interview = email.interview ?? makeMentorInterview(next, mentor.id)
+        if (interview && absoluteSlot(next) >= interview.atAbs) {
+          const replacement = makeMentorInterview(
+            next,
+            mentor.id,
+            absoluteSlot(next) + 1,
+          )
+          interview = {
+            ...replacement,
+            rescheduled: true,
+          }
+          next = {
+            ...next,
+            emails: next.emails.map((item) =>
+              item.id === email.id
+                ? {
+                    ...item,
+                    interview,
+                    body: item.body.replace(
+                      email.interview?.label ?? '',
+                      interview.label,
+                    ),
+                  }
+                : item,
+            ),
+          }
+        }
+        next = {
+          ...next,
+          researchStage: 2,
+          mentorContactUnlocked: true,
+          mentorProfileId: mentor.id,
+          mentorApplication: null,
+          mentorInterview: interview,
+        }
+        notice = {
+          title: '导师回复了',
+          text: `${mentor.alias}老师同意和你聊一聊。面谈时间写在邮件里，去邮箱确认一下。`,
+          ruleText: '阶段2 · 已联系上导师',
+        }
+      }
+    } else if (email.kind === 'negativeReply' && mentor) {
+      next = {
+        ...next,
+        mentorApplication: null,
+        mentorProfileId: null,
+        mentorContactUnlocked: false,
+        failedMentorIds: [...new Set([...next.failedMentorIds, mentor.id])],
+      }
+      notice = {
+        title: '导师婉拒了',
+        text: `${mentor.alias}老师回复了一封礼貌的拒绝信。你仍然停留在阶段1，可以留意其他导师。`,
+        ruleText: '阶段1 · 未联系导师',
+      }
+    } else if (
+      (email.kind === 'welcome' || email.kind === 'medicalAcceptance') &&
+      mentor
+    ) {
+      next = withMentorRelationship(
+        {
+          ...next,
+          researchStage: 4,
+          mentorContactUnlocked: true,
+          mentorProfileId: mentor.id,
+          mentorApplication: null,
+          welcomeMailSent: true,
+        },
+        mentor,
+      )
+      const beforeIds = new Set(next.relationships.map((relation) => relation.id))
+      next = withResearchSeniors(next, mentor)
+      const newSeniors = next.relationships.filter(
+        (relation) => relation.kind === 'senior' && !beforeIds.has(relation.id),
+      )
+      notice = {
+        title: '欢迎加入课题组',
+        text: `你被拉进了一个名为「${mentor.alias}课题组」的微信群。\n\n${newSeniors
+          .map((senior) => `${senior.name}：欢迎欢迎！`)
+          .join('\n')}\n\n导师在群里发了一句：“以后多带带新同学。”然后 @ 了你。`,
+        ruleText: '阶段4 · 正式加入课题组',
+      }
+    } else if (email.kind === 'labAccess') {
+      const pendingAt = nextGameDayStartAbs(next)
+      next = {
+        ...next,
+        labAccessPendingAtAbs: pendingAt,
+      }
+      notice = {
+        title: '实验室门禁已开通',
+        text: `导师回复了实验室门禁和安全培训的安排。从下一个游戏日开始，你可以进入实验室学习。`,
+        ruleText: `阶段5 将于 ${formatAbsTime(next, pendingAt)} 开始`,
+      }
+    } else if (email.kind === 'projectOffer') {
+      notice = {
+        title: '导师发来课题邀请',
+        text: '导师把课题发到了你的邮箱。读完邮件后，你可以在邮件里直接接受课题。',
+        ruleText: '阶段5 · 等待接受课题',
+      }
+    }
+
+    setGame(next)
+    persist(next)
+    if (notice) {
+      showResearchNotice({
+        kind: 'mentor',
+        title: notice.title,
+        text: notice.text,
+        ruleText: notice.ruleText,
+        ruleLabel: '科研邮件',
+      })
+    }
+  }
+
+  // 邮件投递、拒信提醒、阶段5/6的自动推进。
+  useEffect(() => {
+    if (!game) return
+    let next = game
+    let changed = false
+    let stage5Started = false
+    const nowAbs = absoluteSlot(game)
+
+    if (
+      next.medicalFamilyAcceptanceAtAbs !== null &&
+      nowAbs >= next.medicalFamilyAcceptanceAtAbs
+    ) {
+      const mentor = mentorProfileOf(next.medicalFamilyMentorId)
+      if (mentor) {
+        next = {
+          ...next,
+          emails: [
+            ...next.emails,
+            createMedicalFamilyAcceptance(next, mentor),
+          ],
+          medicalFamilyAcceptanceAtAbs: null,
+        }
+        changed = true
+      }
+    }
+
+    const application = next.mentorApplication
+    if (
+      application &&
+      application.replyKind !== null &&
+      application.replyKind !== 'none' &&
+      application.replyAtAbs !== null &&
+      application.replyEmailId === null &&
+      nowAbs >= application.replyAtAbs
+    ) {
+      const mentor = mentorProfileOf(application.mentorId)
+      if (mentor) {
+        let email: GameEmail
+        if (application.replyKind === 'positive') {
+          const interview = makeMentorInterview(next, mentor.id, nowAbs + 1)
+          email = createReplyEmail(next, mentor, 'positive', interview)
+        } else {
+          email = createReplyEmail(next, mentor, 'negative')
+        }
+        next = {
+          ...next,
+          emails: [...next.emails, email],
+          mentorApplication: {
+            ...application,
+            replyEmailId: email.id,
+          },
+        }
+        changed = true
+      }
+    }
+
+    let noReplyName: string | null = null
+    if (
+      next.mentorApplication?.replyKind === 'none' &&
+      next.mentorApplication.noReplyWeekKey === currentWeekKey(next)
+    ) {
+      noReplyName =
+        mentorProfileOf(next.mentorApplication.mentorId)?.alias ?? '导师'
+      next = { ...next, mentorApplication: null }
+      changed = true
+    }
+
+    const mentorProfile = mentorProfileOf(next.mentorProfileId)
+    const mentorRelation = mentorRelationOf(next)
+    if (
+      mentorProfile &&
+      mentorRelation &&
+      next.researchStage === 4 &&
+      next.seniorsGenerated &&
+      !next.labAccessMailSent &&
+      mentorRelation.intimacy >= 40
+    ) {
+      next = {
+        ...next,
+        emails: [...next.emails, createLabAccessEmail(next, mentorProfile)],
+        labAccessMailSent: true,
+      }
+      changed = true
+    }
+
+    if (
+      next.labAccessPendingAtAbs !== null &&
+      nowAbs >= next.labAccessPendingAtAbs
+    ) {
+      next = {
+        ...next,
+        researchStage: 5,
+        labEntered: true,
+        labAccessPendingAtAbs: null,
+      }
+      stage5Started = true
+      changed = true
+    }
+
+    if (
+      mentorProfile &&
+      mentorRelation &&
+      next.researchStage >= 5 &&
+      !next.projectOfferMailSent &&
+      mentorRelation.intimacy >= 60
+    ) {
+      const hypothesis = pickHypothesis(mentorProfile.id)
+      if (hypothesis) {
+        next = {
+          ...next,
+          emails: [
+            ...next.emails,
+            createProjectOfferEmail(next, mentorProfile, hypothesis),
+          ],
+          projectOfferMailSent: true,
+        }
+        changed = true
+      }
+    }
+
+    if (changed) {
+      setGame(next)
+      persist(next)
+    }
+    if (stage5Started) {
+      showResearchNotice({
+        kind: 'mentor',
+        title: '实验室门禁已经生效',
+        text: '第二天，你刷卡进入实验室。门禁灯变绿的那一下，你终于觉得自己不只是“来旁听”的人了。接下来的阶段是熟悉实验室、跟着师兄师姐学习，但真正的科研进度要等导师正式分配课题后才开始。',
+        ruleText: '阶段5 · 允许进入实验室学习',
+        ruleLabel: '科研阶段推进',
+      })
+    }
+    if (noReplyName) {
+      showResearchNotice({
+        kind: 'mentor',
+        title: '导师一直没有回复',
+        text: `${noReplyName}老师这周似乎忘记了回复你的邮件。邮箱里没有新的回信。你可以等下一周再联系其他导师。`,
+        ruleText: '本周没有收到回复 · 可继续联系其他导师',
+        ruleLabel: '邮箱提醒',
+      })
+    }
+  }, [game, view])
+
+  // 面谈时间到达：自动改约一次，然后在当前时间段弹出赴约提示。
+  useEffect(() => {
+    if (
+      !game ||
+      !game.mentorInterview ||
+      (game.researchStage !== 2 && game.researchStage !== 3)
+    ) {
+      return
+    }
+    const interview = game.mentorInterview
+    const nowAbs = absoluteSlot(game)
+    if (nowAbs < interview.atAbs) return
+    if (nowAbs > interview.atAbs && !interview.rescheduled) {
+      const replacement = makeMentorInterview(game, interview.mentorId, nowAbs + 1)
+      setGame({
+        ...game,
+        mentorInterview: {
+          ...replacement,
+          rescheduled: true,
+        },
+      })
+      persist({
+        ...game,
+        mentorInterview: {
+          ...replacement,
+          rescheduled: true,
+        },
+      })
+      return
+    }
+    if (interview.prompted) return
+    const mentor = mentorProfileOf(interview.mentorId)
+    if (!mentor) return
+    const prompted = { ...interview, prompted: true }
+    const staged: GameState = {
+      ...game,
+      researchStage: 3,
+      mentorInterview: prompted,
+    }
+    setGame(staged)
+    persist(staged)
+    showResearchNotice({
+      kind: 'mentor',
+      title: '该去面谈了',
+      text: `${mentor.alias}老师在办公室等你。面谈会占用当前整个时间段。\n\n地点：${mentor.department}。`,
+      ruleText: `面谈时间：${interview.label}`,
+      ruleLabel: '阶段3 · 与导师面谈',
+      choices: [
+        {
+          label: '去面谈',
+          primary: true,
+          onClick: () => resolveMentorInterview(prompted),
+        },
+      ],
+    })
+  }, [game, view])
+
   if (view === 'title') {
     return (
       <TitleScreen
@@ -5299,6 +5724,10 @@ function RealApp() {
           onReconcileBond={reconcileBond}
           onNpcConfession={handleNpcConfession}
           onResolveConsumption={resolveConsumption}
+          onComposeMentorMail={composeMentorMail}
+          onSendMentorMail={sendMentorMail}
+          onReadMentorEmail={readMentorEmail}
+          onAcceptMentorProject={acceptMentorProject}
           onSave={saveNow}
           onTitle={goTitle}
         />
@@ -5507,6 +5936,10 @@ function DemoWeek() {
       onToggleAction={toggle}
       onEndWeek={() => goDemo('prep')}
       onChooseFocus={() => undefined}
+      onComposeMentorMail={() => ({ draft: null, error: '演示模式不能发邮件。' })}
+      onSendMentorMail={() => ({ ok: false, error: '演示模式不能发邮件。' })}
+      onReadMentorEmail={() => undefined}
+      onAcceptMentorProject={() => undefined}
       onSave={() => undefined}
       onTitle={() => goDemo('title')}
     />

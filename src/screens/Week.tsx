@@ -14,7 +14,14 @@ import {
   courseDifficulty,
   simulateWeek,
 } from '../game'
-import type { ActionDef, DinnerInviteResult, GameState, SoloChatRecord, SoloInvite } from '../types'
+import type {
+  ActionDef,
+  DinnerInviteResult,
+  GameEmail,
+  GameState,
+  SoloChatRecord,
+  SoloInvite,
+} from '../types'
 import { Bar, Eyebrow, InterfaceNav, Pill, SectionLabel, TopBar } from '../ui'
 import { PlayerRail } from './PlayerRail'
 import { DinnerModal } from './Dinner'
@@ -24,6 +31,8 @@ import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
 import { CampusNoticeBoard } from './CampusNotice'
+import { Mailbox } from './Mailbox'
+import { ResearchHub } from './ResearchHub'
 import { BondScreen } from './Bond'
 import { SoloInviteModal } from './SoloInvite'
 import { SoloDateOverlay } from './SoloDate'
@@ -66,6 +75,7 @@ const VISIBLE_ACTIONS = [
 type GameTab =
   | 'timetable'
   | 'week'
+  | 'mail'
   | 'people'
   | 'grades'
   | 'research'
@@ -111,6 +121,10 @@ interface WeekScreenProps {
     accept: boolean,
     mode?: 'full' | 'installment',
   ) => void
+  onComposeMentorMail: (mentorId: string) => { draft: GameEmail | null; error: string | null }
+  onSendMentorMail: (draft: GameEmail) => { ok: boolean; error?: string }
+  onReadMentorEmail: (emailId: string) => void
+  onAcceptMentorProject: (emailId: string) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -149,6 +163,10 @@ export function WeekScreen({
   onReconcileBond,
   onNpcConfession,
   onResolveConsumption,
+  onComposeMentorMail,
+  onSendMentorMail,
+  onReadMentorEmail,
+  onAcceptMentorProject,
   onSave,
   onTitle,
 }: WeekScreenProps) {
@@ -161,6 +179,7 @@ export function WeekScreen({
   const [skipClassOpen, setSkipClassOpen] = useState(false)
   const [skipRulesOpen, setSkipRulesOpen] = useState(false)
   const [mobilePage, setMobilePage] = useState(0)
+  const [mailDraft, setMailDraft] = useState<GameEmail | null>(null)
   const gameGridRef = useRef<HTMLElement | null>(null)
   const [selectedClubOrgId, setSelectedClubOrgId] = useState<string | null>(null)
   const [dayTransition, setDayTransition] = useState<{
@@ -189,6 +208,9 @@ export function WeekScreen({
   const showFocusModal = focusPrompt !== null
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : null
+  const unreadMailCount = state.emails.filter(
+    (email) => email.direction === 'inbox' && !email.read,
+  ).length
 
   const passedPe = state.peResults.filter((item) => item.passed)
   const failedPe = state.peResults.filter((item) => !item.passed)
@@ -1276,6 +1298,7 @@ export function WeekScreen({
                 [
                   ['timetable', '课表'],
                   ['week', '本周安排'],
+                  ['mail', '邮箱'],
                   ['people', '档案'],
                   ['grades', '成绩'],
                   ['research', '科研'],
@@ -1299,6 +1322,15 @@ export function WeekScreen({
                       className="tab-alert"
                       aria-label="有尚未使用的联系 TA"
                       title="有尚未使用的联系 TA"
+                    >
+                      !
+                    </span>
+                  )}
+                  {key === 'mail' && unreadMailCount > 0 && (
+                    <span
+                      className="tab-alert"
+                      aria-label={`有 ${unreadMailCount} 封未读邮件`}
+                      title={`有 ${unreadMailCount} 封未读邮件`}
                     >
                       !
                     </span>
@@ -1815,9 +1847,33 @@ export function WeekScreen({
               </>
             )}
 
+            {tab === 'mail' && (
+              <Mailbox
+                state={state}
+                draft={mailDraft}
+                onSendDraft={onSendMentorMail}
+                onReadEmail={onReadMentorEmail}
+                onAcceptProject={onAcceptMentorProject}
+                onDraftDone={() => setMailDraft(null)}
+                onCancelDraft={() => setMailDraft(null)}
+              />
+            )}
+
             {tab === 'people' && renderAttributePanel()}
             {tab === 'grades' && renderGrades()}
-            {tab === 'research' && renderResearch()}
+            {tab === 'research' && (
+              <ResearchHub
+                state={state}
+                onComposeMentor={(mentorId) => {
+                  const result = onComposeMentorMail(mentorId)
+                  if (result.draft) {
+                    setMailDraft(result.draft)
+                    setTab('mail')
+                  }
+                  return result
+                }}
+              />
+            )}
             {tab === 'club' && renderClub()}
             {tab === 'bond' && (
               <BondScreen

@@ -189,7 +189,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                 </div>
                 <div>
                   <span>科研进度</span>
-                  <strong>{state.researchProgress} / 100</strong>
+                  <strong>{state.researchStage < 6 ? '—' : `${state.researchProgress} / 100`}</strong>
                 </div>
               </div>
               <div className="dossier-growth">
@@ -266,7 +266,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                 </div>
                 <div>
                   <span>导师联系</span>
-                  <strong>{state.mentorContactUnlocked ? '已解锁（待开发）' : '未解锁'}</strong>
+                  <strong>{state.researchStage >= 2 ? `阶段 ${state.researchStage} · 已联系` : '未解锁'}</strong>
                 </div>
                 <div>
                   <span>舍友关系</span>
@@ -370,13 +370,13 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                 待补考：{state.pendingMakeups.map((course) => course.name).join(' / ')}
               </p>
             )}
-            {state.mentorSelected || state.labEntered ? (
+            {state.researchStage >= 2 ? (
               <p className="dossier-muted">
-                导师：{state.mentorSelected ? '已选' : '未选'} · 实验室：
+                导师：阶段 {state.researchStage} · {state.mentorProfileId ? '已联系' : '等待导师'} · 实验室：
                 {state.labEntered ? '已进入' : '未进入'}
               </p>
             ) : (
-              <p className="dossier-muted">科研导师与实验室：等待开发。</p>
+              <p className="dossier-muted">科研导师与实验室：尚未开启，去科研页查看导师名录。</p>
             )}
           </section>
 

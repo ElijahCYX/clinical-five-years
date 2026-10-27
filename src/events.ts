@@ -17,7 +17,6 @@ import {
   adjustIntimacyDelta,
   progressWeek,
 } from './social'
-import { unlockMentor } from './mentors'
 
 interface EventSeed {
   id: string
@@ -58,7 +57,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-scene-22', kind: 'scene', title: '见习第一天', text: '你第一次穿白大褂进病房，老师让你问病史，你开口先问您哪里不舒服。病人愣了一下，说你不是医生吗，你解释自己还在学。', effects: {prep: 2, stress: 3}, condition: afterPreclinical },
   { id: 'ev-scene-23', kind: 'scene', title: '护士站社交', text: '你帮护士姐姐搬了一箱液体，顺便听完了三个科室的八卦。她们说以后有事可以来找她们，你第一次觉得医院不只有考试。', effects: {socialGrowth: 5, energy: -4}, condition: afterPreclinical },
   { id: 'ev-scene-24', kind: 'scene', title: '兼职群', text: '你在兼职群接了个发传单的活，第一张发给了自己的室友。室友认真看完后问你能不能帮他带一份，你决定这活其实也不算太亏。', effects: {money: 80, energy: -5}, condition: (s) => s.plan==='C'&&s.money<500 },
-  { id: 'ev-scene-25', kind: 'scene', title: '实验室门禁', text: '导师给了你一张实验室门禁卡，你第一次觉得自己像正经科研人。刷卡进门时机器响了三声，你站在门口反复确认自己不是非法入侵。', effects: {research: 4}, condition: (s) => s.mentorContactUnlocked },
+  { id: 'ev-scene-25', kind: 'scene', title: '实验室门禁', text: '导师给了你一张实验室门禁卡，你第一次觉得自己像正经科研人。刷卡进门时机器响了三声，你站在门口反复确认自己不是非法入侵。', effects: {research: 4}, condition: (s) => s.labEntered },
   { id: 'ev-scene-26', kind: 'scene', title: '宿舍夜谈', text: '熄灯后室友关掉游戏语音，认真听你吐槽了半小时。最后他说实在不行就早点睡，你虽然没得到解决方案，但确实舒服了一点。', effects: {stress: -4, socialGrowth: 5}, condition: (s) => s.roommateBond },
   { id: 'ev-scene-27', kind: 'scene', title: '考研自习室', text: '你走进考研自习室，发现每个人都在低头卷，连空气里都是背诵声。你不好意思只卷一支笔，于是翻开书假装自己也在状态。', effects: {kaoyanPrep: 1, stress: 2}, condition: (s) => s.kaoyanRegistered },
   { id: 'ev-scene-28', kind: 'scene', title: '保研讲座', text: '保研讲座说要看综合素质，你开始重新审视自己的综合素质。越审视越发现，自己最突出的素质是能在讲座上认真走神。', effects: {composite: 1, stress: 3}, condition: (s) => s.postgradChoice!==null },
@@ -88,7 +87,7 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-attr-21', kind: 'attribute', title: '奖学金候选', text: '奖学金名单出现你的名字，你走路都开始带风。回到宿舍后你冷静下来，开始担心公示期会不会有人举报你上课吃包子。', effects: {stress: -3, composite: 1}, condition: (s) => s.cumulativeCredits>0 && s.cumulativePoints/s.cumulativeCredits>=3.8 },
   { id: 'ev-attr-22', kind: 'attribute', title: '挂科阴影', text: '你看到挂科两个字就条件反射地心慌。虽然已经补考通过，但每次路过教务处，你还是会下意识加快脚步。', effects: {stress: 4}, condition: (s) => s.everFailed },
   { id: 'ev-attr-23', kind: 'attribute', title: '思政课谈心', text: '思政老师找你谈心，你准备了八百字，最后只说了好的老师。回去路上你突然想到一句更合适的回答，但已经晚了。', effects: {composite: 2, stress: 2}, condition: (s) => s.politicsCompleted.length>0 },
-  { id: 'ev-attr-24', kind: 'attribute', title: '导师召唤', text: '导师突然喊你去办公室，你一路上把自己这学期所有错误都复习了一遍。结果他只是问你有没有兴趣参加一个课题，你差点当场答应三个。', effects: {research: 3, stress: 2}, condition: (s) => s.mentorContactUnlocked },
+  { id: 'ev-attr-24', kind: 'attribute', title: '导师召唤', text: '导师突然喊你去办公室，你一路上把自己这学期所有错误都复习了一遍。结果他只是问你有没有兴趣参加一个课题，你差点当场答应三个。', effects: {research: 3, stress: 2}, condition: (s) => s.researchStage >= 4 },
   { id: 'ev-attr-25', kind: 'attribute', title: '室友带饭', text: '室友帮你带饭占座，还顺手帮你把快递取了。你决定这周不跟他抢厕所，也不计较他半夜打游戏的键盘声。', effects: {energy: 4, stress: -3}, condition: (s) => s.roommateBond },
   { id: 'ev-attr-26', kind: 'attribute', title: '考研焦虑', text: '考研报名后，你做梦都在涂答题卡。醒来时你发现枕头被自己捏出了手印，决定今天先做一套真题压压惊。', effects: {stress: 5, energy: -4}, condition: (s) => s.kaoyanRegistered },
   { id: 'ev-attr-27', kind: 'attribute', title: '保研面试梦', text: '你梦到保研面试，老师问你为什么选择这个专业。你在梦里回答得头头是道，醒来后只记得自己一直在找教室。', effects: {stress: 3, prep: 2}, condition: (s) => (s.postgradChance ?? 0)>=0.5 },
@@ -227,7 +226,6 @@ const EVENTS: EventSeed[] = [
   { id: 'ev-social-random-08', kind: 'random', title: '室友出卖', text: '室友把你的糗事讲给了全班，你在食堂被三个人笑着问“真的假的”。你决定今晚回去把他的洗发水藏起来。', effects: {socialGrowth: 3, stress: 3} },
   { id: 'ev-social-random-09', kind: 'random', title: '操场看球', text: '傍晚操场有人打球，你被拉去凑数。你一个球都没进，但场边的人一直在给你加油，结束以后还一起去喝了水。', effects: {socialGrowth: 5, stress: -3, energy: -2} },
   { id: 'ev-social-random-10', kind: 'random', title: '毕业合影', text: '毕业季的校园到处是拍照的人，你被{npc}拉去合影。快门按下时，你突然发现自己已经能熟练地说出“以后常联系”。', effects: {socialGrowth: 5, stress: -2} },  // 科研导师解锁事件
-  { id: 'ev-scene-mentor', kind: 'scene', title: '讲台边的导师', text: '讲座结束后，你留下来问了一个有点笨的问题。讲台上的老师没有笑你，反而把电脑合上，和你聊了十分钟。临走时，TA说：“有兴趣的话，来实验室看看。”', effects: { mentorUnlock: true }, condition: (s) => !s.mentorContactUnlocked },
   // 科研相关突发事件
   { id: 'ev-research-meeting', kind: 'scene', title: '临时组会', text: '导师突然在群里发了一句“十分钟后组会”，你抱着电脑冲进会议室，发现 PPT 还是上个月的版本。好在导师只是临时想讨论一个方向，你一边记笔记一边祈祷自己不要被点名。', effects: { energy: -8, stress: 4, mentorIntimacy: 2 }, condition: (s) => s.labEntered },
   { id: 'ev-research-call', kind: 'scene', title: '导师电话', text: '晚上十点，导师突然打来电话，说刚看完一篇文献，觉得和你的课题有关。你听完之后发现，TA 说的方向和你的开题报告几乎完全相反。', effects: { stress: 5, mentorIntimacy: 2 }, condition: (s) => s.labEntered },
@@ -453,9 +451,6 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     if (reconciled && isStaffRelation(reconciled)) {
       next.teacherScandalRisk = Math.max(5, next.teacherScandalRisk)
     }
-  }
-  if (effect.mentorUnlock && !next.mentorContactUnlocked) {
-    Object.assign(next, unlockMentor(next))
   }
   if (effect.mentorIntimacy) {
     next.relationships = next.relationships.map((relation) =>
