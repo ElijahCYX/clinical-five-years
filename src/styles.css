@@ -18118,3 +18118,53 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     width: 100%;
   }
 }
+
+/* Mentor interview appointment markers */
+.legend-dot.mentor {
+  background: #b65d3f;
+}
+
+.timetable-slot.is-mentor-interview {
+  border-left: 3px solid #b65d3f;
+  background:
+    linear-gradient(135deg, rgba(182, 93, 63, 0.1), rgba(169, 133, 73, 0.08)),
+    rgba(250, 244, 232, 0.8);
+}
+
+.timetable-slot.is-mentor-interview strong {
+  color: #8f352c;
+}
+
+.timetable-slot.is-mentor-interview small {
+  color: #9a6b55;
+}
+
+.week-overview-dot.is-mentor-interview {
+  border-color: #b65d3f;
+  background: #b65d3f;
+  box-shadow: 0 0 0 2px rgba(182, 93, 63, 0.14);
+}
+
+.week-overview-dot.is-mentor-interview.is-past {
+  background: #b65d3f;
+  opacity: 0.5;
+}
+
+.week-slot-square.is-mentor-interview {
+  border-color: #b65d3f;
+  background: rgba(182, 93, 63, 0.1);
+}
+
+.week-slot-square.is-mentor-interview span {
+  color: #8f352c;
+}
+
+.timetable-slot.is-mentor-interview .mentor-interview-conflict {
+  color: #a23f30;
+}
+
+.week-overview-mentor-hint {
+  color: #a23f30 !important;
+  font-size: 6.5px !important;
+  letter-spacing: 0 !important;
+}

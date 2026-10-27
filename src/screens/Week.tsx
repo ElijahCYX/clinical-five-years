@@ -448,6 +448,23 @@ export function WeekScreen({
     : VISIBLE_ACTIONS
   const weekTimetable = buildTimetable(state)
   const weekSlot = Math.max(0, Math.min(20, state.weekSlot))
+  const mentorInterviewSlot =
+    state.mentorInterview &&
+    state.mentorInterview.seasonIndex === state.seasonIndex &&
+    state.mentorInterview.week === state.week
+      ? state.mentorInterview.weekSlot
+      : -1
+  const mentorInterviewName = state.mentorInterview
+    ? MENTOR_BY_ID[state.mentorInterview.mentorId]?.alias ?? '导师'
+    : '导师'
+  const mentorInterviewDay =
+    mentorInterviewSlot >= 0
+      ? TIMETABLE_DAYS[Math.floor(mentorInterviewSlot / 3)]
+      : ''
+  const mentorInterviewPhase =
+    mentorInterviewSlot >= 0
+      ? TIMETABLE_SLOTS[mentorInterviewSlot % 3]
+      : ''
   const activeSoloInvite = soloInviteAt(state, weekSlot)
   const bondContactUnused = hasUnusedLoverContact(state)
   const currentSlotActivity = timetableActivityAt(state, weekSlot)
@@ -688,6 +705,7 @@ export function WeekScreen({
               <span><i className="legend-dot politics" />思政课</span>
               <span><i className="legend-dot club" />组织活动</span>
               <span><i className="legend-dot solo" />单独邀约</span>
+              <span><i className="legend-dot mentor" />导师面谈</span>
             </div>
           </div>
 
@@ -704,7 +722,8 @@ export function WeekScreen({
                   {slot}
                 </div>,
                 ...TIMETABLE_DAYS.map((day, dayIndex) => {
-                  const cell = timetable.cells[dayIndex * 3 + slotIndex]
+                  const cellIndex = dayIndex * 3 + slotIndex
+                  const cell = timetable.cells[cellIndex]
                   const course = cell.course
                   const activity = cell.activity
                   const soloInvite = cell.soloInvite
@@ -720,10 +739,20 @@ export function WeekScreen({
                               : course
                                 ? `has-course kind-${kindOf(course.electiveType)}`
                                 : 'is-empty'
-                      }`}
+                      } ${cellIndex === mentorInterviewSlot ? 'is-mentor-interview' : ''}`}
                       key={`${day}-${slot}`}
                     >
-                      {activity ? (
+                      {cellIndex === mentorInterviewSlot ? (
+                        <>
+                          <strong>导师面谈</strong>
+                          <small>{mentorInterviewName} · 面谈</small>
+                          {(course || activity) && (
+                            <small className="mentor-interview-conflict">
+                              与{activity?.name ?? course?.name}时间冲突
+                            </small>
+                          )}
+                        </>
+                      ) : activity ? (
                         <>
                           <strong>{activity.name}</strong>
                           <small>组织活动 · 强制占格</small>
@@ -1384,17 +1413,25 @@ export function WeekScreen({
                   >
                     <div className="week-overview-head">
                       <span>本周概览</span>
-                      <small>7 日 × 3 段</small>
+                      {mentorInterviewSlot >= 0 ? (
+                        <small className="week-overview-mentor-hint">
+                          导师面谈 · {mentorInterviewDay.replace('周', '')}{mentorInterviewPhase.slice(0, 1)}
+                        </small>
+                      ) : (
+                        <small>7 日 × 3 段</small>
+                      )}
                     </div>
                     <div className="week-overview-grid">
                       {TIMETABLE_SLOTS.flatMap((phase, slotIndex) =>
                         TIMETABLE_DAYS.map((day, dayIndex) => {
                           const index = dayIndex * 3 + slotIndex
                           const cell = weekTimetable.cells[index]
+                          const isMentorInterview = index === mentorInterviewSlot
                           const hasPlan = Boolean(
                             cell.course ||
                               cell.activity ||
-                              cell.soloInvite,
+                              cell.soloInvite ||
+                              isMentorInterview,
                           )
                           const isPast = index < state.weekSlot
                           const isCurrent = index === state.weekSlot
@@ -1403,14 +1440,16 @@ export function WeekScreen({
                               key={`${day}-${phase}`}
                               className={`week-overview-dot ${
                                 hasPlan ? 'has-plan' : 'is-free'
-                              } ${isPast ? 'is-past' : ''} ${
-                                isCurrent ? 'is-current' : ''
-                              }`}
+                              } ${isMentorInterview ? 'is-mentor-interview' : ''} ${
+                                isPast ? 'is-past' : ''
+                              } ${isCurrent ? 'is-current' : ''}`}
                               title={`${day} · ${phase} · ${
-                                cell.course?.name ??
-                                cell.activity?.name ??
-                                cell.soloInvite?.eventName ??
-                                '空闲'
+                                isMentorInterview
+                                  ? `导师面谈 · ${mentorInterviewName}`
+                                  : cell.course?.name ??
+                                    cell.activity?.name ??
+                                    cell.soloInvite?.eventName ??
+                                    '空闲'
                               }`}
                             />
                           )
@@ -1447,9 +1486,17 @@ export function WeekScreen({
                                   : isCurrent
                                     ? 'is-current'
                                     : 'is-future'
-                              } ${cell.course ? 'has-course' : ''}`}
+                              } ${cell.course ? 'has-course' : ''} ${
+                                index === mentorInterviewSlot ? 'is-mentor-interview' : ''
+                              }`}
                               style={pastFill}
-                              title={`${day} · ${phase}${cell.course ? ` · ${cell.course.name}` : ''}`}
+                              title={`${day} · ${phase}${
+                                index === mentorInterviewSlot
+                                  ? ` · 导师面谈 · ${mentorInterviewName}`
+                                  : cell.course
+                                    ? ` · ${cell.course.name}`
+                                    : ''
+                              }`}
                             >
                               <span>{index + 1}</span>
                               <small>{day.replace('周', '')}{phase.slice(0, 1)}</small>
