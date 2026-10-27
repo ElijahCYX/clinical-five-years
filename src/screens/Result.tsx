@@ -140,6 +140,9 @@ export function ResultScreen({
                           · 预计 {result.expectedMin}–{result.expectedMax}
                         </span>
                       </span>
+                      {typeof result.forgetPenalty === 'number' && result.forgetPenalty > 0 && (
+                        <span className="forget-tag">考前遗忘 -{result.forgetPenalty}</span>
+                      )}
                       {result.course.makeup && (
                         <span className="makeup-explain">
                           补考最终绩点 = 原绩点与补考绩点的平均值，因此卷面分与最终绩点可能不同。

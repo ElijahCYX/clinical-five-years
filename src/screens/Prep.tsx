@@ -10,6 +10,7 @@ import {
   examReviewTalentMultiplier,
   getReviewEffect,
   isExamReviewCourse,
+  FORGET_PENALTY_RANGE,
   prepGainMultiplier,
   reviewMultiplier,
 } from '../game'
@@ -350,6 +351,11 @@ export function PrepScreen({
                   </button>
                 ))}
               </div>
+              <p className="prep-forget-note">
+                考前遗忘：本计划每门专业课 / 思政课预计损失{' '}
+                {FORGET_PENALTY_RANGE[planId].min}–{FORGET_PENALTY_RANGE[planId].max} 点准备度；
+                遗忘在复习收益结算后扣除。
+              </p>
             </section>
 
             <div className="prep-confirm">

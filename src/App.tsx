@@ -63,6 +63,7 @@ import {
   coursePrepTalentMultiplier,
   examCoffeeMultiplier,
   examReviewTalentMultiplier,
+  rollForgetPenalty,
 } from './game'
 import { applyGrowthCarry } from './growth'
 import { pickSleepText } from './sleepTexts'
@@ -3908,6 +3909,11 @@ function RealApp() {
 
     const results: ExamResult[] = game.season.courses.map((course) => {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
+      const forgetPenalty =
+        !course.electiveType || course.electiveType === 'politics'
+          ? rollForgetPenalty(game.plan ?? 'B')
+          : 0
+      prep[course.id] = Math.max(0, prep[course.id] - forgetPenalty)
       const [rawMin, rawMax] = estimateRange(prep[course.id])
       const cap = effect.scoreCap ?? 100
       let rawScore =
@@ -3978,6 +3984,7 @@ function RealApp() {
         stressRelief,
         usualScore,
         paperScore,
+        forgetPenalty,
       }
     })
     let peNoticeText: string | null = null

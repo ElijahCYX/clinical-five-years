@@ -17243,3 +17243,18 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 .ending-screen.is-danger .ending-title em {
   color: var(--red);
 }
+
+.prep-forget-note {
+  margin: 10px 0 0;
+  color: var(--red);
+  font-size: 8.5px;
+  line-height: 1.55;
+}
+
+.forget-tag {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--red);
+  font-size: 8px;
+  letter-spacing: 0.02em;
+}

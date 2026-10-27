@@ -294,6 +294,7 @@ export interface ExamResult {
   usualScore?: number
   paperScore?: number
   scoreCap?: number
+  forgetPenalty?: number
 }
 
 export type EventKind = 'scene' | 'attribute' | 'random' | 'romance' | 'consumption'

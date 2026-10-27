@@ -98,6 +98,18 @@ export function sleepRecoveryFor(stress: number, extraTier = 0): {
   }
 }
 
+/** 考前遗忘：每门专业课/思政课分别抽取，并在复习收益结算后扣除。 */
+export const FORGET_PENALTY_RANGE: Record<PlanId, { min: number; max: number }> = {
+  A: { min: 0, max: 3 },
+  B: { min: 8, max: 16 },
+  C: { min: 15, max: 25 },
+}
+
+export function rollForgetPenalty(plan: PlanId): number {
+  const range = FORGET_PENALTY_RANGE[plan]
+  return range.min + Math.floor(Math.random() * (range.max - range.min + 1))
+}
+
 export function planPassive(plan: PlanId): number {
   return { A: 3, B: 1, C: 0 }[plan]
 }
