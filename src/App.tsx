@@ -2644,16 +2644,16 @@ function RealApp() {
             ...next,
             prep: {
               ...next.prep,
-              [course.id]: Math.min(100, (next.prep[course.id] ?? 0) + 5),
+              [course.id]: Math.min(100, (next.prep[course.id] ?? 0) + 3),
             },
           }
-          messages.push(`TA把《${course.name}》的笔记借给你看，准备度 +5。`)
+          messages.push(`TA把《${course.name}》的笔记借给你看，准备度 +3。`)
           events.push({
             id: `${relation.id}-notes`,
             name: relation.name,
             title: '借你笔记',
             text: `${relation.name}把《${course.name}》的笔记推到你面前：“重点我都标了，别客气。”`,
-            lines: [`《${course.name}》准备度 +5`],
+            lines: [`《${course.name}》准备度 +3`],
           })
         }
       }

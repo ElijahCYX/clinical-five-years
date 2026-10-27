@@ -291,7 +291,7 @@ hp.paragraph_format.space_after = Pt(0)
 r = hp.add_run('临床五年  /  新玩家规则说明')
 set_run_font(r, HEAD_FONT, 8, False, MUTED)
 hp.add_run('\t\t')
-r2 = hp.add_run('v0.56.6')
+r2 = hp.add_run('v0.56.8')
 set_run_font(r2, BODY_FONT, 8, False, MUTED)
 add_rule(hp, LINE, 4, 2)
 
@@ -349,7 +349,7 @@ meta.alignment = WD_TABLE_ALIGNMENT.LEFT
 meta.autofit = False
 meta.columns[0].width = Cm(3.4); meta.columns[1].width = Cm(11.8)
 for i, (k, v) in enumerate([
-    ('适用版本', 'v0.56.6'),
+    ('适用版本', 'v0.56.8'),
     ('适用对象', '第一次游玩本作的新玩家'),
     ('游戏类型', '医学本科生五年生活文字模拟'),
     ('在线地址', 'https://elijahcyx.github.io/clinical-five-years/'),
@@ -650,7 +650,7 @@ para('关系不是附加剧情，而是会影响时间、金钱、压力和结�
 h2('亲密度')
 para('每段关系有 0–100 的亲密度。亲密度越高，越容易解锁对方的面板、触发关心事件、接受邀约、建立羁绊。双方人际之和越高，亲密度变化还有额外加成。亲密度不会自动上涨，需要你主动花时间或花钱。')
 h2('拍一拍')
-para('在「TA 是谁」页面可以每周拍一拍。普通周每人一次、全周最多 3 次；假期共有 5 次，不按周刷新。拍一拍通常 +2 亲密度，并可能触发借笔记、请奶茶、导师指点、辅导员谈心等事件。无论是否触发事件，拍一拍本身都不占行动时间段。')
+para('在「TA 是谁」页面可以每周拍一拍。普通周每人一次、全周最多 3 次；假期共有 5 次，不按周刷新。拍一拍通常 +2 亲密度，并可能触发借笔记（随机一门在修课程准备度 +3）、请奶茶、导师指点、辅导员谈心等事件。无论是否触发事件，拍一拍本身都不占行动时间段。')
 para('连续三周不拍朋友，亲密度会下降；降到 15 以下后下降速度变慢。舍友在非假期每周会自动 +3 亲密度，因此不要忽略同宿舍的人。')
 h2('生日、表白与恋爱')
 para('亲密度达到 40 后，生日月份可以送礼（生活费 -150、亲密度 +15，受交际加成）或只送祝福（+5）。错过生日月份会扣亲密度，并可能让 TA 在三周内不愿被拍一拍。')
@@ -855,11 +855,11 @@ para('如果五年后你回头看，发现自己没有成为最优秀的那个�
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
-doc.core_properties.subject = '《临床五年》v0.56.6 新玩家规则说明'
+doc.core_properties.subject = '《临床五年》v0.56.8 新玩家规则说明'
 doc.core_properties.author = '临床五年项目组'
 doc.core_properties.comments = '面向第一次游玩《临床五年》的规则说明文档。'
 doc.core_properties.category = '游戏规则说明'
 doc.core_properties.keywords = '临床五年, 新玩家, 规则说明, 医学模拟'
-out = '临床五年_新玩家规则说明_v0.56.6.docx'
+out = '临床五年_新玩家规则说明_v0.56.8.docx'
 doc.save(out)
 print(out)
