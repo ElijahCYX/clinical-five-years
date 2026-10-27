@@ -40,6 +40,7 @@ interface WhoIsTAScreenProps {
   onAutoPat: (mode: AutoPatMode) => PatResult
   onConfess: (id: string) => ConfessionResult
   onEstablishBond: (id: string, type: 'brother' | 'sister') => ConfessionResult
+  onBondEstablished?: (id: string) => void
   onViewRelation?: (id: string) => void
   onMarkAllSeen?: () => void
   onBirthdayGift?: (id: string) => BirthdayGiftResult
@@ -85,6 +86,7 @@ export function WhoIsTAScreen({
   onAutoPat,
   onConfess,
   onEstablishBond,
+  onBondEstablished,
   onViewRelation,
   onMarkAllSeen,
   onBirthdayGift,
@@ -638,12 +640,16 @@ export function WhoIsTAScreen({
                     onClick={() => {
                       const target = bondPickerTarget
                       setBondPickerTarget(null)
-                      if (def.type === 'lover') {
-                        setConfessionResult(onConfess(target.id))
+                      const result =
+                        def.type === 'lover'
+                          ? onConfess(target.id)
+                          : onEstablishBond(target.id, def.type)
+                      if (result.success && onBondEstablished) {
+                        // Enter the persistent chat immediately; the result
+                        // modal is skipped so the nickname question can play.
+                        onBondEstablished(target.id)
                       } else {
-                        setConfessionResult(
-                          onEstablishBond(target.id, def.type),
-                        )
+                        setConfessionResult(result)
                       }
                     }}
                   >

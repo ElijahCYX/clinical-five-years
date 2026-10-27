@@ -21,6 +21,7 @@ interface BondScreenProps {
   onContact: (relationshipId: string) => LoverContactResult
   onBreakBond: (relationshipId: string) => BondActionResult
   onReconcileBond: (relationshipId: string) => BondActionResult
+  onBondEstablished?: (relationshipId: string) => void
 }
 
 interface BreakTarget {
@@ -99,6 +100,7 @@ export function BondScreen({
   onContact,
   onBreakBond,
   onReconcileBond,
+  onBondEstablished,
 }: BondScreenProps) {
   const [contactResult, setContactResult] = useState<LoverContactResult | null>(
     null,
@@ -145,6 +147,11 @@ export function BondScreen({
 
   const tryReconcile = (relation: Relationship) => {
     const result = onReconcileBond(relation.id)
+    if (result.success && onBondEstablished) {
+      // A restored bond goes through the same nickname-chat entry as a new bond.
+      onBondEstablished(relation.id)
+      return
+    }
     setBondResultKind(result.success ? 'success' : 'fail')
     setBondResult(result)
   }

@@ -32,6 +32,8 @@ import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
 import { CampusNoticeBoard } from './CampusNotice'
 import { Mailbox } from './Mailbox'
+import { ChatScreen, type ChatLaunch } from './Chat'
+import { RelationshipNetwork } from './RelationshipNetwork'
 import { ResearchHub } from './ResearchHub'
 import {
   MentorInterviewScene,
@@ -85,7 +87,8 @@ type GameTab =
   | 'research'
   | 'club'
   | 'bond'
-  | 'roommates'
+  | 'network'
+  | 'chat'
   | 'diary'
 
 interface WeekScreenProps {
@@ -129,6 +132,11 @@ interface WeekScreenProps {
   onSendMentorMail: (draft: GameEmail) => { ok: boolean; error?: string }
   onReadMentorEmail: (emailId: string) => void
   onAcceptMentorProject: (emailId: string) => void
+  chatFocus: ChatLaunch | null
+  onChatFocusConsumed: () => void
+  onBondNicknameChange: (relationshipId: string, nickname: string) => void
+  onAskGossip: (relationshipId: string) => void
+  onBondNicknameDisplayChange: (relationshipId: string, enabled: boolean) => void
   interviewScene: MentorInterviewSceneData | null
   onConfirmMentorInterview: () => void
   onSave?: () => void
@@ -173,12 +181,18 @@ export function WeekScreen({
   onSendMentorMail,
   onReadMentorEmail,
   onAcceptMentorProject,
+  chatFocus,
+  onChatFocusConsumed,
+  onBondNicknameChange,
+  onBondNicknameDisplayChange,
+  onAskGossip,
   interviewScene,
   onConfirmMentorInterview,
   onSave,
   onTitle,
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
+  const [withdrawPanelHidden, setWithdrawPanelHidden] = useState(false)
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
@@ -479,6 +493,15 @@ export function WeekScreen({
   const mentorInterviewCompleted = Boolean(
     completedMentorInterview && !activeMentorInterview,
   )
+
+  useEffect(() => {
+    setWithdrawPanelHidden(false)
+  }, [state.seasonIndex, state.week])
+
+  useEffect(() => {
+    if (chatFocus) setTab('chat')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatFocus?.token])
   const mentorInterviewDay =
     mentorInterviewSlot >= 0
       ? TIMETABLE_DAYS[Math.floor(mentorInterviewSlot / 3)]
@@ -902,154 +925,6 @@ export function WeekScreen({
   )
 
 
-  const renderResearch = () => {
-    const mentorRelation = state.relationships.find(
-      (relation) => relation.kind === 'mentor',
-    )
-    const profile = state.mentorProfileId
-      ? MENTOR_BY_ID[state.mentorProfileId]
-      : null
-    const stage = researchStage(state.researchProgress)
-
-    if (!state.mentorContactUnlocked) {
-      return (
-        <div className="tab-panel">
-          <SectionLabel right="LOCKED">科研</SectionLabel>
-          <div className="locked-panel">
-            <span className="lock-glyph">✳</span>
-            <h3>还没有找到导师</h3>
-            <p>
-              科研系统需要通过随机事件结识一位导师才会解锁。
-              先去过几周，留意讲台边、讲座后和实验室门口。
-            </p>
-          </div>
-        </div>
-      )
-    }
-
-    if (!state.labEntered) {
-      return (
-        <div className="tab-panel">
-          <SectionLabel right="WAITING FOR LAB">科研</SectionLabel>
-          <div className="research-locked-card">
-            <span className="lock-glyph">⌁</span>
-            <h3>导师已经联系上了</h3>
-            <p>
-              导师愿意先和你聊聊，但还没有允许你进入课题组。
-              和导师的亲密度达到 40 后，TA 会通知你进实验室。
-            </p>
-            {mentorRelation && (
-              <div className="research-mentor-line">
-                <span>{mentorRelation.name}</span>
-                <strong>亲密度 {mentorRelation.intimacy} / 40 · 认可度 {state.mentorRecognition}</strong>
-              </div>
-            )}
-            {profile && (
-              <p className="research-mentor-meta">
-                {profile.department} · {profile.title} · {profile.field}
-              </p>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    if (!state.researchStarted) {
-      return (
-        <div className="tab-panel">
-          <SectionLabel right="LAB CHORES">科研</SectionLabel>
-          <div className="research-locked-card">
-            <span className="lock-glyph">⌁</span>
-            <h3>实验室打杂中</h3>
-            <p>
-              你已经可以进出实验室，但还没有自己的课题。
-              先帮师兄师姐跑跑胶、配配液、整理数据，顺便和导师混熟。
-            </p>
-            {mentorRelation && (
-              <div className="research-mentor-line">
-                <span>{mentorRelation.name}</span>
-                <strong>亲密度 {mentorRelation.intimacy} / 60 · 认可度 {state.mentorRecognition}</strong>
-              </div>
-            )}
-            <p className="research-mentor-meta">
-              亲密度达到 60 后，导师会给你一个可以开始的课题。
-              本周选择「实验室打杂」可以增加导师亲密度，并有概率收到导师分配课题的通知。
-            </p>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="tab-panel">
-        <SectionLabel
-          right={
-            state.researchPublished
-              ? 'PUBLISHED'
-              : state.researchStarted
-                ? stage.name
-                : 'LAB CHORES'
-          }
-        >
-          课题组
-        </SectionLabel>
-        <div className="research-panel">
-          <div className="research-panel-head">
-            <div>
-              <h3>{profile?.alias ?? mentorRelation?.name ?? '导师'}</h3>
-              <p>
-                {profile ? `${profile.department} · ${profile.title}` : '导师'} ·{' '}
-                {profile?.field ?? '科研训练'}
-              </p>
-              {state.activeHypothesisTitle && (
-                <p className="research-hypothesis">
-                  当前课题：{state.activeHypothesisTitle}
-                </p>
-              )}
-            </div>
-            <Pill tone={state.researchPublished ? 'green' : 'gold'}>
-              {state.researchPublished ? '已发表' : stage.name}
-            </Pill>
-          </div>
-
-          <div className="research-progress-row">
-            <div>
-              <span>科研进度</span>
-              <strong>{state.researchProgress} / 100</strong>
-            </div>
-            <div>
-              <span>导师认可度</span>
-              <strong>{state.mentorRecognition}</strong>
-            </div>
-            <Bar value={state.researchProgress} max={100} />
-            <p>{stage.description}</p>
-          </div>
-
-          {state.researchPublished ? (
-            <div className="research-published">
-              <span>论文已刊登</span>
-              <strong>{state.researchJournal ?? '待定期刊'}</strong>
-              <p>科研阶段完成。之后可以继续以其他方式积累科研经历。</p>
-            </div>
-          ) : (
-            <div className="research-action-note">
-              <span>本周科研行动</span>
-              <strong>
-                {state.researchStarted ? '科研进度随机 +2–6' : '实验室打杂 · 导师亲密度 +5'}
-              </strong>
-              <p>
-                {state.researchStarted
-                  ? '悟性越高，抽出 4、5 点的概率越高。科研进度会显示在「本周安排」的科研相关行动中。'
-                  : '你还在熟悉实验室。和导师亲密度达到 60 后，TA 会给你一个可以开始的课题。'}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-
   const renderClub = () => {
     if (clubMemberships.length === 0) {
       return (
@@ -1140,71 +1015,6 @@ export function WeekScreen({
       </div>
     )
   }
-
-  const renderRoommates = () => (
-    <div className="tab-panel">
-      <SectionLabel right={`${state.relationships.length} 人`}>
-        舍友与认识的人
-      </SectionLabel>
-      {state.relationships.length === 0 ? (
-        <p className="placeholder-note">还没有认识的人。下学期也许会遇见谁。</p>
-      ) : (
-        <div className="roommate-grid">
-          {state.relationships.map((relation) => {
-            const stats = relationshipStatsLine(relation)
-            return (
-              <article className="roommate-card" key={relation.id}>
-                <div className="roommate-top">
-                  <div className="roommate-avatar">{relation.name.slice(0, 1)}</div>
-                  <div>
-                    <h4>
-                      {relation.name}
-                      <span
-                        className={`inline-gender ${relation.gender === '男' ? 'is-male' : 'is-female'}`}
-                        title={relation.gender === '男' ? '男性' : '女性'}
-                        aria-label={relation.gender === '男' ? '男性' : '女性'}
-                      >
-                        {relation.gender === '男' ? '♂' : '♀'}
-                      </span>
-                      {relation.intimacy >= 80 && (
-                        <span
-                          className="inline-orientation"
-                          title={`性取向：${orientationLabel(relation.orientation)}`}
-                        >
-                          {orientationLabel(relation.orientation)}
-                        </span>
-                      )}
-                    </h4>
-                    <p>
-                      {relation.identity}
-                      {relationshipKindLabel(relation.kind) !== relation.identity
-                        ? ` · ${relationshipKindLabel(relation.kind)}`
-                        : ''}
-                    </p>
-                  </div>
-                  <span className="roommate-intimacy">{relation.intimacy}</span>
-                </div>
-                <Bar value={relation.intimacy} thin />
-                {relation.kind === 'roommate' && (
-                  <p className="roommate-action">本周：{relation.weeklyAction}</p>
-                )}
-                <div className="roommate-stats">
-                  {stats.length > 0 ? (
-                    stats.map((line) => <span key={line}>{line}</span>)
-                  ) : (
-                    <span className="roommate-unknown">面板 ??? · 亲密度 100 后完全解锁</span>
-                  )}
-                </div>
-              </article>
-            )
-          })}
-        </div>
-      )}
-      <button type="button" className="text-btn tab-link" onClick={onOpenTA}>
-        去 TA 是谁看完整关系 →
-      </button>
-    </div>
-  )
 
   const renderDiary = () => (
     <div className="tab-panel">
@@ -1358,7 +1168,8 @@ export function WeekScreen({
                   ['research', '科研'],
                   ['club', '组织'],
                   ['bond', '羁绊'],
-                  ['roommates', '相识'],
+                  ['network', '关系网'],
+                  ['chat', '聊天'],
                   ['diary', '日记'],
                 ] as Array<[GameTab, string]>
               ).map(([key, label]) => (
@@ -1684,9 +1495,22 @@ export function WeekScreen({
                   )}
                 </div>
 
-                {state.week === 1 && courses.some((course) => course.electiveType) && (
+                {!withdrawPanelHidden &&
+                  state.week === 1 &&
+                  courses.some((course) => course.electiveType) && (
                   <div className="withdraw-elective-panel">
-                    <span>第一周退选窗口</span>
+                    <div className="withdraw-elective-head">
+                      <span>第一周退选窗口</span>
+                      <button
+                        type="button"
+                        className="withdraw-elective-close"
+                        aria-label="关闭退选窗口"
+                        title="关闭退选窗口"
+                        onClick={() => setWithdrawPanelHidden(true)}
+                      >
+                        ×
+                      </button>
+                    </div>
                     <div>
                       {courses
                         .filter((course) => course.electiveType)
@@ -1912,13 +1736,6 @@ export function WeekScreen({
                   <span className="slot-auto-note">选择行动后自动进入下一时间段</span>
                 </div>
 
-                <div className="coming-soon" aria-label="等待开发的功能">
-                  <span>后续模块</span>
-                  <span className="coming-soon-item">科研导师 · 等待开发</span>
-                  <span className="coming-soon-item">奖学金 · 等待开发</span>
-                  <span className="coming-soon-item">校园事件 · 等待开发</span>
-                  <span className="coming-soon-item">人物关系 · 等待开发</span>
-                </div>
                   </>
                 )}
               </>
@@ -1980,7 +1797,18 @@ export function WeekScreen({
                 }
               />
             )}
-            {tab === 'roommates' && renderRoommates()}
+            {tab === 'network' && <RelationshipNetwork state={state} />}
+            {tab === 'chat' && (
+              <ChatScreen
+                state={state}
+                focus={chatFocus}
+                onFocusConsumed={onChatFocusConsumed}
+                onOpenSoloInvite={() => setSoloInviteOpen(true)}
+                onBondNicknameChange={onBondNicknameChange}
+                onBondNicknameDisplayChange={onBondNicknameDisplayChange}
+                onAskGossip={onAskGossip}
+              />
+            )}
             {tab === 'diary' && renderDiary()}
           </section>
 

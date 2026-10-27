@@ -319,6 +319,7 @@ export interface EventEffect {
   reconcileRelationId?: string
   mentorUnlock?: boolean
   mentorIntimacy?: number
+  revealNpcRelationId?: string
 }
 
 export interface PendingEvent {
@@ -350,6 +351,46 @@ export type RelationshipKind =
   | 'club'
   | 'senior'
 
+export type NpcRelationKind =
+  | 'roommate'
+  | 'classmate'
+  | 'clubmate'
+  | 'friend'
+  | 'lover'
+  | 'brother'
+  | 'sister'
+  | 'crush'
+  | 'ex'
+  | 'conflict'
+
+export interface NpcRelation {
+  id: string
+  aId: string
+  bId: string
+  kind: NpcRelationKind
+  intimacy: number
+  known: boolean
+  source: 'initial' | 'dynamic' | 'gossip' | 'event'
+  discoveredWeekKey?: string
+}
+
+export interface GossipRecord {
+  id: string
+  partnerId: string
+  weekKey: string
+  seasonIndex?: number
+  week?: number
+  weekSlot?: number
+  text: string
+  relationId: string | null
+  told: boolean
+  relationLabel?: string
+  reply?: string
+  atMs?: number
+  /** 询问八卦时记录下来的时间标签，避免存档缺少字段时回退到当前时间。 */
+  timeLabel?: string
+}
+
 export interface RelationshipStats {
   talent: TalentId
   gpa: number
@@ -379,6 +420,20 @@ export interface Relationship {
   clubOrgId?: string
   partner: boolean
   bondType?: BondType
+  /** 羁绊建立后玩家给 TA 起的代称；name 会同步显示为这个值。 */
+  bondNickname?: string
+  /** 开启代称前的关系原名，用于关掉代称或解除羁绊时恢复。 */
+  bondOriginalName?: string
+  /** 聊天/关系页是否使用代称显示，默认 true。 */
+  bondNicknameEnabled?: boolean
+  /** 最近一次确认代称时玩家发送的聊天消息。 */
+  bondNicknameAnnouncement?: string
+  bondNicknameAnnouncementAt?: {
+    seasonIndex: number
+    week: number
+    weekSlot: number
+    atMs?: number
+  }
   confessRejected?: boolean
   intimacyFrozenSeason?: string
   frozenIntimacy?: number
@@ -699,7 +754,10 @@ export interface SoloChatRecord {
   eventId: string
   eventName: string
   weekKey: string
+  seasonIndex?: number
+  week?: number
   attemptSlot: number
+  atMs?: number
   outcome: 'accepted' | 'declined' | 'no-slot'
   inviteSlot?: number
   chat: SoloChatLine[]
@@ -853,6 +911,9 @@ export interface GameState {
   familyCrisisRescued: boolean
   soloInvites: SoloInvite[]
   soloChatRecords: SoloChatRecord[]
+  npcRelations: NpcRelation[]
+  gossipAsked: Record<string, string>
+  gossipRecords: GossipRecord[]
   soloRefusals: Record<string, string>
   mentorRecognition: number
   walkEncounterWeekKey: string | null

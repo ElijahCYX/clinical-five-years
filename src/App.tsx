@@ -106,10 +106,8 @@ import { CetResultScreen } from './screens/CetResult'
 import { CreateScreen } from './screens/Create'
 import { EndingScreen } from './screens/Ending'
 import { FailureReport } from './screens/FailureReport'
-import {
-  MentorInterviewScene,
-  type MentorInterviewSceneData,
-} from './screens/MentorInterview'
+import type { MentorInterviewSceneData } from './screens/MentorInterview'
+import type { ChatLaunch } from './screens/Chat'
 import { PlanScreen } from './screens/Plan'
 import {
   BaoyanResultScreen,
@@ -229,6 +227,12 @@ import {
 } from './organizations'
 import { pickHypothesis } from './hypotheses'
 import {
+  askGossip,
+  createInitialNpcSocial,
+  ensureNpcSocial,
+  maybeCreateNpcRevealEvent,
+} from './npcRelations'
+import {
   canConfess,
   canPat,
   confessionChance,
@@ -249,6 +253,9 @@ import {
   progressWeek,
   patRemainingThisWeek,
   isStaffRelation,
+  clearBondNickname,
+  applyBondNickname,
+  setBondNicknameDisplay,
   closeFriendCount,
   isPeerFriend,
   revealMaybe,
@@ -285,6 +292,37 @@ function persist(game: GameState) {
   } catch {
     /* localStorage may be unavailable */
   }
+}
+
+/** 开发模式专用：把当前存档里的舍友临时转成闺蜜，方便测试聊天/代称。 */
+function devRoommatesToSisters(game: GameState): GameState {
+  const roommates = game.relationships.filter((relation) => relation.kind === 'roommate')
+  if (roommates.length === 0) return game
+  const now = progressWeek(game)
+  const relationships = game.relationships.map((relation) =>
+    relation.kind === 'roommate'
+      ? {
+          ...relation,
+          gender: '女' as const,
+          partner: false,
+          bondType: 'sister' as const,
+          brokenBondType: undefined,
+          bondBreakWeek: undefined,
+          bondCalmUntilWeek: undefined,
+          bondReconcileAttempted: false,
+          intimacy: Math.max(60, relation.intimacy),
+          partnerSinceSeasonIndex: game.seasonIndex,
+          partnerSinceWeek: game.week,
+          partnerSinceLabel: game.season.seasonLabel,
+          bondNickname: undefined,
+          bondOriginalName: undefined,
+          bondNicknameEnabled: true,
+          lastContactKey: '',
+          metAbsWeek: now,
+        }
+      : relation,
+  )
+  return { ...game, relationships }
 }
 
 function migrateLegacySeasonLayout(game: GameState): GameState {
@@ -446,6 +484,9 @@ function readSave(): GameState | null {
       familyCrisisRescued: game.familyCrisisRescued ?? false,
       soloInvites: game.soloInvites ?? [],
       soloChatRecords: game.soloChatRecords ?? [],
+      npcRelations: game.npcRelations ?? [],
+      gossipAsked: game.gossipAsked ?? {},
+      gossipRecords: game.gossipRecords ?? [],
       soloRefusals: game.soloRefusals ?? {},
       mentorRecognition: game.mentorRecognition ?? 0,
       walkEncounterWeekKey: game.walkEncounterWeekKey ?? null,
@@ -869,6 +910,7 @@ function RealApp() {
   const [dismissedFailureKey, setDismissedFailureKey] = useState<string | null>(null)
   const [mentorInterviewScene, setMentorInterviewScene] =
     useState<MentorInterviewSceneData | null>(null)
+  const [chatFocus, setChatFocus] = useState<ChatLaunch | null>(null)
 
   const openPublicationNotice = (
     journal: string,
@@ -1336,7 +1378,8 @@ function RealApp() {
       persist(next)
       return
     }
-    const pending = rollWeeklyEvent(social.state)
+    const npcReveal = maybeCreateNpcRevealEvent(social.state)
+    const pending = npcReveal ?? rollWeeklyEvent(social.state)
     const next: GameState = {
       ...social.state,
       eventWeek: game.week,
@@ -1552,11 +1595,12 @@ function RealApp() {
 
   const handleCreate = (player: Player) => {
     setCrisisKind(null)
-    const next = {
+    const base = {
       ...newGameState(player),
       screen: 'talentSelect' as const,
       relationships: createInitialRelationships(player),
     }
+    const next = createInitialNpcSocial(base)
     commit(next, 'talentSelect')
   }
 
@@ -2751,7 +2795,7 @@ function RealApp() {
       ...game,
       relationships: game.relationships.map((item) =>
         item.id === relation.id
-          ? {
+          ? clearBondNickname({
               ...item,
               bondType: undefined,
               partner: false,
@@ -2761,7 +2805,7 @@ function RealApp() {
               bondReconcileAttempted: false,
               intimacyFrozenUntilWeek: now + 2,
               frozenIntimacy: item.intimacy,
-            }
+            })
           : item,
       ),
     }
@@ -3016,6 +3060,95 @@ function RealApp() {
       text: type === 'brother' ? BROTHER_BOND_TEXT : SISTER_BOND_TEXT,
       bondType: type,
     }
+  }
+
+  const openBondChat = (relationshipId: string) => {
+    setChatFocus({
+      relationshipId,
+      token: Date.now(),
+      promptNickname: true,
+    })
+    setView('week')
+  }
+
+  const changeBondNickname = (relationshipId: string, nickname: string) => {
+    if (!game) return
+    const clean = nickname.trim().slice(0, 12)
+    if (!clean) return
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((relation) =>
+        relation.id === relationshipId
+          ? {
+              ...applyBondNickname(relation, clean),
+              bondNicknameAnnouncement: `我要叫你 ${clean}！`,
+              bondNicknameAnnouncementAt: {
+                seasonIndex: game.seasonIndex,
+                week: game.week,
+                weekSlot: game.weekSlot,
+                atMs: Date.now(),
+              },
+            }
+          : relation,
+      ),
+      soloInvites: game.soloInvites.map((invite) =>
+        invite.relationshipId === relationshipId
+          ? { ...invite, partnerName: clean }
+          : invite,
+      ),
+      soloChatRecords: game.soloChatRecords.map((record) =>
+        record.relationshipId === relationshipId
+          ? { ...record, partnerName: clean }
+          : record,
+      ),
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const changeBondNicknameDisplay = (
+    relationshipId: string,
+    enabled: boolean,
+  ) => {
+    if (!game) return
+    const renamed = game.relationships.find(
+      (relation) => relation.id === relationshipId,
+    )
+    const visibleName = renamed
+      ? setBondNicknameDisplay(renamed, enabled).name
+      : null
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((relation) =>
+        relation.id === relationshipId
+          ? setBondNicknameDisplay(relation, enabled)
+          : relation,
+      ),
+      soloInvites: visibleName
+        ? game.soloInvites.map((invite) =>
+            invite.relationshipId === relationshipId
+              ? { ...invite, partnerName: visibleName }
+              : invite,
+          )
+        : game.soloInvites,
+      soloChatRecords: visibleName
+        ? game.soloChatRecords.map((record) =>
+            record.relationshipId === relationshipId
+              ? { ...record, partnerName: visibleName }
+              : record,
+          )
+        : game.soloChatRecords,
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const askBondGossip = (relationshipId: string) => {
+    if (!game) return
+    if (game.gossipAsked?.[relationshipId] === currentWeekKey(game)) return
+    const result = askGossip(game, relationshipId)
+    setGame(result.state)
+    persist(result.state)
   }
 
   const withdrawElective = (courseId: string) => {
@@ -4939,9 +5072,30 @@ function RealApp() {
   }
 
   const handleContinueSave = () => {
-    const saved = readSave()
+    let saved = readSave()
     if (!saved) return
+    saved = ensureNpcSocial(saved)
     setCrisisKind(null)
+    const params = new URLSearchParams(window.location.search)
+    if (import.meta.env.DEV && params.get('dev') === 'make-sisters') {
+      saved = devRoommatesToSisters(saved)
+      persist(saved)
+      setHasSave(true)
+      window.history.replaceState({}, '', window.location.pathname)
+      const firstSister = saved.relationships.find(
+        (relation) => relation.kind === 'roommate',
+      )
+      if (firstSister) {
+        setChatFocus({
+          relationshipId: firstSister.id,
+          token: Date.now(),
+          promptNickname: true,
+        })
+      }
+      setGame(saved)
+      setView('week')
+      return
+    }
     setGame(saved)
     setView(
       saved.screen === 'title' || saved.screen === 'randomEvent'
@@ -5577,6 +5731,7 @@ function RealApp() {
         onAutoPat={autoPatTopRelations}
         onConfess={confessRelation}
         onEstablishBond={establishFriendBond}
+        onBondEstablished={openBondChat}
         onViewRelation={markRelationSeen}
         onMarkAllSeen={markAllRelationsSeen}
         onBirthdayGift={giveBirthdayGift}
@@ -5749,6 +5904,11 @@ function RealApp() {
           onSendMentorMail={sendMentorMail}
           onReadMentorEmail={readMentorEmail}
           onAcceptMentorProject={acceptMentorProject}
+          chatFocus={chatFocus}
+          onChatFocusConsumed={() => setChatFocus(null)}
+          onBondNicknameChange={changeBondNickname}
+          onBondNicknameDisplayChange={changeBondNicknameDisplay}
+          onAskGossip={askBondGossip}
           interviewScene={mentorInterviewScene}
           onConfirmMentorInterview={confirmMentorInterview}
           onSave={saveNow}
@@ -5963,6 +6123,11 @@ function DemoWeek() {
       onSendMentorMail={() => ({ ok: false, error: '演示模式不能发邮件。' })}
       onReadMentorEmail={() => undefined}
       onAcceptMentorProject={() => undefined}
+      chatFocus={null}
+      onChatFocusConsumed={() => undefined}
+      onBondNicknameChange={() => undefined}
+      onBondNicknameDisplayChange={() => undefined}
+      onAskGossip={() => undefined}
       interviewScene={null}
       onConfirmMentorInterview={() => undefined}
       onSave={() => undefined}

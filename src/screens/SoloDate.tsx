@@ -31,6 +31,7 @@ export function SoloDateOverlay({
   const event = SOLO_EVENT_BY_ID[invite.eventId]
   const relation = state.relationships.find((item) => item.id === invite.relationshipId)
   const bond = relation ? bondOf(relation) : invite.bondType
+  const partnerName = relation?.name ?? invite.partnerName
   const [partnerState, setPartnerState] = useState(() => {
     const pool = SOLO_PARTNER_STATES[bond]
     return pool[Math.floor(Math.random() * pool.length)]
@@ -54,7 +55,7 @@ export function SoloDateOverlay({
           <span className="solo-date-kicker">SOLO DATE / 赴约时间到</span>
           <h2>该去赴约了</h2>
           <p>
-            {invite.partnerName} · {event.name}
+            {partnerName} · {event.name}
           </p>
           <strong>{soloSlotLabel(invite.slot)}</strong>
           <button type="button" className="btn btn-primary" onClick={() => setDateOpen(true)}>
@@ -68,7 +69,7 @@ export function SoloDateOverlay({
             <span className="solo-date-kicker">SOLO DATE / 约会记录</span>
             <h2>{event.name}</h2>
             <p>
-              {BOND_LABEL[bond]} · {invite.partnerName} · {soloSlotLabel(invite.slot)}
+              {BOND_LABEL[bond]} · {partnerName} · {soloSlotLabel(invite.slot)}
             </p>
           </header>
           <div className="solo-date-body">

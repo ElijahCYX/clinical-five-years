@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { applyGrowthCarry } from './growth'
 import { consumptionAppearanceMultiplier } from './consumption'
+import { evolveNpcSocial, revealNpcRelation } from './npcRelations'
 import {
   createEventFriend,
   isStaffRelation,
@@ -15,6 +16,7 @@ import {
   playerAllowsGender,
 
   adjustIntimacyDelta,
+  clearBondNickname,
   progressWeek,
 } from './social'
 
@@ -335,7 +337,7 @@ function absoluteWeek(state: GameState): number {
 
 export function applyEvent(state: GameState, event: PendingEvent): GameState {
   const effect = event.effects
-  const next: GameState = {
+  let next: GameState = {
     ...state,
     pendingEvent: null,
     screen: 'week',
@@ -374,9 +376,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   if (effect.romanceBreak) {
     next.relationships = next.relationships.map((relation) =>
       relation.partner
-        ? {
+        ? clearBondNickname({
             ...relation,
             partner: false,
+            bondType: undefined,
             intimacy: Math.max(
               0,
               relation.intimacy + adjustIntimacyDelta(state, relation, -10),
@@ -384,7 +387,7 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ex: true,
             exWeek: absoluteWeek(state),
             exPenalty: false,
-          }
+          })
         : relation,
     )
     next.romanceRisk = 0
@@ -393,9 +396,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   if (effect.teacherBreak) {
     next.relationships = next.relationships.map((relation) =>
       relation.partner && isStaffRelation(relation)
-        ? {
+        ? clearBondNickname({
             ...relation,
             partner: false,
+            bondType: undefined,
             intimacy: Math.max(
               0,
               relation.intimacy + adjustIntimacyDelta(state, relation, -18),
@@ -404,7 +408,7 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ex: true,
             exWeek: absoluteWeek(state),
             exPenalty: false,
-          }
+          })
         : relation,
     )
     next.teacherScandalRisk = 0
@@ -412,9 +416,10 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
   if (effect.breakupRelationId) {
     next.relationships = next.relationships.map((relation) =>
       relation.id === effect.breakupRelationId
-        ? {
+        ? clearBondNickname({
             ...relation,
             partner: false,
+            bondType: undefined,
             intimacy: Math.max(
               0,
               relation.intimacy + adjustIntimacyDelta(state, relation, -20),
@@ -423,7 +428,7 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
             ex: true,
             exWeek: absoluteWeek(state),
             exPenalty: false,
-          }
+          })
         : relation,
     )
   }
@@ -503,6 +508,9 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     next.constitutionGrowth = grown.constitutionGrowth
     next.appearanceGrowth = grown.appearanceGrowth
     next.socialGrowth = grown.socialGrowth
+  }
+  if (effect.revealNpcRelationId) {
+    next = revealNpcRelation(next, effect.revealNpcRelationId)
   }
   return next
 }
@@ -621,8 +629,8 @@ export function rollRelationshipWeekly(state: GameState): RelationshipWeeklyResu
   if (!state.player) {
     return { state, pendingEvent: null, pendingConfession: null }
   }
-  let next: GameState = { ...state }
-  let relationships = [...state.relationships]
+  let next: GameState = evolveNpcSocial({ ...state })
+  let relationships = [...next.relationships]
 
   // 1. 师生恋被发现风险
   const staffPartners = relationships.filter(

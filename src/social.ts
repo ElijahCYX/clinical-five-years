@@ -532,6 +532,51 @@ export function revealMaybe(relation: Relationship): Relationship {
   return relation
 }
 
+/** 羁绊建立后把关系名切换为玩家选定的代称，同时记住原名。 */
+export function applyBondNickname(
+  relation: Relationship,
+  nickname: string,
+): Relationship {
+  const clean = nickname.trim()
+  if (!clean || (!relation.partner && !relation.bondType)) return relation
+  const original = relation.bondOriginalName ?? relation.name
+  return {
+    ...relation,
+    name: clean,
+    bondNickname: clean,
+    bondOriginalName: original,
+    bondNicknameEnabled: true,
+  }
+}
+
+/** 开关代称显示；关闭后恢复原名，但保留代称本身。 */
+export function setBondNicknameDisplay(
+  relation: Relationship,
+  enabled: boolean,
+): Relationship {
+  if (!relation.bondNickname) return relation
+  const original = relation.bondOriginalName ?? relation.name
+  return {
+    ...relation,
+    name: enabled ? relation.bondNickname : original,
+    bondNicknameEnabled: enabled,
+  }
+}
+
+/** 解除羁绊或关系消失时恢复原名并清空代称。 */
+export function clearBondNickname(relation: Relationship): Relationship {
+  if (!relation.bondNickname && !relation.bondOriginalName) return relation
+  return {
+    ...relation,
+    name: relation.bondOriginalName ?? relation.name,
+    bondNickname: undefined,
+    bondOriginalName: undefined,
+    bondNicknameEnabled: undefined,
+    bondNicknameAnnouncement: undefined,
+    bondNicknameAnnouncementAt: undefined,
+  }
+}
+
 export function normalizeRelationships(
   relationships: Relationship[],
 ): Relationship[] {
@@ -557,6 +602,11 @@ export function normalizeRelationships(
     patBlockedUntilWeek: relation.patBlockedUntilWeek ?? 0,
     partner: relation.partner ?? false,
     bondType: relation.bondType ?? (relation.partner ? 'lover' : undefined),
+    bondNickname: relation.bondNickname,
+    bondOriginalName: relation.bondOriginalName,
+    bondNicknameEnabled: relation.bondNicknameEnabled ?? true,
+    bondNicknameAnnouncement: relation.bondNicknameAnnouncement,
+    bondNicknameAnnouncementAt: relation.bondNicknameAnnouncementAt,
     confessRejected: relation.confessRejected ?? false,
     intimacyFrozenSeason: relation.intimacyFrozenSeason,
     frozenIntimacy: relation.frozenIntimacy,
