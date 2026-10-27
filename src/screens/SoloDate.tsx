@@ -6,6 +6,7 @@ import {
   soloSlotLabel,
 } from '../solo'
 import type { GameState, SoloInvite } from '../types'
+import { consumptionSoloDateCost } from '../consumption'
 
 const BOND_LABEL = {
   lover: '恋人',
@@ -76,7 +77,7 @@ export function SoloDateOverlay({
             <div className="solo-date-effects">
               <span>亲密度 +{SOLO_EFFECTS.intimacy}</span>
               <span>精力 {SOLO_EFFECTS.energy}</span>
-              <span>生活费 {SOLO_EFFECTS.money}</span>
+              <span>生活费 -{consumptionSoloDateCost(state, invite)}</span>
             </div>
           </div>
           <button type="button" className="btn btn-primary" onClick={onFinish}>

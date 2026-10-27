@@ -28,6 +28,7 @@ import { BondScreen } from './Bond'
 import { SoloInviteModal } from './SoloInvite'
 import { SoloDateOverlay } from './SoloDate'
 import { ActionDoodle } from './ActionDoodle'
+import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import {
@@ -106,7 +107,10 @@ interface WeekScreenProps {
   onBreakBond?: (relationshipId: string) => import('../types').BondActionResult
   onReconcileBond?: (relationshipId: string) => import('../types').BondActionResult
   onNpcConfession?: (accept: boolean) => void
-  onResolveConsumption?: (accept: boolean) => void
+  onResolveConsumption?: (
+    accept: boolean,
+    mode?: 'full' | 'installment',
+  ) => void
   onSave?: () => void
   onTitle?: () => void
 }
@@ -441,8 +445,14 @@ export function WeekScreen({
   const coffeeUsedToday = state.coffeeDayKey === dailyKey
   const runUsedToday = state.campusRunDayKey === dailyKey
   const selfCareUsedToday = state.selfCareDayKey === dailyKey
-  const coffeeCost = state.habits.includes('ledger') ? 5 : 10
-  const selfCareCost = state.habits.includes('ledger') ? 15 : 30
+  const coffeeCost = consumptionCoffeeCost(
+    state,
+    state.habits.includes('ledger') ? 5 : 10,
+  )
+  const selfCareCost = consumptionSelfCareCost(
+    state,
+    state.habits.includes('ledger') ? 15 : 30,
+  )
   const earlyRiseBlocked =
     currentSlotIsMorning &&
     Math.floor(weekSlot / 3) <= 4 &&
@@ -1436,7 +1446,7 @@ export function WeekScreen({
                     onClick={onDrinkCoffee}
                   >
                     <strong>喝咖啡</strong>
-                    <small>精力 +10 · 生活费 -{coffeeCost}</small>
+                    <small>精力 +10 · {coffeeCost === 0 ? '免费' : `生活费 -${coffeeCost}`}</small>
                     <em>{coffeeUsedToday ? '今日已喝' : '今日可执行'}</em>
                   </button>
                   {hasPeCourse && (
@@ -1998,7 +2008,9 @@ export function WeekScreen({
         <ConsumptionEventModal
           event={state.pendingConsumption}
           money={state.money}
-          onResolve={(accept) => onResolveConsumption?.(accept)}
+          onResolve={(accept, mode) =>
+            onResolveConsumption?.(accept, mode)
+          }
         />
       )}
 

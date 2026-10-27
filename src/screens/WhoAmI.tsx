@@ -195,7 +195,7 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   <strong>{Math.round(state.constitutionGrowth)}%</strong>
                 </div>
                 <div>
-                  <span>外形成长</span>
+                  <span>建模成长</span>
                   <strong>{Math.round(state.appearanceGrowth)}%</strong>
                 </div>
                 <div>

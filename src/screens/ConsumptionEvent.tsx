@@ -5,7 +5,7 @@ import { Pill } from '../ui'
 interface ConsumptionEventModalProps {
   event: ConsumptionEvent
   money: number
-  onResolve: (accept: boolean) => void
+  onResolve: (accept: boolean, mode?: 'full' | 'installment') => void
 }
 
 export function ConsumptionEventModal({
@@ -37,7 +37,12 @@ export function ConsumptionEventModal({
         <div className="random-event-effects">
           <span className="random-event-effects-label">本次消费</span>
           <div>
-            <span className="random-event-effect">生活费 -{event.cost}</span>
+            <span className="random-event-effect">立即：生活费 -{event.cost}</span>
+            {event.installment && (
+              <span className="random-event-effect">
+                分期：每周期生活费 -{event.installment.amount}（共 {event.installment.weeks} 期）
+              </span>
+            )}
             {event.benefitLines.map((line) => (
               <span className="random-event-effect" key={line}>
                 {line}
@@ -49,7 +54,11 @@ export function ConsumptionEventModal({
         <footer className="random-event-footer">
           <p>
             当前生活费 ¥{money}
-            {!affordable ? ' · 买不起，下次再说吧' : ' · 买下后会立即结算'}
+            {!affordable
+              ? event.installment
+                ? ' · 暂时买不起，可选择分期'
+                : ' · 暂时买不起，下次再说吧'
+              : ' · 收益在购买后生效'}
           </p>
           <div className="consumption-actions">
             <button
@@ -59,13 +68,23 @@ export function ConsumptionEventModal({
             >
               算了
             </button>
+            {event.installment && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={money < event.installment.amount}
+                onClick={() => onResolve(true, 'installment')}
+              >
+                分 {event.installment.weeks} 期
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-primary"
               disabled={!affordable}
-              onClick={() => onResolve(true)}
+              onClick={() => onResolve(true, 'full')}
             >
-              买下
+              立即买下
               <span className="btn-arrow">→</span>
             </button>
           </div>

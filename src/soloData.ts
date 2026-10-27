@@ -11,6 +11,7 @@ export interface SoloEventDef {
   bonds?: BondType[]
   timing?: SoloTiming
   season?: SoloSeasonKind
+  unlock?: string
 }
 
 export const SOLO_EVENTS: SoloEventDef[] = [
@@ -43,6 +44,7 @@ export const SOLO_EVENTS: SoloEventDef[] = [
   { id: 'claw', name: '去夹娃娃', bonds: ['lover', 'sister'], invite: '陪我去夹娃娃吧，我就不信一个都夹不到。', description: '爪子一次次松开，TA的表情从自信变成怀疑。最后终于夹到一只小小的玩偶，两个人站在机器前笑了很久。' },
   { id: 'pottery', name: '去做陶艺', bonds: ['lover', 'sister'], invite: '一起去玩陶艺吧，我想看看你会做出什么。', description: '陶土在手里转得歪歪扭扭，你们互相嘲笑对方的作品。最后两个人都没有做出像样的杯子，却认真地在底部刻上了同一天的日期。' },
   { id: 'picnic', name: '去野餐', bonds: ['lover', 'sister'], timing: 'not-evening', invite: '天气这么好，一起去野餐吧，我准备吃的。', description: '你们在草地上铺开垫子，把带来的食物一样样摆好。风把包装袋吹得沙沙响，TA躺在垫子上眯起眼睛，说这样过一天也很好。' },
+  { id: 'camping', name: '去露营', timing: 'not-evening', unlock: 'cons-camping', invite: '天气不错，一起去露营吧，晚上还能看星星。', description: '你们把帐篷支得歪歪扭扭，最后干脆坐在旁边看它。夜里风很轻，TA把外套分给你一半，说下次还要来。' },
   { id: 'internetCafe', name: '去网吧', bonds: ['brother'], invite: '走，去网吧开黑，我已经约好位置了。', description: '网吧里键盘声此起彼伏，你们并肩坐在角落里打了很久。输的时候互相甩锅，赢的时候又击掌，好像回到高中。' },
   { id: 'ball', name: '去打球', bonds: ['brother'], invite: '去打球吧，让我看看你最近有没有退步。', description: '球场上你们来来回回，汗水把衣服浸湿。TA投进最后一个球，回头冲你挑衅地扬了扬眉，又走过来把手搭在你肩上。' },
   { id: 'soccer', name: '去踢球', bonds: ['brother'], invite: '去踢球吧，正好缺一个你这样的。', description: '你们在草地上跑得满身是汗，最后一脚球踢偏了，两个人却一起笑得停不下来。回家的路上还在复盘刚才那个没进的机会。' },

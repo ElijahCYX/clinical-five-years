@@ -132,7 +132,29 @@ import {
 import { EncounterProvider, useEncounter } from './screens/Encounter'
 import { TravelEventProvider, useTravelEvents } from './screens/TravelEvent'
 import { pickTravelEvent } from './travelEvents'
-import { pickConsumptionEvent } from './consumptionEvents'
+import {
+  CONSUMPTION_EVENTS,
+  pickConsumptionEvent,
+} from './consumptionEvents'
+import {
+  addImmediateConsumptionEffects,
+  applyConsumptionWeekStart,
+  applyDailyConsumptionEffects,
+  applyBreakfastConsumptionEffect,
+  applyWeeklyConsumptionEffects,
+  chargeConsumptionInstallments,
+  consumptionAppearanceMultiplier,
+  consumptionExcludedIds,
+  consumptionSoloDateCost,
+  consumptionCoffeeCost,
+  consumptionSelfCareCost,
+  consumptionSoloChanceBonus,
+  consumptionLibraryMultiplier,
+  consumptionExamReviewStressReduction,
+  consumptionExamPrepGainMultiplier,
+  hasConsumption,
+  makeConsumptionPurchase,
+} from './consumption'
 import {
   ROOMMATE_TALKS,
   STRESS_ENDING_TEXT,
@@ -371,8 +393,16 @@ function readSave(): GameState | null {
         game.seenRelationIds ?? game.relationships.map((relation) => relation.id),
       vacationTravel: game.vacationTravel ?? null,
       vacationTravelInvites: game.vacationTravelInvites ?? null,
-      pendingConsumption: game.pendingConsumption ?? null,
+      pendingConsumption: game.pendingConsumption
+        ? CONSUMPTION_EVENTS.find(
+            (event) => event.id === game.pendingConsumption!.id,
+          ) ?? game.pendingConsumption
+        : null,
       consumptionEventWeek: game.consumptionEventWeek ?? 0,
+      consumptionPurchases: game.consumptionPurchases ?? [],
+      consumptionConcertDays: game.consumptionConcertDays ?? 0,
+      consumptionConcertStartDay: game.consumptionConcertStartDay ?? 0,
+      sleepInDayKey: game.sleepInDayKey ?? null,
       clubMemberships,
       clubHistory: game.clubHistory ?? [],
       clubInitialRecruitmentDone: game.clubInitialRecruitmentDone ?? false,
@@ -1093,9 +1123,13 @@ function RealApp() {
     }
     if (game.consumptionEventWeek !== game.week) {
       if (Math.random() < 0.25) {
+        const consumptionEvent = pickConsumptionEvent(
+          consumptionExcludedIds(game),
+        )
+        if (!consumptionEvent) return
         const next: GameState = {
           ...game,
-          pendingConsumption: pickConsumptionEvent(),
+          pendingConsumption: consumptionEvent,
           consumptionEventWeek: game.week,
           pendingEvent: null,
           pendingConfession: null,
@@ -1578,7 +1612,10 @@ function RealApp() {
     commit({ ...game, screen: 'plan' }, 'plan')
   }
 
-  const resolveConsumption = (accept: boolean) => {
+  const resolveConsumption = (
+    accept: boolean,
+    mode: 'full' | 'installment' = 'full',
+  ) => {
     if (!game || !game.pendingConsumption) return
     const consumption = game.pendingConsumption
     let next: GameState = {
@@ -1586,36 +1623,25 @@ function RealApp() {
       pendingConsumption: null,
       consumptionEventWeek: game.week,
     }
-    if (accept && game.money >= consumption.cost) {
+    if (accept) {
+      const installment = consumption.installment
+      const payment =
+        mode === 'installment' ? (installment?.amount ?? 0) : consumption.cost
+      if (
+        mode === 'installment' &&
+        (!installment || game.money < installment.amount)
+      ) {
+        return
+      }
+      if (mode === 'full' && game.money < consumption.cost) return
+      const purchase = makeConsumptionPurchase(game, consumption, mode)
       next = {
         ...next,
-        money: game.money - consumption.cost,
-        stress: Math.max(
-          0,
-          Math.min(100, game.stress + (consumption.effects.stress ?? 0)),
-        ),
-        energy: Math.max(
-          0,
-          Math.min(100, game.energy + (consumption.effects.energy ?? 0)),
-        ),
+        money: Math.max(0, game.money - payment),
+        consumptionPurchases: [...(game.consumptionPurchases ?? []), purchase],
       }
-      const prepGain = consumption.effects.prep ?? 0
-      if (prepGain && game.season.courses.length > 0) {
-        const course =
-          game.season.courses[
-            Math.floor(Math.random() * game.season.courses.length)
-          ]
-        next = {
-          ...next,
-          prep: {
-            ...next.prep,
-            [course.id]: Math.min(
-              100,
-              (next.prep[course.id] ?? 0) + prepGain,
-            ),
-          },
-        }
-      }
+      next = addImmediateConsumptionEffects(next, consumption)
+      next = applyWeeklyConsumptionEffects(next)
     }
     setGame(next)
     persist(next)
@@ -3206,7 +3232,9 @@ function RealApp() {
     }
 
     const clubBenefit = applyClubSemesterBenefit(next, base)
-    const finalNext = applyWeeklyOpeningTalent(clubBenefit.next)
+    const finalNext = applyConsumptionWeekStart(
+      applyWeeklyOpeningTalent(clubBenefit.next),
+    )
     commit(
       finalNext,
       isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
@@ -3259,6 +3287,7 @@ function RealApp() {
           course.id,
           1 *
             courseK(course, player.attrs) *
+            consumptionLibraryMultiplier(base) *
             (1 + timeBonus) *
             prepGainMultiplier(base) *
             coursePrepTalentMultiplier(base, course) *
@@ -3381,18 +3410,26 @@ function RealApp() {
             coffeeBoosted: false,
           }
     if (earlySleep) sleep.gain += 5
+    const advanced: GameState = {
+      ...base,
+      weekSlot: nextSlot,
+      weekSlotSkipped: false,
+      weekSlotActions: base.weekSlotActions,
+      energy: clamp(base.energy + daily.energy + sleep.gain, 0, 100),
+      stress: stressAfterDay,
+      money: Math.max(0, base.money - livingCost),
+      eveningCoffeeDayKey:
+        base.weekSlot % 3 === 2 ? null : base.eveningCoffeeDayKey,
+    }
+    const afterAfternoon =
+      base.weekSlot % 3 === 1
+        ? applyBreakfastConsumptionEffect(advanced, finishedDay)
+        : advanced
     return {
-      state: {
-        ...base,
-        weekSlot: nextSlot,
-        weekSlotSkipped: false,
-        weekSlotActions: base.weekSlotActions,
-        energy: clamp(base.energy + daily.energy + sleep.gain, 0, 100),
-        stress: stressAfterDay,
-        money: Math.max(0, base.money - livingCost),
-        eveningCoffeeDayKey:
-          base.weekSlot % 3 === 2 ? null : base.eveningCoffeeDayKey,
-      },
+      state:
+        base.weekSlot % 3 === 2
+          ? applyDailyConsumptionEffects(afterAfternoon, finishedDay)
+          : afterAfternoon,
       sleep,
     }
   }
@@ -3450,7 +3487,7 @@ function RealApp() {
     const next: GameState = {
       ...game,
       energy: clamp(game.energy - 10, 0, 100),
-      money: Math.max(0, game.money - 50),
+      money: Math.max(0, game.money - consumptionSoloDateCost(game, invite)),
       relationships: game.relationships.map((relation) =>
         relation.id === invite.relationshipId
           ? { ...relation, intimacy: Math.min(100, relation.intimacy + 5) }
@@ -3514,7 +3551,10 @@ function RealApp() {
     `${game?.seasonIndex ?? 0}-${game?.week ?? 1}-${Math.floor((game?.weekSlot ?? 0) / 3)}`
 
   const drinkCoffee = () => {
-    const coffeeCost = game?.habits.includes('ledger') ? 5 : 10
+    const coffeeCost = consumptionCoffeeCost(
+      game ?? ({} as GameState),
+      game?.habits.includes('ledger') ? 5 : 10,
+    )
     if (!game || game.money < coffeeCost || game.energy >= 100) return
     const key = dailyActionKey()
     if (game.coffeeDayKey === key) return
@@ -3576,6 +3616,7 @@ function RealApp() {
       ...game,
       energy: clamp(game.energy + 20, 0, 100),
       stress: clamp(game.stress - 10, 0, 100),
+      sleepInDayKey: dayKey,
     }
     finishWeekSlot(next, 'sleepIn')
   }
@@ -3754,6 +3795,7 @@ function RealApp() {
           examReviewTalentMultiplier(game) *
           coursePrepTalentMultiplier(game, course) *
           examCoffeeMultiplier(game) *
+          consumptionExamPrepGainMultiplier(game) *
           (game.examEnglishPrep ? 0.9 : 1),
       ]),
     )
@@ -3762,7 +3804,11 @@ function RealApp() {
       0,
       100,
     )
-    let stress = clamp(game.stress + effect.stress, 0, 100)
+    let stress = clamp(
+      game.stress + effect.stress - consumptionExamReviewStressReduction(game),
+      0,
+      100,
+    )
     const money = Math.max(
       0,
       game.money -
@@ -4069,7 +4115,10 @@ function RealApp() {
   }
 
   const dailySelfCare = () => {
-    const selfCareCost = game?.habits.includes('ledger') ? 15 : 30
+    const selfCareCost = consumptionSelfCareCost(
+      game ?? ({} as GameState),
+      game?.habits.includes('ledger') ? 15 : 30,
+    )
     if (!game || game.money < selfCareCost) return
     const key = dailyActionKey()
     if (game.selfCareDayKey === key) return
@@ -4115,7 +4164,11 @@ function RealApp() {
   const handleAllNighter = () => {
     if (!game || game.examAllNighter) return
     const prep = { ...game.prep }
-    const gain = 15 * prepGainMultiplier(game) * examCoffeeMultiplier(game)
+    const gain =
+      15 *
+      prepGainMultiplier(game) *
+      examCoffeeMultiplier(game) *
+      consumptionExamPrepGainMultiplier(game)
     for (const course of game.season.courses) {
       prep[course.id] = clamp((prep[course.id] ?? 0) + gain, 0, 100)
     }
@@ -4250,7 +4303,7 @@ function RealApp() {
   }
 
   const beginSeason = (base: GameState, index: number) => {
-    const prepared = prepareSeason(base, index)
+    const prepared = applyConsumptionWeekStart(prepareSeason(base, index))
     const pendingCet =
       (base.cetWindow === 'winter' && index >= 2 && !isAutumnSeasonIndex(index) && [2, 6, 10, 15, 19].includes(index)) ||
       (base.cetWindow === 'summer' && isAutumnSeasonIndex(index))

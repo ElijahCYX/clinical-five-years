@@ -7,6 +7,7 @@ import type {
   Relationship,
 } from './types'
 import { applyGrowthCarry } from './growth'
+import { consumptionAppearanceMultiplier } from './consumption'
 import {
   createEventFriend,
   isStaffRelation,
@@ -351,7 +352,8 @@ export function applyEvent(state: GameState, event: PendingEvent): GameState {
     socialGrowth: Math.max(0, state.socialGrowth + (effect.socialGrowth ?? 0)),
     appearanceGrowth: Math.max(
       0,
-      state.appearanceGrowth + (effect.appearanceGrowth ?? 0),
+      state.appearanceGrowth +
+        (effect.appearanceGrowth ?? 0) * consumptionAppearanceMultiplier(state),
     ),
     research: Math.max(0, state.research + (effect.research ?? 0)),
     englishGrowth: state.englishGrowth + (effect.english ?? 0),

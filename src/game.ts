@@ -11,6 +11,10 @@ import {
   TALENT_BY_ID,
 } from './data'
 import { applyGrowthCarry } from './growth'
+import {
+  consumptionAppearanceMultiplier,
+  consumptionLibraryMultiplier,
+} from './consumption'
 import type {
   AttrKey,
   Award,
@@ -486,6 +490,10 @@ export function newGameState(player: Player): GameState {
     noticeFeed: [],
     pendingConsumption: null,
     consumptionEventWeek: 0,
+    consumptionPurchases: [],
+    consumptionConcertDays: 0,
+    consumptionConcertStartDay: 0,
+    sleepInDayKey: null,
   }
 }
 
@@ -853,6 +861,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
           1 *
             courseK(course, attrs) *
             (1 + studyBonus) *
+            consumptionLibraryMultiplier(state) *
             prepMultiplier *
             coursePrepTalentMultiplier(state, course) *
             (state.energy < 40 ? 0.5 : 1),
@@ -924,7 +933,10 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
         constitutionGrowth += (habit.growthAmount ?? 0) * workdayFactor
       }
       if (habit.growth === 'appearance') {
-        appearanceGrowth += (habit.growthAmount ?? 0) * workdayFactor
+        appearanceGrowth +=
+          (habit.growthAmount ?? 0) *
+          workdayFactor *
+          consumptionAppearanceMultiplier(state)
       }
     }
   }

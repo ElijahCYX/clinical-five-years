@@ -22,6 +22,7 @@ import {
   soloWeekKey,
 } from '../solo'
 import type { GameState, Relationship, SoloChatLine, SoloChatRecord, SoloInvite } from '../types'
+import { consumptionSoloChanceBonus } from '../consumption'
 
 type ChatMessage = {
   id: number
@@ -124,7 +125,7 @@ export function SoloInviteModal({
         push('them', reply)
       }, 2250),
       window.setTimeout(() => {
-        setOptions(drawSoloOptions(bond, soloSeasonKind(state)))
+        setOptions(drawSoloOptions(bond, soloSeasonKind(state), state))
         setPhase('options')
       }, 3250),
     )
@@ -235,7 +236,7 @@ export function SoloInviteModal({
 
   const refreshOptions = () => {
     if (!selected || refreshed || phase !== 'options') return
-    setOptions(drawSoloOptions(bondOf(selected), soloSeasonKind(state)))
+    setOptions(drawSoloOptions(bondOf(selected), soloSeasonKind(state), state))
     setRefreshed(true)
   }
 
@@ -247,7 +248,12 @@ export function SoloInviteModal({
     push('me', event.invite)
 
     const bond = bondOf(selected)
-    const accepted = Math.random() * 100 < soloSuccessChance(selected.intimacy)
+    const accepted =
+      Math.random() * 100 <
+      Math.min(
+        100,
+        soloSuccessChance(selected.intimacy) + consumptionSoloChanceBonus(state),
+      )
     const slot = accepted ? findSoloSlot(state, event) : null
 
     if (!accepted) {

@@ -511,6 +511,14 @@ export interface ConsumptionEffects {
   stress?: number
   energy?: number
   prep?: number
+  constitutionGrowth?: number
+}
+
+export type ConsumptionDuration = 'permanent' | 'year' | 'semester'
+
+export interface ConsumptionInstallment {
+  weeks: number
+  amount: number
 }
 
 export interface ConsumptionEvent {
@@ -519,8 +527,25 @@ export interface ConsumptionEvent {
   title: string
   text: string
   cost: number
+  duration: ConsumptionDuration
   effects: ConsumptionEffects
   benefitLines: string[]
+  installment?: ConsumptionInstallment
+}
+
+export interface ConsumptionPurchase {
+  id: string
+  eventId: string
+  title: string
+  duration: ConsumptionDuration
+  purchasedYear: number
+  purchasedSeasonIndex: number
+  purchasedDayIndex: number
+  expiresYear?: number
+  expiresSeasonIndex?: number
+  installmentWeeks: number
+  installmentAmount: number
+  installmentRemaining: number
 }
 
 export interface OrganizationBenefit {
@@ -748,6 +773,10 @@ export interface GameState {
   noticeFeed: NoticeItem[]
   pendingConsumption: ConsumptionEvent | null
   consumptionEventWeek: number
+  consumptionPurchases: ConsumptionPurchase[]
+  consumptionConcertDays: number
+  consumptionConcertStartDay: number
+  sleepInDayKey: string | null
 }
 
 export type DemoName =

@@ -1,3 +1,4 @@
+import { activeInstallmentSummary } from '../consumption'
 import { BACKGROUND_BY_ID, HABIT_BY_ID, PLAN_BY_ID, TALENT_BY_ID } from '../data'
 import { cetHint, type WeekSimulation } from '../game'
 import type { GameState } from '../types'
@@ -37,6 +38,8 @@ export function PlayerRail({
     .filter(Boolean)
   const habitActive = habits.length > 0 && state.stress <= 60
   const isExam = mode === 'exam'
+
+  const installments = activeInstallmentSummary(state)
 
   return (
     <aside className="game-left">
@@ -113,6 +116,11 @@ export function PlayerRail({
           </div>
           <small>每日固定开销 ¥{dailyLivingCostFor(state.player?.background)}</small>
         </div>
+        {installments.count > 0 && (
+          <p className="consumption-installment-note">
+            分期 {installments.count} 项 · 每周 -{installments.weekly}
+          </p>
+        )}
         <div className="mini-stats">
           <div>
             <span>综合测评</span>

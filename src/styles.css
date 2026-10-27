@@ -16897,3 +16897,11 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     line-height: 0;
   }
 }
+
+.consumption-installment-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}

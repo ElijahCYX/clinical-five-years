@@ -1,6 +1,7 @@
 import { SOLO_EVENTS, SOLO_EVENT_BY_ID, type SoloEventDef, type SoloSeasonKind } from './soloData'
 import { buildTimetable, TIMETABLE_DAYS, TIMETABLE_SLOTS } from './timetable'
 import type { BondType, GameState, Relationship, SoloChatLine, SoloInvite } from './types'
+import { hasConsumption } from './consumption'
 
 export const SOLO_MAX_WEEKLY_SUCCESS = 2
 export const SOLO_EFFECTS = {
@@ -67,11 +68,13 @@ function shuffle<T>(items: T[]): T[] {
 export function drawSoloOptions(
   bond: BondType,
   season: SoloSeasonKind,
+  state: GameState,
 ): SoloEventDef[] {
   const pool = SOLO_EVENTS.filter(
     (event) =>
       (!event.bonds || event.bonds.includes(bond)) &&
-      (!event.season || event.season === season),
+      (!event.season || event.season === season) &&
+      (!event.unlock || hasConsumption(state, event.unlock)),
   )
   const seasonal = pool.find((event) => event.season === season)
   const rest = shuffle(pool.filter((event) => event !== seasonal))
