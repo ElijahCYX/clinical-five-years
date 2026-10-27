@@ -17,6 +17,7 @@ import {
   closeFriendGrowthMultiplier,
   isCloseFriend,
   isPeerFriend,
+  isSeniorRelation,
   canConfess,
   canPat,
   confessionChance,
@@ -93,7 +94,7 @@ export function WhoIsTAScreen({
   onTitle,
 }: WhoIsTAScreenProps) {
   const [message, setMessage] = useState<string | null>(null)
-  const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer'>('all')
+  const [relationFilter, setRelationFilter] = useState<'all' | 'elder' | 'peer' | 'senior'>('all')
   const [birthdayTarget, setBirthdayTarget] = useState<Relationship | null>(null)
   const [patEvents, setPatEvents] = useState<PatEvent[]>([])
   const [confessionResult, setConfessionResult] =
@@ -121,7 +122,11 @@ export function WhoIsTAScreen({
       ? true
       : relationFilter === 'elder'
         ? relation.kind === 'mentor' || relation.kind === 'counselor'
-        : relation.kind !== 'mentor' && relation.kind !== 'counselor',
+        : relationFilter === 'senior'
+          ? isSeniorRelation(relation)
+          : !isSeniorRelation(relation) &&
+            relation.kind !== 'mentor' &&
+            relation.kind !== 'counselor',
   )
   const patRemaining = patRemainingThisWeek(state)
   const partnerCount = relations.filter((relation) => relation.partner).length
@@ -196,7 +201,8 @@ export function WhoIsTAScreen({
                 ['all', '全部'],
                 ['elder', '长辈'],
                 ['peer', '同辈'],
-              ] as Array<['all' | 'elder' | 'peer', string]>
+                ['senior', '前辈'],
+              ] as Array<['all' | 'elder' | 'peer' | 'senior', string]>
             ).map(([key, label]) => (
               <button
                 key={key}
@@ -211,9 +217,11 @@ export function WhoIsTAScreen({
           <small>
             {relationFilter === 'elder'
               ? '导师与辅导员'
-              : relationFilter === 'peer'
-                ? '舍友、朋友、同学与恋人'
-                : '长辈与同辈'}
+              : relationFilter === 'senior'
+                ? '同门师兄师姐与社团/学生会/辩论队前辈'
+                : relationFilter === 'peer'
+                  ? '舍友、朋友、同学与恋人'
+                  : '长辈、同辈与前辈'}
           </small>
         </div>
 
@@ -242,7 +250,11 @@ export function WhoIsTAScreen({
         <section className="paper-card whois-card">
           <SectionLabel right={`本周 ${weekKey}`}>关系列表</SectionLabel>
           {visibleRelations.length === 0 ? (
-            <p className="placeholder-note">你还没有认识什么人。先去过一周。</p>
+            <p className="placeholder-note">
+              {relationFilter === 'senior'
+                ? '你还没有认识前辈。加入课题组或组织后，师兄师姐会出现在这里。'
+                : '你还没有认识什么人。先去过一周。'}
+            </p>
           ) : (
             <div className="whois-list">
               {visibleRelations.map((relation) => {

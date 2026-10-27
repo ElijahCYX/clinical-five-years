@@ -369,6 +369,11 @@ export function isPeerFriend(relation: Relationship): boolean {
   return !isStaffRelation(relation)
 }
 
+/** 前辈：科研课题组里的同门，以及社团/学生会/辩论队里认识的学长学姐。 */
+export function isSeniorRelation(relation: Relationship): boolean {
+  return relation.kind === 'senior' || relation.kind === 'club'
+}
+
 export function isCloseFriend(relation: Relationship): boolean {
   return (
     isPeerFriend(relation) && relation.intimacy >= CLOSE_FRIEND_THRESHOLD
