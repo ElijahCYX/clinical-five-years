@@ -98,16 +98,39 @@ export function sleepRecoveryFor(stress: number, extraTier = 0): {
   }
 }
 
-/** 考前遗忘：每门专业课/思政课分别抽取，并在复习收益结算后扣除。 */
+/**
+ * 考前遗忘：基础范围以 3 学分为 100%。
+ * 学分越高，知识量越大，遗忘扣减按学分比例放大；
+ * 1 学分的小课不会被大课的固定扣减直接压垮。
+ */
 export const FORGET_PENALTY_RANGE: Record<PlanId, { min: number; max: number }> = {
   A: { min: 0, max: 3 },
   B: { min: 8, max: 16 },
   C: { min: 15, max: 25 },
 }
 
-export function rollForgetPenalty(plan: PlanId): number {
-  const range = FORGET_PENALTY_RANGE[plan]
+export function forgetPenaltyRangeForCourse(
+  plan: PlanId,
+  credits: number,
+): { min: number; max: number } {
+  const scale = credits / 3
+  const base = FORGET_PENALTY_RANGE[plan]
+  return {
+    min: Math.round(base.min * scale),
+    max: Math.round(base.max * scale),
+  }
+}
+
+export function rollForgetPenalty(plan: PlanId, credits: number): number {
+  const range = forgetPenaltyRangeForCourse(plan, credits)
   return range.min + Math.floor(Math.random() * (range.max - range.min + 1))
+}
+
+/** 上课获得的准备度：学分越高的课程，单次到课收益越低。 */
+export function attendancePrepGain(course: Course): number {
+  if (course.credits >= 5) return 3
+  if (course.credits >= 3) return 4
+  return 5
 }
 
 export function planPassive(plan: PlanId): number {

@@ -64,6 +64,7 @@ import {
   examCoffeeMultiplier,
   examReviewTalentMultiplier,
   rollForgetPenalty,
+  attendancePrepGain,
 } from './game'
 import { applyGrowthCarry } from './growth'
 import { pickSleepText } from './sleepTexts'
@@ -3605,7 +3606,9 @@ function RealApp() {
         prep: {
           ...game.prep,
           [course.id]: clamp(
-            (game.prep[course.id] ?? 0) + 5 + (earlyRiseBonus ? 1 : 0),
+            (game.prep[course.id] ?? 0) +
+              attendancePrepGain(course) +
+              (earlyRiseBonus ? 1 : 0),
             0,
             100,
           ),
@@ -3911,7 +3914,7 @@ function RealApp() {
       prep[course.id] = clamp((prep[course.id] ?? 0) + (gains[course.id] ?? 0), 0, 100)
       const forgetPenalty =
         !course.electiveType || course.electiveType === 'politics'
-          ? rollForgetPenalty(game.plan ?? 'B')
+          ? rollForgetPenalty(game.plan ?? 'B', course.credits)
           : 0
       prep[course.id] = Math.max(0, prep[course.id] - forgetPenalty)
       const [rawMin, rawMax] = estimateRange(prep[course.id])
