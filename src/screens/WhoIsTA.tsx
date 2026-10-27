@@ -12,6 +12,11 @@ import type {
 import { pickBirthdayReaction } from '../birthdayReactions'
 import {
   adjustIntimacyDelta,
+  CLOSE_FRIEND_LIMIT,
+  closeFriendCount,
+  closeFriendGrowthMultiplier,
+  isCloseFriend,
+  isPeerFriend,
   canConfess,
   canPat,
   confessionChance,
@@ -108,6 +113,9 @@ export function WhoIsTAScreen({
 
   const weekKey = currentWeekKey(state)
   const relations = state.relationships
+  const closeCount = closeFriendCount(state)
+  const closeGrowthPct = Math.round(closeFriendGrowthMultiplier(state) * 100)
+  const closeCapReached = closeCount >= CLOSE_FRIEND_LIMIT
   const visibleRelations = relations.filter((relation) =>
     relationFilter === 'all'
       ? true
@@ -209,6 +217,19 @@ export function WhoIsTAScreen({
           </small>
         </div>
 
+        <div className={`whois-close-rule ${closeCapReached ? 'is-full' : ''}`}>
+          <div>
+            <span>交心朋友</span>
+            <strong>{closeCount} / {CLOSE_FRIEND_LIMIT}</strong>
+          </div>
+          <p>
+            {closeCapReached
+              ? '名额已满：未达 60 的同辈亲密度最多停在 59。'
+              : '交心朋友越多，其他未达 60 的同辈亲密度增长越慢。'}
+          </p>
+          <b>{closeCapReached ? '封顶 59' : `成长 ×${closeGrowthPct}%`}</b>
+        </div>
+
         {message && (
           <div className="whois-message" role="status">
             {message}
@@ -233,6 +254,9 @@ export function WhoIsTAScreen({
                   relation.birthdayGiftYear === currentDate.year
                 const patBlocked = isPatBlocked(state, relation)
                 const patAvailable = canPat(state, relation) && patRemaining > 0
+                const peer = isPeerFriend(relation)
+                const close = isCloseFriend(relation)
+                const cappedHere = peer && !close && closeCapReached
                 const bondOptions = BOND_DEFS.filter((def) =>
                   bondTypeAvailable(player, relation, def.type),
                 )
@@ -364,6 +388,18 @@ export function WhoIsTAScreen({
                         {!relation.statsKnown && (
                           <span className="whois-hidden">
                             其余面板未解锁 · 亲密度 100 或随机事件后可见
+                          </span>
+                        )}
+                        {peer && !close && (
+                          <span className="whois-growth-chip">
+                            成长 ×{closeGrowthPct}%
+                          </span>
+                        )}
+                        {cappedHere && (
+                          <span className="whois-cap-chip">
+                            {relation.intimacy >= 59
+                              ? '交心名额已满 · 停在 59'
+                              : '交心名额已满 · 最多 59'}
                           </span>
                         )}
                       </div>

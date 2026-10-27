@@ -215,6 +215,8 @@ import {
   progressWeek,
   patRemainingThisWeek,
   isStaffRelation,
+  closeFriendCount,
+  isPeerFriend,
   revealMaybe,
   vacationTravelInviteKey,
   academicYearForSeason,
@@ -2570,6 +2572,13 @@ function RealApp() {
         actualPatGain >= 0 ? '+' : ''
       }${actualPatGain}。`,
     ]
+    if (
+      isPeerFriend(relation) &&
+      relation.intimacy < 60 &&
+      closeFriendCount(current) >= 5
+    ) {
+      messages.push('交心朋友已经满 5 人，TA 的亲密度最高停在 59。')
+    }
     let next: GameState = {
       ...current,
       relationships: current.relationships.map((item) =>
@@ -3585,13 +3594,24 @@ function RealApp() {
     if (!game) return
     const invite = game.soloInvites.find((item) => item.id === inviteId)
     if (!invite || invite.resolved || invite.slot !== game.weekSlot) return
+    const dateRelation = game.relationships.find(
+      (relation) => relation.id === invite.relationshipId,
+    )
+    if (!dateRelation) return
+    const dateIntimacyGain = adjustIntimacyDelta(game, dateRelation, 5)
     const next: GameState = {
       ...game,
       energy: clamp(game.energy - 10, 0, 100),
       money: Math.max(0, game.money - consumptionSoloDateCost(game, invite)),
       relationships: game.relationships.map((relation) =>
         relation.id === invite.relationshipId
-          ? { ...relation, intimacy: Math.min(100, relation.intimacy + 5) }
+          ? {
+              ...relation,
+              intimacy: Math.min(
+                100,
+                relation.intimacy + dateIntimacyGain,
+              ),
+            }
           : relation,
       ),
       soloInvites: game.soloInvites.map((item) =>

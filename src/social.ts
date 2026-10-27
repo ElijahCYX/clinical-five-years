@@ -341,6 +341,38 @@ export function intimacyMultiplier(state: GameState, relation: Relationship): nu
   return 1
 }
 
+/** 真正交心的同辈朋友上限；导师/辅导员不计入。 */
+export const CLOSE_FRIEND_LIMIT = 5
+export const CLOSE_FRIEND_THRESHOLD = 60
+/** 0–5 个交心朋友时，其余未交心同辈的正向亲密度倍率。 */
+export const CLOSE_FRIEND_GROWTH_MULTIPLIERS = [1, 0.85, 0.7, 0.55, 0.4, 0.25] as const
+
+export function isPeerFriend(relation: Relationship): boolean {
+  return !isStaffRelation(relation)
+}
+
+export function isCloseFriend(relation: Relationship): boolean {
+  return (
+    isPeerFriend(relation) && relation.intimacy >= CLOSE_FRIEND_THRESHOLD
+  )
+}
+
+export function closeFriendCount(state: GameState): number {
+  return state.relationships.filter(isCloseFriend).length
+}
+
+export function closeFriendGrowthMultiplier(state: GameState): number {
+  const count = Math.min(
+    CLOSE_FRIEND_LIMIT,
+    closeFriendCount(state),
+  )
+  return CLOSE_FRIEND_GROWTH_MULTIPLIERS[count]
+}
+
+/**
+ * 亲密度变化统一入口：社交面板倍率 → 交心朋友数量倍率 → 5 人封顶。
+ * 只有同辈且当前亲密度低于 60 的正向增长会受新规则影响。
+ */
 export function adjustIntimacyDelta(
   state: GameState,
   relation: Relationship,
@@ -354,7 +386,19 @@ export function adjustIntimacyDelta(
   ) {
     return 0
   }
-  return Math.round(delta * intimacyMultiplier(state, relation))
+  let adjusted = Math.round(delta * intimacyMultiplier(state, relation))
+  if (
+    adjusted > 0 &&
+    isPeerFriend(relation) &&
+    relation.intimacy < CLOSE_FRIEND_THRESHOLD
+  ) {
+    adjusted = Math.round(adjusted * closeFriendGrowthMultiplier(state))
+    if (closeFriendCount(state) >= CLOSE_FRIEND_LIMIT) {
+      adjusted = Math.min(adjusted, CLOSE_FRIEND_THRESHOLD - 1 - relation.intimacy)
+    }
+    adjusted = Math.max(0, adjusted)
+  }
+  return adjusted
 }
 
 export function patUsedThisWeek(state: GameState): number {
