@@ -14533,10 +14533,10 @@ body.day-transitioning .skip-rules-overlay {
   }
 }
 
-/* Shorter desktop windows: two rows of six actions instead of three rows of four. */
+/* Shorter windows now scroll; do not squeeze six cards into one row. */
 @media (min-width: 1000px) and (orientation: landscape) and (max-height: 940px) {
   .game-screen .game-center.tab-week .actions-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -15169,7 +15169,8 @@ body.day-transitioning .skip-rules-overlay {
 /* Narrower canvas ratios: compress the Week action grid so it still fits. */
 html[data-canvas-ratio="3:2"] .game-screen .game-center.tab-week .actions-grid,
 html[data-canvas-ratio="4:3"] .game-screen .game-center.tab-week .actions-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* Narrow canvas gets fewer, wider cards instead of more cramped columns. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
 }
 
@@ -19118,5 +19119,914 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* ============================================================
+   WEEK PAGE: internal scroll, collapsing hero, quiet daily tools
+   ============================================================ */
+
+.game-screen .game-center.tab-week {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.game-screen .game-center.tab-week > .tabs {
+  flex: 0 0 auto;
+}
+
+.week-scroll-shell {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.week-mini-header {
+  display: flex;
+  width: 100%;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 2px;
+  border-bottom: 0 solid transparent;
+  opacity: 0;
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.03em;
+  transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.week-mini-header:hover {
+  background: rgba(255, 252, 245, 0.4);
+}
+
+.week-mini-header.is-visible {
+  max-height: 31px;
+  padding: 4px 2px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  opacity: 1;
+}
+
+.week-mini-header span {
+  overflow: hidden;
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-mini-header strong {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.week-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 0 4px 18px 0;
+  scrollbar-width: none;
+}
+
+.week-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.week-hero {
+  max-height: 320px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.18s ease, margin 0.3s ease;
+}
+
+.week-hero.is-collapsed {
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.week-scrollbar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  width: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.week-scrollbar.is-visible {
+  opacity: 1;
+}
+
+.week-scrollbar > span {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  border-radius: 99px;
+  background: rgba(47, 91, 76, 0.36);
+  transition: transform 0.12s linear;
+}
+
+.daily-actions-section {
+  margin: 10px 0 12px;
+  padding: 0 0 9px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.daily-actions-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.daily-actions-head span {
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: 16px;
+}
+
+.daily-actions-head small {
+  color: var(--muted);
+  font-size: 7.5px;
+}
+
+.daily-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.daily-action-card {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 252, 245, 0.55);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.daily-action-card:hover:not(:disabled) {
+  border-color: rgba(47, 91, 76, 0.45);
+  background: var(--green-soft);
+}
+
+.daily-action-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.daily-action-card.is-used {
+  background: rgba(235, 232, 221, 0.55);
+}
+
+.daily-action-icon {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--green);
+}
+
+.daily-action-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+}
+
+.daily-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.daily-action-copy strong {
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-action-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7.3px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-action-card em {
+  color: var(--green);
+  font-size: 7px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+/* Compress the free-action cards after the daily tools. Keep the title,
+   one-line effect and locked state; remove repeated footnotes/flavor. */
+.game-screen .game-center.tab-week .actions-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.game-screen .game-center.tab-week .action-card {
+  min-height: 0;
+  padding: 7px 8px;
+  border-color: var(--line-soft);
+  background: rgba(255, 252, 245, 0.5);
+}
+
+.game-screen .game-center.tab-week .action-card .action-flavor {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.game-screen .game-center.tab-week .action-card .action-repeat {
+  display: none;
+}
+
+.game-screen .game-center.tab-week .action-card .action-effect {
+  margin-top: 2px;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.game-screen .game-center.tab-week .action-card .action-bottom {
+  padding-top: 4px;
+}
+
+.game-screen .game-center.tab-week .action-footer {
+  margin-top: 7px;
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-center.tab-week {
+    padding-bottom: 0;
+  }
+
+  .week-scroll {
+    padding-bottom: 22px;
+  }
+
+  .daily-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .game-screen .game-center.tab-week .actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep the daily action title and the three cards on a single row. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .daily-actions-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 7px;
+  }
+
+  .daily-actions-head {
+    flex: 0 0 auto;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 0;
+    padding-right: 2px;
+  }
+
+  .daily-actions-head span {
+    font-size: 14px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .daily-actions-head small {
+    font-size: 6.8px;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+
+  .daily-actions-grid {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .daily-action-card {
+    min-height: 45px;
+    padding: 5px 8px;
+  }
+}
+
+/* Mobile-only quick filters for the free-action grid. Research is grouped
+   with study actions; part-time work and sport are life actions. */
+.mobile-action-tabs {
+  display: none;
+}
+
+@media (max-width: 999px), (orientation: portrait) {
+  .mobile-action-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .mobile-action-tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 5px 4px;
+    border: 1px solid var(--line-soft);
+    background: rgba(255, 252, 245, 0.5);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 8px;
+    cursor: pointer;
+  }
+
+  .mobile-action-tabs button.is-active {
+    border-color: var(--green);
+    background: var(--green-soft);
+    color: var(--green);
+  }
+
+  .actions-grid.mobile-filter-life .action-card:not(.mobile-category-life),
+  .actions-grid.mobile-filter-study .action-card:not(.mobile-category-study),
+  .actions-grid.mobile-filter-social .action-card:not(.mobile-category-social) {
+    display: none;
+  }
+}
+
+/* Phone: keep the three daily tools on one compact row and drop the
+   explanatory/effect copy, leaving icon + name + status. */
+@media (max-width: 999px), (orientation: portrait) {
+  .daily-actions-section {
+    padding-bottom: 6px;
+  }
+
+  .daily-actions-head {
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .daily-actions-head span {
+    font-size: 15px;
+  }
+
+  .daily-actions-head small {
+    display: none;
+  }
+
+  .daily-actions-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .daily-action-card {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 2px 5px;
+    min-height: 0;
+    padding: 6px 6px 5px;
+  }
+
+  .daily-action-icon {
+    grid-row: 1 / 3;
+    width: 22px;
+    height: 22px;
+  }
+
+  .daily-action-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .daily-action-copy strong {
+    font-size: 11px;
+    white-space: normal;
+  }
+
+  .daily-action-copy small {
+    display: none;
+  }
+
+  .daily-action-card em {
+    grid-column: 2 / 3;
+    font-size: 6.5px;
+  }
+}
+
+/* Phone header: keep the 01 / 04 year block beside the chapter title. */
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .game-screen .game-head-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .game-screen .game-head-right {
+    flex: 0 0 auto;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  .game-screen .game-head-left h1 {
+    white-space: nowrap;
+  }
+
+  /* Keep the daily label and the three cards on one compact row. */
+  .daily-actions-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 6px;
+  }
+
+  .daily-actions-head {
+    flex: 0 0 auto;
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  .daily-actions-head span {
+    font-size: 13px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .daily-actions-head small {
+    display: none;
+  }
+
+  .daily-actions-grid {
+    flex: 1 1 auto;
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .daily-action-card {
+    min-width: 0;
+    padding: 5px 4px;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 2px 4px;
+  }
+
+  .daily-action-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .daily-action-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .daily-action-copy strong {
+    font-size: 9.5px;
+  }
+
+  .daily-action-card em {
+    font-size: 6px;
+  }
+
+  /* Energy / stress: label and value on one line, bar underneath. */
+  .mobile-hud .mobile-stat-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .mobile-hud .mobile-stat-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .mobile-hud .mobile-stat-line span {
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+
+  .mobile-hud .mobile-stat-line strong {
+    display: inline-block;
+    min-width: 0;
+    margin-top: 0;
+    font-size: 14px;
+  }
+
+  .mobile-stat-bar {
+    width: 100%;
+    height: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: rgba(47, 91, 76, 0.12);
+  }
+
+  .mobile-stat-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.2s ease;
+  }
+
+  .mobile-stat-bar.is-energy i {
+    background: #527b68;
+  }
+
+  .mobile-stat-bar.is-stress i {
+    background: #b45a42;
+  }
+}
+
+/* ------------------------------------------------------------
+   Phone-only minimal week mode
+   Toggle with the bottom "主界面·完整 / 主界面·极简" button.
+   ------------------------------------------------------------ */
+
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-center.tab-week.week-minimal-mode .week-hero {
+    display: none !important;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .week-mini-header {
+    max-height: 31px;
+    padding: 4px 2px 6px;
+    border-bottom: 1px solid var(--line-soft);
+    opacity: 1;
+    cursor: default;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .free-slot-heading,
+  .game-screen .game-center.tab-week.week-minimal-mode .withdraw-elective-panel,
+  .game-screen .game-center.tab-week.week-minimal-mode .constitution-decay-note,
+  .game-screen .game-center.tab-week.week-minimal-mode .week-focus-bar,
+  .game-screen .game-center.tab-week.week-minimal-mode .mobile-action-tabs,
+  .game-screen .game-center.tab-week.week-minimal-mode .action-footer {
+    display: none !important;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .daily-actions-section {
+    margin: 3px 0 7px;
+    padding-bottom: 6px;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid var(--line-soft);
+    background: rgba(255, 252, 245, 0.58);
+    overflow: hidden;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card .action-doodle {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 13px 11px 26px;
+    opacity: 0.27;
+    color: var(--green-deep);
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card:hover .action-doodle {
+    opacity: 0.34;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card > :not(.action-doodle):not(h3) {
+    display: none !important;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card h3 {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    left: 4px;
+    z-index: 2;
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    padding: 6px 2px 3px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    text-shadow: 0 1px 0 rgba(255, 252, 245, 0.82), 0 0 7px rgba(255, 252, 245, 0.62);
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-locked {
+    opacity: 0.52;
+    filter: grayscale(1);
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-locked::after,
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-selected::before,
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-committed::before {
+    position: absolute;
+    z-index: 3;
+    padding: 2px 4px;
+    font-family: var(--sans);
+    font-size: 6px;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-locked::after {
+    top: 5px;
+    right: 5px;
+    border: 1px solid rgba(95, 85, 70, 0.28);
+    background: rgba(255, 250, 240, 0.78);
+    color: var(--muted);
+    content: '锁定';
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-selected::before {
+    top: 5px;
+    left: 5px;
+    background: var(--green);
+    color: #f7f2e7;
+    content: '已选';
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-committed::before {
+    top: 5px;
+    left: 5px;
+    background: var(--gold);
+    color: #fffaf0;
+    content: '完成';
+  }
+
+  .game-screen .game-center.tab-week.week-minimal-mode .action-card.is-selected .action-doodle {
+    opacity: 0.2;
+  }
+}
+
+@media (max-width: 370px) and (max-height: 900px), (max-width: 370px) and (orientation: portrait) {
+  .game-screen .game-center.tab-week.week-minimal-mode .actions-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+/* Daily action labels have no inner fill; only the outer card is tinted. */
+.daily-action-copy,
+.daily-action-copy strong,
+.daily-action-copy small {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------
+   Free-action cards: one shared, time-of-day gradient flowing
+   across the whole grid. Card gaps stay transparent.
+   ------------------------------------------------------------ */
+.game-screen .game-center.tab-week .actions-grid .action-card {
+  background-color: rgba(255, 252, 245, 0.18);
+  background-image:
+    radial-gradient(circle at 18% 28%, var(--action-flow-a), transparent 55%),
+    radial-gradient(circle at 82% 74%, var(--action-flow-b), transparent 52%),
+    linear-gradient(120deg, var(--action-flow-c), var(--action-flow-d) 46%, var(--action-flow-e));
+  background-repeat: no-repeat;
+  background-size: 185% 185%, 185% 185%, 185% 185%;
+  background-attachment: fixed, fixed, fixed;
+  background-position: 4% 50%, 96% 50%, 0% 50%;
+  animation: free-action-flow 8s ease-in-out infinite;
+}
+
+.game-screen .game-center.tab-week.time-morning .actions-grid .action-card {
+  --action-flow-a: rgba(218, 177, 96, 0.33);
+  --action-flow-b: rgba(255, 242, 207, 0.28);
+  --action-flow-c: rgba(232, 205, 149, 0.17);
+  --action-flow-d: rgba(255, 249, 234, 0.08);
+  --action-flow-e: rgba(192, 148, 71, 0.24);
+}
+
+.game-screen .game-center.tab-week.time-afternoon .actions-grid .action-card {
+  --action-flow-a: rgba(126, 162, 134, 0.3);
+  --action-flow-b: rgba(207, 229, 198, 0.27);
+  --action-flow-c: rgba(147, 181, 151, 0.16);
+  --action-flow-d: rgba(255, 251, 237, 0.08);
+  --action-flow-e: rgba(77, 116, 92, 0.23);
+}
+
+.game-screen .game-center.tab-week.time-evening .actions-grid .action-card {
+  --action-flow-a: rgba(151, 135, 188, 0.32);
+  --action-flow-b: rgba(220, 209, 239, 0.26);
+  --action-flow-c: rgba(124, 108, 158, 0.17);
+  --action-flow-d: rgba(250, 247, 255, 0.08);
+  --action-flow-e: rgba(106, 91, 144, 0.24);
+}
+
+@keyframes free-action-flow {
+  0%, 100% {
+    background-position: 4% 50%, 96% 50%, 0% 50%;
+  }
+  50% {
+    background-position: 96% 50%, 4% 50%, 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-screen .game-center.tab-week .actions-grid .action-card {
+    animation: none;
+  }
+}
+
+/* Stronger single-gradient pass: this reads as one continuous sheet of
+   colour moving across all free-action cards, not a separate fill per card. */
+.game-screen .game-center.tab-week .actions-grid .action-card {
+  background-color: rgba(255, 252, 245, 0.1);
+  background-image: linear-gradient(
+    112deg,
+    var(--action-flow-a) 0%,
+    var(--action-flow-b) 22%,
+    var(--action-flow-c) 48%,
+    var(--action-flow-d) 68%,
+    var(--action-flow-e) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 150% 150%;
+  background-attachment: fixed;
+  background-position: 0% 50%;
+  animation: free-action-flow-wide 8s ease-in-out infinite;
+}
+
+@keyframes free-action-flow-wide {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Phone week: remove the 21-square slot progress strip, in both modes.
+   The compact current-time badge/mini-header still carries the context. */
+@media (max-width: 999px), (orientation: portrait) {
+  .game-screen .game-center.tab-week .week-slot-strip {
+    display: none !important;
+  }
+
+  .game-screen .game-center.tab-week .week-controls-row {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-screen .game-center.tab-week .actions-grid .action-card {
+    animation: none;
+  }
+}
+
+/* One continuous gradient sheet behind the free-action grid.
+   It is clipped to the union of the card rectangles, so card gaps stay
+   transparent while every card samples the same moving gradient. */
+.actions-grid-flow-wrap {
+  position: relative;
+}
+
+.action-flow-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    112deg,
+    var(--action-flow-a) 0%,
+    var(--action-flow-b) 22%,
+    var(--action-flow-c) 48%,
+    var(--action-flow-d) 68%,
+    var(--action-flow-e) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 150% 150%;
+  background-position: 0% 50%;
+  animation: free-action-sheet-flow 8s ease-in-out infinite;
+}
+
+.game-screen .game-center.tab-week.time-morning .action-flow-sheet {
+  --action-flow-a: rgba(218, 177, 96, 0.42);
+  --action-flow-b: rgba(255, 242, 207, 0.26);
+  --action-flow-c: rgba(232, 205, 149, 0.22);
+  --action-flow-d: rgba(255, 249, 234, 0.09);
+  --action-flow-e: rgba(192, 148, 71, 0.34);
+}
+
+.game-screen .game-center.tab-week.time-afternoon .action-flow-sheet {
+  --action-flow-a: rgba(126, 162, 134, 0.38);
+  --action-flow-b: rgba(207, 229, 198, 0.25);
+  --action-flow-c: rgba(147, 181, 151, 0.22);
+  --action-flow-d: rgba(255, 251, 237, 0.09);
+  --action-flow-e: rgba(77, 116, 92, 0.32);
+}
+
+.game-screen .game-center.tab-week.time-evening .action-flow-sheet {
+  --action-flow-a: rgba(151, 135, 188, 0.4);
+  --action-flow-b: rgba(220, 209, 239, 0.25);
+  --action-flow-c: rgba(124, 108, 158, 0.23);
+  --action-flow-d: rgba(250, 247, 255, 0.09);
+  --action-flow-e: rgba(106, 91, 144, 0.33);
+}
+
+.actions-grid-flow-wrap > .actions-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.game-screen .game-center.tab-week .actions-grid .action-card {
+  background: transparent !important;
+  background-image: none !important;
+  animation: none;
+}
+
+@keyframes free-action-sheet-flow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-flow-sheet {
+    animation: none;
   }
 }

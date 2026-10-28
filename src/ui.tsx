@@ -312,6 +312,7 @@ export function InterfaceNav({
   badges = {},
   variant = 'top',
   bondAlert = false,
+  mainLabel = '主界面',
 }: {
   active: 'main' | 'who' | 'ta'
   onMain: () => void
@@ -320,6 +321,7 @@ export function InterfaceNav({
   badges?: Partial<Record<'main' | 'who' | 'ta', string | number | boolean>>
   variant?: 'top' | 'bottom'
   bondAlert?: boolean
+  mainLabel?: string
 }) {
   const renderBadge = (value: string | number | boolean | undefined) => {
     if (value === undefined || value === false || value === 0 || value === '') {
@@ -363,7 +365,7 @@ export function InterfaceNav({
   return (
     <nav className={`interface-nav is-${variant}`} aria-label="界面切换">
       {item('who', '我是谁', onWho)}
-      {item('main', '主界面', onMain)}
+      {item('main', mainLabel, onMain)}
       {item('ta', 'TA 是谁', onTA)}
     </nav>
   )

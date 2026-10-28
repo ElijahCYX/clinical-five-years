@@ -91,6 +91,55 @@ type GameTab =
   | 'chat'
   | 'diary'
 
+function DailyActionIcon({
+  kind,
+}: {
+  kind: 'coffee' | 'run' | 'care'
+}) {
+  if (kind === 'coffee') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 8h11v6a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z" />
+        <path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2" />
+        <path d="M8 4c-1 1-1 2 0 3M11 4c-1 1-1 2 0 3" />
+      </svg>
+    )
+  }
+  if (kind === 'run') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="14" cy="4.5" r="2" />
+        <path d="M12 8l-3 5 4 2 2 5M9 13l-4 2M13 15l-3 5" />
+        <path d="M4 21h5M16 21h4" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.3A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+      <path d="M8 13h2l1-2 2 4 1-2h2" />
+    </svg>
+  )
+}
+
+type MobileActionGroup = 'all' | 'life' | 'study' | 'social'
+
+function mobileActionGroup(actionId: string): Exclude<MobileActionGroup, 'all'> {
+  if (actionId === 'sport' || actionId === 'partTime') return 'life'
+  if (
+    actionId === 'library' ||
+    actionId === 'electiveHomework' ||
+    actionId === 'research' ||
+    actionId === 'english'
+  ) {
+    return 'study'
+  }
+  return 'social'
+}
+
+type MobileWeekMode = 'full' | 'minimal'
+const MOBILE_WEEK_MODE_KEY = 'clinical-five-years-mobile-week-mode'
+
 interface WeekScreenProps {
   state: GameState
   onToggleAction: (id: string) => void
@@ -193,6 +242,30 @@ export function WeekScreen({
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
   const [withdrawPanelHidden, setWithdrawPanelHidden] = useState(false)
+  const [weekScrollTop, setWeekScrollTop] = useState(0)
+  const [weekHeroCollapsed, setWeekHeroCollapsed] = useState(false)
+  const [mobileActionFilter, setMobileActionFilter] = useState<MobileActionGroup>('all')
+  const [mobileWeekMode, setMobileWeekMode] = useState<MobileWeekMode>(() => {
+    try {
+      return localStorage.getItem(MOBILE_WEEK_MODE_KEY) === 'minimal' ? 'minimal' : 'full'
+    } catch {
+      return 'full'
+    }
+  })
+  const [isMobileLayout, setIsMobileLayout] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(max-width: 999px), (orientation: portrait)').matches
+      : false,
+  )
+  const [weekScrollVisible, setWeekScrollVisible] = useState(false)
+  const [weekScrollThumb, setWeekScrollThumb] = useState({
+    top: 0,
+    height: 0,
+  })
+  const weekScrollRef = useRef<HTMLDivElement | null>(null)
+  const weekScrollHideTimer = useRef<number | null>(null)
+  const actionFlowWrapRef = useRef<HTMLDivElement | null>(null)
+  const [actionFlowClip, setActionFlowClip] = useState('')
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const [dinnerOpen, setDinnerOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
@@ -598,6 +671,138 @@ export function WeekScreen({
     [],
   )
 
+  useEffect(
+    () => () => {
+      if (weekScrollHideTimer.current !== null) {
+        window.clearTimeout(weekScrollHideTimer.current)
+      }
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (tab === 'week') return
+    setWeekScrollTop(0)
+    setWeekHeroCollapsed(false)
+    setWeekScrollVisible(false)
+    setWeekScrollThumb({ top: 0, height: 0 })
+  }, [tab])
+
+  useEffect(() => {
+    const element = weekScrollRef.current
+    if (element) element.scrollTop = 0
+    setWeekScrollTop(0)
+    setWeekHeroCollapsed(false)
+    setWeekScrollVisible(false)
+    setWeekScrollThumb({ top: 0, height: 0 })
+  }, [state.weekSlot, state.week, state.seasonIndex])
+
+  const handleWeekScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const element = event.currentTarget
+    setWeekScrollTop(element.scrollTop)
+    if (element.scrollTop > 52) setWeekHeroCollapsed(true)
+    const maxScroll = Math.max(1, element.scrollHeight - element.clientHeight)
+    const ratio = Math.min(1, Math.max(0, element.scrollTop / maxScroll))
+    const trackHeight = element.clientHeight
+    const thumbHeight = Math.max(
+      36,
+      Math.round(trackHeight * Math.min(1, element.clientHeight / Math.max(1, element.scrollHeight))),
+    )
+    setWeekScrollThumb({
+      top: Math.round(ratio * Math.max(0, trackHeight - thumbHeight)),
+      height: thumbHeight,
+    })
+    setWeekScrollVisible(true)
+    if (weekScrollHideTimer.current !== null) {
+      window.clearTimeout(weekScrollHideTimer.current)
+    }
+    weekScrollHideTimer.current = window.setTimeout(() => {
+      setWeekScrollVisible(false)
+      weekScrollHideTimer.current = null
+    }, 850)
+  }
+
+  const weekHeroFade = Math.max(0, Math.min(1, 1 - weekScrollTop / 90))
+
+  const minimalWeekMode =
+    isMobileLayout && tab === 'week' && mobileWeekMode === 'minimal'
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 999px), (orientation: portrait)')
+    const update = () => setIsMobileLayout(media.matches)
+    media.addEventListener?.('change', update)
+    return () => media.removeEventListener?.('change', update)
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MOBILE_WEEK_MODE_KEY, mobileWeekMode)
+    } catch {
+      /* localStorage may be unavailable */
+    }
+    if (mobileWeekMode === 'full') {
+      setWeekHeroCollapsed(false)
+      setWeekScrollTop(0)
+      weekScrollRef.current?.scrollTo({ top: 0 })
+    }
+  }, [mobileWeekMode])
+
+  useLayoutEffect(() => {
+    const wrap = actionFlowWrapRef.current
+    if (!wrap) {
+      setActionFlowClip('')
+      return
+    }
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const wrapRect = wrap.getBoundingClientRect()
+      const cards = Array.from(
+        wrap.querySelectorAll<HTMLElement>('.actions-grid .action-card'),
+      ).filter((card) => getComputedStyle(card).display !== 'none')
+      if (!cards.length) {
+        setActionFlowClip('')
+        return
+      }
+      const path = cards
+        .map((card) => {
+          const rect = card.getBoundingClientRect()
+          const x = Math.round(rect.left - wrapRect.left)
+          const y = Math.round(rect.top - wrapRect.top)
+          const width = Math.round(rect.width)
+          const height = Math.round(rect.height)
+          return `M${x} ${y}h${width}v${height}h${-width}Z`
+        })
+        .join(' ')
+      setActionFlowClip((previous) => (previous === path ? previous : path))
+    }
+    const schedule = () => {
+      if (frame) return
+      frame = requestAnimationFrame(update)
+    }
+    update()
+    const observer = new ResizeObserver(schedule)
+    observer.observe(wrap)
+    wrap
+      .querySelectorAll<HTMLElement>('.actions-grid .action-card')
+      .forEach((card) => observer.observe(card))
+    window.addEventListener('resize', schedule)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      observer.disconnect()
+      window.removeEventListener('resize', schedule)
+    }
+  }, [tab, minimalWeekMode, mobileActionFilter, isMobileLayout, state])
+
+  const toggleWeekMode = () => {
+    if (!isMobileLayout) return
+    if (tab !== 'week') {
+      setTab('week')
+      return
+    }
+    setMobileWeekMode((mode) => (mode === 'minimal' ? 'full' : 'minimal'))
+  }
+
   const lockReason = (action: ActionDef): string | null => {
     if (
       action.id === 'electiveHomework' &&
@@ -715,6 +920,68 @@ export function WeekScreen({
       </div>
       <p className="placeholder-note">人物关系与好感系统将在后续模块展开。</p>
     </div>
+  )
+
+  const renderDailyActions = () => (
+    <section className="daily-actions-section" aria-label="每日行动">
+      <div className="daily-actions-head">
+        <div>
+          <span>每日行动</span>
+          <small>每天各一次 · 不消耗时间段</small>
+        </div>
+      </div>
+      <div className="daily-actions-grid">
+        <button
+          type="button"
+          className={`daily-action-card ${coffeeUsedToday ? 'is-used' : ''}`}
+          disabled={coffeeUsedToday || state.money < coffeeCost || state.energy >= 100}
+          onClick={onDrinkCoffee}
+        >
+          <span className="daily-action-icon"><DailyActionIcon kind="coffee" /></span>
+          <span className="daily-action-copy">
+            <strong>喝咖啡</strong>
+            <small>精力 +10 · {coffeeCost === 0 ? '免费' : `生活费 -${coffeeCost}`}</small>
+          </span>
+          <em>{coffeeUsedToday ? '今日已喝' : '可执行'}</em>
+        </button>
+        <button
+          type="button"
+          className={`daily-action-card ${runUsedToday ? 'is-used' : ''}`}
+          disabled={!hasPeCourse || runUsedToday || state.energy < 20 || state.peRunCount >= 24}
+          onClick={onCampusRun}
+        >
+          <span className="daily-action-icon"><DailyActionIcon kind="run" /></span>
+          <span className="daily-action-copy">
+            <strong>校园跑</strong>
+            <small>
+              {hasPeCourse
+                ? `精力 -20 · 体质成长 +1 · ${state.peRunCount} / 24`
+                : '当前没有体育课'}
+            </small>
+          </span>
+          <em>
+            {!hasPeCourse
+              ? '不可用'
+              : runUsedToday
+                ? '今日已跑'
+                : `上限 ${runCap}`}
+          </em>
+        </button>
+        <button
+          type="button"
+          className={`daily-action-card ${selfCareUsedToday ? 'is-used' : ''}`}
+          disabled={selfCareUsedToday || state.money < selfCareCost}
+          onClick={onDailySelfCare}
+        >
+          <span className="daily-action-icon"><DailyActionIcon kind="care" /></span>
+          <span className="daily-action-copy">
+            <strong>爱你老己</strong>
+            <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长 -5%</small>
+          </span>
+          <em>{selfCareUsedToday ? '今日已做' : '可执行'}</em>
+        </button>
+      </div>
+    </section>
   )
 
   const renderTimetable = () => {
@@ -1079,19 +1346,29 @@ export function WeekScreen({
         </header>
 
         <div className="mobile-hud">
-          <div>
-            <span>精力</span>
-            <strong>
-              {state.energy}
-              {previewTransition(state.energy, preview?.energy ?? null, true)}
-            </strong>
+          <div className="mobile-stat-cell">
+            <div className="mobile-stat-line">
+              <span>精力</span>
+              <strong>
+                {state.energy}
+                {previewTransition(state.energy, preview?.energy ?? null, true)}
+              </strong>
+            </div>
+            <div className="mobile-stat-bar is-energy">
+              <i style={{ width: `${Math.max(0, Math.min(100, state.energy))}%` }} />
+            </div>
           </div>
-          <div>
-            <span>压力</span>
-            <strong>
-              {state.stress}
-              {previewTransition(state.stress, preview?.stress ?? null, false)}
-            </strong>
+          <div className="mobile-stat-cell">
+            <div className="mobile-stat-line">
+              <span>压力</span>
+              <strong>
+                {state.stress}
+                {previewTransition(state.stress, preview?.stress ?? null, false)}
+              </strong>
+            </div>
+            <div className="mobile-stat-bar is-stress">
+              <i style={{ width: `${Math.max(0, Math.min(100, state.stress))}%` }} />
+            </div>
           </div>
           <div>
             <span>生活费</span>
@@ -1149,7 +1426,11 @@ export function WeekScreen({
           />
 
 
-          <section className={`game-center time-${weekPhaseClass} tab-${tab}`}>
+          <section
+            className={`game-center time-${weekPhaseClass} tab-${tab} ${
+              minimalWeekMode ? 'week-minimal-mode' : ''
+            }`}
+          >
             <div
               className={`time-phase-veil phase-${weekPhaseClass}`}
               key={weekPhaseClass}
@@ -1224,7 +1505,31 @@ export function WeekScreen({
             {tab === 'timetable' && renderTimetable()}
 
             {tab === 'week' && (
-              <>
+              <div className="week-scroll-shell">
+                <button
+                  type="button"
+                  className={`week-mini-header ${weekHeroCollapsed || weekScrollTop > 36 ? 'is-visible' : ''}`}
+                  aria-label="展开本周标题与概览"
+                  title="展开本周标题与概览"
+                  onClick={() => {
+                    if (minimalWeekMode) return
+                    setWeekHeroCollapsed(false)
+                    setWeekScrollTop(0)
+                    weekScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  <span>第 {state.week} 周 · {currentSlotDay} · {currentSlotPhase}</span>
+                  <strong>{weekSlot + 1} / 21</strong>
+                </button>
+                <div
+                  className="week-scroll"
+                  ref={weekScrollRef}
+                  onScroll={handleWeekScroll}
+                >
+                <div
+                  className={`week-hero ${weekHeroCollapsed ? 'is-collapsed' : ''}`}
+                  style={{ opacity: weekHeroFade }}
+                >
                 <div className="week-title-row">
                   <div>
                     <h2>这周，你想怎么过？</h2>
@@ -1363,50 +1668,10 @@ export function WeekScreen({
                   </div>
                 </div>
 
-                <div className="daily-action-bar">
-                  <div className="daily-action-label">
-                    <span>每日行动</span>
-                    <small>每天各一次 · 不消耗时间段</small>
-                  </div>
-                  <button
-                    type="button"
-                    className={`daily-action-btn ${coffeeUsedToday ? 'is-used' : ''}`}
-                    disabled={coffeeUsedToday || state.money < coffeeCost || state.energy >= 100}
-                    onClick={onDrinkCoffee}
-                  >
-                    <strong>喝咖啡</strong>
-                    <small>精力 +10 · {coffeeCost === 0 ? '免费' : `生活费 -${coffeeCost}`}</small>
-                    <em>{coffeeUsedToday ? '今日已喝' : '今日可执行'}</em>
-                  </button>
-                  {hasPeCourse && (
-                    <button
-                      type="button"
-                      className={`daily-action-btn campus-run ${runUsedToday ? 'is-used' : ''}`}
-                      disabled={runUsedToday || state.energy < 20 || state.peRunCount >= 24}
-                      onClick={onCampusRun}
-                    >
-                      <strong>校园跑</strong>
-                      <small>精力 -20 · 体质成长 +1</small>
-                      <em>
-                        {runUsedToday
-                          ? '今日已跑'
-                          : `${state.peRunCount} / 24 · 成绩上限 ${runCap}`}
-                      </em>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className={`daily-action-btn ${selfCareUsedToday ? 'is-used' : ''}`}
-                    disabled={selfCareUsedToday || state.money < selfCareCost}
-                    onClick={onDailySelfCare}
-                  >
-                    <strong>高碳日！爱你老己</strong>
-                    <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长值 -5%</small>
-                    <em>{selfCareUsedToday ? '今日已做' : '今日可执行'}</em>
-                  </button>
                 </div>
 
                 {currentSlotActivity ? (
+                  <>
                   <section className="paper-card slot-course-panel slot-club-panel">
                     <div className="slot-course-meta">
                       <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
@@ -1434,7 +1699,10 @@ export function WeekScreen({
                       </button>
                     </div>
                   </section>
+                  {renderDailyActions()}
+                  </>
                 ) : currentSlotCourse ? (
+                  <>
                   <section className="paper-card slot-course-panel">
                     <div className="slot-course-meta">
                       <span>当前时间段有课 · {currentSlotDay} {currentSlotPhase}</span>
@@ -1474,6 +1742,8 @@ export function WeekScreen({
                       </div>
                     </div>
                   </section>
+                  {renderDailyActions()}
+                  </>
                 ) : (
                   <>
 
@@ -1547,10 +1817,43 @@ export function WeekScreen({
                   </button>
                 )}
 
-                <div className="actions-grid">
+                {renderDailyActions()}
+
+                <div className="mobile-action-tabs" role="tablist" aria-label="行动分类">
+                  {(
+                    [
+                      ['all', '全部'],
+                      ['life', '生活'],
+                      ['study', '学习'],
+                      ['social', '社交'],
+                    ] as Array<[MobileActionGroup, string]>
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={mobileActionFilter === key}
+                      className={mobileActionFilter === key ? 'is-active' : ''}
+                      onClick={() => setMobileActionFilter(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="actions-grid-flow-wrap" ref={actionFlowWrapRef}>
+                  <div
+                    className="action-flow-sheet"
+                    aria-hidden="true"
+                    style={{
+                      clipPath: actionFlowClip ? `path("${actionFlowClip}")` : undefined,
+                      visibility: actionFlowClip ? 'visible' : 'hidden',
+                    }}
+                  />
+                  <div className={`actions-grid mobile-filter-${mobileActionFilter}`}>
                   {currentSlotIsMorning ? (
                     <div
-                      className={`action-card sleep-in-card ${
+                      className={`action-card sleep-in-card mobile-category-life ${
                         sleepInDisabled ? 'is-locked' : ''
                       }`}
                       role="button"
@@ -1608,7 +1911,7 @@ export function WeekScreen({
                     </div>
                   ) : (
                     <div
-                      className="action-card"
+                      className="action-card mobile-category-life"
                       role="button"
                       tabIndex={0}
                       onClick={() => handleSlotActionClick('rest')}
@@ -1638,7 +1941,7 @@ export function WeekScreen({
                       return (
                         <div
                           key="soloInvite"
-                          className="action-card solo-invite-card"
+                          className="action-card solo-invite-card mobile-category-social"
                           role="button"
                           tabIndex={0}
                           onClick={() => setSoloInviteOpen(true)}
@@ -1683,7 +1986,7 @@ export function WeekScreen({
                         role="button"
                         tabIndex={disabled || committed ? -1 : 0}
                         aria-disabled={disabled || committed}
-                        className={`action-card ${selected ? 'is-selected' : ''} ${
+                        className={`action-card mobile-category-${mobileActionGroup(action.id)} ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         } ${committed ? 'is-committed' : ''}`}
                         onClick={() => !disabled && handleSlotActionClick(action.id)}
@@ -1702,7 +2005,11 @@ export function WeekScreen({
                           <span>{action.category}</span>
                           <span className="action-no">{action.no}</span>
                         </div>
-                        <h3>{displayActionName(action)}</h3>
+                        <h3>
+                          {minimalWeekMode && action.id === 'electiveHomework'
+                            ? '小组作业'
+                            : displayActionName(action)}
+                        </h3>
                         <p className="action-flavor">{action.flavor}</p>
                         <p className="action-effect">{actionEffectText(action)}</p>
                         <div className="action-bottom">
@@ -1730,6 +2037,7 @@ export function WeekScreen({
                       </div>
                     )
                   })}
+                  </div>
                 </div>
 
                 <div className="action-footer">
@@ -1738,7 +2046,19 @@ export function WeekScreen({
 
                   </>
                 )}
-              </>
+                </div>
+                <div
+                  className={`week-scrollbar ${weekScrollVisible ? 'is-visible' : ''}`}
+                  aria-hidden="true"
+                >
+                  <span
+                    style={{
+                      height: `${weekScrollThumb.height}px`,
+                      transform: `translateY(${weekScrollThumb.top}px)`,
+                    }}
+                  />
+                </div>
+              </div>
             )}
 
             {tab === 'mail' && (
@@ -1897,7 +2217,14 @@ export function WeekScreen({
             active="main"
             variant="bottom"
             bondAlert={hasAvailableBond(state)}
-            onMain={() => undefined}
+            onMain={toggleWeekMode}
+            mainLabel={
+              isMobileLayout
+                ? mobileWeekMode === 'minimal'
+                  ? '主界面·极简'
+                  : '主界面·完整'
+                : '主界面'
+            }
             onWho={onOpenWhoAmI ?? (() => undefined)}
             onTA={onOpenTA ?? (() => undefined)}
             badges={{
