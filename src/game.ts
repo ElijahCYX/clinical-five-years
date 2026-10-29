@@ -426,6 +426,12 @@ export function newGameState(player: Player): GameState {
       exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
       english: 0, electiveHomework: 0, date: 0,
     },
+    careerStats: {
+      library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
+      exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
+      english: 0, electiveHomework: 0, date: 0, campusRun: 0, dinner: 0,
+      travel: 0, weeks: 0,
+    },
     expulsionText: null,
     expulsionCredits: 0,
     expulsionCourses: [],
@@ -443,6 +449,9 @@ export function newGameState(player: Player): GameState {
     everFailed: false,
     yearFailed: false,
     socialGrowth: 0,
+    comprehensionGrowth: 0,
+    debateCups: [],
+    debateHonors: [],
     mentorSelected: false,
     labEntered: false,
     highPressureDebuff: false,
@@ -492,6 +501,7 @@ export function newGameState(player: Player): GameState {
     socialModuleUnlocked: false,
     relationships: [],
     dinnerPlan: null,
+    dinnerPlans: [],
     dinnerInvites: null,
     romanceUnlocked: false,
     courseRecords: [],
@@ -513,7 +523,9 @@ export function newGameState(player: Player): GameState {
     labAccessMailSent: false,
     labAccessPendingAtAbs: null,
     projectOfferMailSent: false,
+    projectOfferPendingAtAbs: null,
     researchProgress: 0,
+    researchPreparation: 0,
     researchPublished: false,
     researchJournal: null,
     publishedPapers: 0,
@@ -529,6 +541,8 @@ export function newGameState(player: Player): GameState {
     soloInvites: [],
     soloChatRecords: [],
     npcRelations: [],
+    npcProfiles: {},
+    npcClueAsked: {},
     gossipAsked: {},
     gossipRecords: [],
     soloRefusals: {},
@@ -786,6 +800,7 @@ export interface WeekSimulation {
   composite: number
   research: number
   researchProgressGain: number
+  researchPreparationGain: number
   mentorIntimacyGain: number
   familyAffectionGain: number
   mentorRecognitionGain: number
@@ -794,6 +809,7 @@ export interface WeekSimulation {
   constitutionGrowth: number
   appearanceGrowth: number
   socialGrowth: number
+  comprehensionGrowth: number
   attrs: Record<AttrKey, number>
   studyCount: number
   habitApplied: boolean
@@ -847,6 +863,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   let composite = state.composite
   let research = state.research
   let researchProgressGain = 0
+  let researchPreparationGain = 0
   let mentorIntimacyGain = 0
   let familyAffectionGain = 0
   let mentorRecognitionGain = 0
@@ -854,6 +871,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   let constitutionGrowth = state.constitutionGrowth
   let appearanceGrowth = state.appearanceGrowth
   let socialGrowth = state.socialGrowth
+  const comprehensionGrowth = state.comprehensionGrowth
   const attrs = { ...player.attrs }
   const prep = { ...state.prep }
   let studyCount = 0
@@ -980,9 +998,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
       englishGrowth += (habit.english ?? 0) * workdayFactor
       if (habit.id === 'reading') {
         if (!state.labEntered) {
-          if (state.relationships.some((relation) => relation.kind === 'mentor')) {
-            mentorRecognitionGain += (habit.mentorRecognition ?? 2) * workdayFactor
-          }
+          researchPreparationGain += 2 * workdayFactor
         } else {
           const progress = 0.4 * workdayFactor
           research += progress
@@ -1042,6 +1058,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     composite,
     research,
     researchProgressGain,
+    researchPreparationGain,
     mentorIntimacyGain,
     familyAffectionGain,
     mentorRecognitionGain,
@@ -1050,6 +1067,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     constitutionGrowth: grown.constitutionGrowth,
     appearanceGrowth: grown.appearanceGrowth,
     socialGrowth: grown.socialGrowth,
+    comprehensionGrowth: grown.comprehensionGrowth,
     attrs: grown.attrs,
     studyCount,
     habitApplied,

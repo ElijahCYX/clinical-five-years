@@ -1,10 +1,14 @@
 import type {
   GameState,
+  Gender,
   GossipRecord,
+  NpcProfile,
   NpcRelation,
   NpcRelationKind,
   PendingEvent,
+  SexualOrientation,
 } from './types'
+import { randomCharacterName } from './names'
 import { currentWeekKey } from './social'
 import { soloSlotLabel } from './solo'
 import { pickGossipReply } from './gossipReplies'
@@ -24,6 +28,103 @@ export const NPC_RELATION_LABELS: Record<NpcRelationKind, string> = {
 
 const SECRET_KINDS: NpcRelationKind[] = ['lover', 'crush', 'conflict']
 const DYNAMIC_KINDS: NpcRelationKind[] = ['lover', 'crush', 'conflict', 'ex']
+
+/** Every NPC relationship kind has a coherent intimacy range. */
+const INTIMACY_BOUNDS: Record<NpcRelationKind, [number, number]> = {
+  roommate: [20, 75],
+  classmate: [20, 75],
+  clubmate: [20, 75],
+  friend: [40, 75],
+  lover: [60, 100],
+  brother: [60, 100],
+  sister: [60, 100],
+  crush: [30, 85],
+  ex: [15, 59],
+  conflict: [0, 40],
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+function randomInt(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1))
+}
+
+const PROFILE_ORIENTATIONS: SexualOrientation[] = [
+  'heterosexual',
+  'homosexual',
+  'bisexual',
+]
+
+function createNpcProfile(): NpcProfile {
+  const gender: Gender = Math.random() < 0.5 ? '女' : '男'
+  return {
+    name: randomCharacterName(),
+    gender,
+    orientation:
+      PROFILE_ORIENTATIONS[Math.floor(Math.random() * PROFILE_ORIENTATIONS.length)],
+    revealed: false,
+  }
+}
+
+function ensureNpcProfiles(
+  state: GameState,
+  relations: NpcRelation[],
+): Record<string, NpcProfile> {
+  const profiles: Record<string, NpcProfile> = { ...(state.npcProfiles ?? {}) }
+  const knownIds = new Set(state.relationships.map((relation) => relation.id))
+  for (const relation of relations) {
+    for (const id of [relation.aId, relation.bId]) {
+      if (knownIds.has(id) || profiles[id]) continue
+      profiles[id] = createNpcProfile()
+    }
+  }
+  return profiles
+}
+
+function randomSecretIntimacy(kind: NpcRelationKind): number {
+  if (kind === 'lover') return randomInt(62, 94)
+  if (kind === 'ex') return randomInt(18, 55)
+  if (kind === 'conflict') return randomInt(10, 40)
+  return randomInt(32, 82)
+}
+
+/**
+ * Keep labels and numbers consistent. A lover below 60 is an ex, a sibling
+ * below 60 becomes a friend, and conflict/ex/friend values are clamped.
+ */
+export function normalizeNpcRelation(relation: NpcRelation): NpcRelation {
+  const raw = Number.isFinite(relation.intimacy) ? relation.intimacy : 20
+  let kind = relation.kind
+
+  // Decide the coherent label from the raw value first, then clamp into that
+  // label's range. Clamping first would silently turn a 45-point "lover" into
+  // a 60-point lover instead of an ex.
+  if (kind === 'lover' && raw < 60) {
+    kind = 'ex'
+  } else if ((kind === 'brother' || kind === 'sister') && raw < 60) {
+    kind = 'friend'
+  } else if (kind === 'ex' && raw > 59) {
+    kind = 'friend'
+  } else if (kind === 'conflict' && raw > 40) {
+    kind = 'friend'
+  } else if (kind === 'friend' && raw < 40) {
+    kind = 'classmate'
+  } else if (kind === 'crush' && raw < 30) {
+    kind = 'friend'
+  }
+
+  const bounds = INTIMACY_BOUNDS[kind]
+  const intimacy = Math.round(clamp(raw, bounds[0], bounds[1]))
+  return kind === relation.kind && intimacy === relation.intimacy
+    ? relation
+    : { ...relation, kind, intimacy }
+}
+
+function normalizedRelations(state: GameState): NpcRelation[] {
+  return (state.npcRelations ?? []).map(normalizeNpcRelation)
+}
 const GOSSIP_TEXTS = [
   '我最近看到{known}和{other}在食堂角落坐了很久，看起来关系不一般。',
   '有人说{known}和{other}之间有点什么，但具体是什么我也说不准。',
@@ -36,6 +137,31 @@ const GOSSIP_TEXTS = [
   '{known}在{other}面前和平时完全不一样，你自己观察一下就知道。',
   '关于{known}和{other}，我知道的不多，但肯定不是普通同学那么简单。',
 ]
+const GOSSIP_TEXTS_BY_KIND: Partial<Record<NpcRelationKind, string[]>> = {
+  lover: [
+    '听说 {known} 和 {other} 已经在一起了，只是还没公开。',
+    '最近 {known} 和 {other} 总是一起出现，大家都默认他们是一对了。',
+    '{known} 和 {other} 的关系好像有了新进展，有人看到他们牵手了。',
+  ],
+  crush: [
+    '{known} 最近看 {other} 的眼神不太一样，八成是有点意思。',
+    '我听说 {known} 一直暗恋 {other}，但对方好像还没察觉。',
+    '{known} 每次提到 {other} 都会突然话多，你说这是不是暗恋？',
+  ],
+  ex: [
+    '听说 {known} 和 {other} 已经分手了，最近两个人见面都绕着走。',
+    '{known} 和 {other} 那段关系结束了，具体原因没人说得清。',
+    '有人看见 {known} 把 {other} 送的东西还回去了，应该是分手了。',
+    '{known} 和 {other} 现在是前任关系，气氛有点尴尬。',
+  ],
+  conflict: [
+    '{known} 和 {other} 最近闹得很僵，听说因为一件小事吵了一架。',
+    '我听说 {known} 和 {other} 已经冷战好几天了，谁也不先开口。',
+    '{known} 和 {other} 现在见面连招呼都不打，气氛明显不对。',
+    '最近 {known} 和 {other} 之间有点矛盾，周围人都不敢提这件事。',
+  ],
+}
+
 const REFUSALS = [
   '嗯……这个我还是不说了吧，传出去不太好。',
   '你听谁说的？我倒是知道一点，但不太方便讲。',
@@ -72,11 +198,17 @@ export function npcRelationLabel(kind: NpcRelationKind): string {
 }
 
 export function npcPersonName(state: GameState, id: string): string {
-  return knownRelationship(state, id)?.name ?? '一个你还不认识的人'
+  const relation = knownRelationship(state, id)
+  if (relation) return relation.name
+  const profile = state.npcProfiles?.[id]
+  return profile?.revealed ? profile.name : '一个你还不认识的人'
 }
 
 export function npcGraphName(state: GameState, id: string): string {
-  return knownRelationship(state, id)?.name ?? '？？'
+  const relation = knownRelationship(state, id)
+  if (relation) return relation.name
+  const profile = state.npcProfiles?.[id]
+  return profile?.revealed ? profile.name : '？？'
 }
 
 export function npcAffinity(state: GameState, aId: string, bId: string): number {
@@ -163,68 +295,337 @@ export function createInitialNpcSocial(state: GameState): GameState {
   }
   peers.slice(0, 2).forEach((relation, index) => {
     const unknownId = `unknown-${index + 1}`
+    const kind = SECRET_KINDS[index % SECRET_KINDS.length]
     add(
       relation.id,
       unknownId,
-      SECRET_KINDS[index % SECRET_KINDS.length],
+      kind,
       false,
-      35 + (hashString(relation.id) % 35),
+      randomSecretIntimacy(kind),
     )
   })
 
-  return { ...state, npcRelations: relations }
+  const normalized = relations.map(normalizeNpcRelation)
+  return {
+    ...state,
+    npcRelations: normalized,
+    npcProfiles: ensureNpcProfiles(state, normalized),
+    npcClueAsked: state.npcClueAsked ?? {},
+  }
 }
 
 export function ensureNpcSocial(state: GameState): GameState {
   if ((state.npcRelations ?? []).length === 0) return createInitialNpcSocial(state)
-  return state
+  const npcRelations = normalizedRelations(state)
+  return {
+    ...state,
+    npcRelations,
+    npcProfiles: ensureNpcProfiles(state, npcRelations),
+    npcClueAsked: state.npcClueAsked ?? {},
+  }
 }
 
-/** 每周低概率让 NPC 关系发生一点变化。 */
+/** 每周让 1–2 个 NPC 关系自然变化，并维持关系类型与亲密度的合理性。 */
+function mutateNpcRelationOnce(relation: NpcRelation): NpcRelation {
+  const kind = relation.kind
+  const roll = Math.random()
+  const drift = randomInt(-7, 7)
+  const make = (
+    nextKind: NpcRelationKind,
+    min: number,
+    max: number,
+    intimacy = randomInt(min, max),
+  ) => normalizeNpcRelation({ ...relation, kind: nextKind, intimacy })
+
+  if (kind === 'lover') {
+    if (roll < 0.14) return make('ex', 18, 55)
+    if (roll < 0.2) return make('conflict', 10, 40)
+    if (roll < 0.24) return make('friend', 40, 60)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (kind === 'brother' || kind === 'sister') {
+    if (roll < 0.12) return make('conflict', 10, 40)
+    if (roll < 0.18) return make('friend', 40, 60)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (kind === 'crush') {
+    if (roll < 0.12 && relation.intimacy >= 60) {
+      return make('lover', 60, 100, clamp(relation.intimacy + randomInt(3, 9), 60, 100))
+    }
+    if (roll < 0.2) return make('friend', 40, 65)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (kind === 'ex') {
+    if (roll < 0.18) return make('friend', 40, 60)
+    if (roll < 0.28) return make('conflict', 10, 40)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (kind === 'conflict') {
+    if (roll < 0.3) return make('friend', 40, 55)
+    if (roll < 0.4) return make('ex', 20, 50)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (kind === 'friend') {
+    if (roll < 0.1) return make('crush', 30, 65)
+    if (roll < 0.16) return make('conflict', 10, 40)
+    return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+  }
+
+  if (roll < 0.07) return make('crush', 30, 65)
+  if (roll < 0.14) return make('friend', 40, 65)
+  if (roll < 0.18) return make('conflict', 10, 40)
+  return normalizeNpcRelation({ ...relation, intimacy: relation.intimacy + drift })
+}
+
+function mutateNpcRelation(relation: NpcRelation): NpcRelation {
+  const next = mutateNpcRelationOnce(relation)
+  if (next.kind !== relation.kind || next.intimacy !== relation.intimacy) {
+    return next
+  }
+  // A 0-point drift should still count as a weekly change. Nudge by one
+  // within the relationship's own range instead of leaving the graph static.
+  const [min, max] = INTIMACY_BOUNDS[next.kind]
+  const direction = next.intimacy >= max ? -1 : 1
+  return normalizeNpcRelation({
+    ...next,
+    intimacy: Math.max(min, Math.min(max, next.intimacy + direction)),
+  })
+}
+
+function newHiddenRelation(
+  state: GameState,
+  relations: NpcRelation[],
+): NpcRelation | null {
+  const peers = state.relationships.filter(
+    (relation) => !isStaffKind(relation.kind),
+  )
+  if (peers.length < 1) return null
+  const usedPairs = new Set(
+    relations.map((relation) => pairKey(relation.aId, relation.bId)),
+  )
+  const knownPairs: Array<[string, string]> = []
+  for (let index = 0; index < peers.length; index += 1) {
+    for (let other = index + 1; other < peers.length; other += 1) {
+      if (!usedPairs.has(pairKey(peers[index].id, peers[other].id))) {
+        knownPairs.push([peers[index].id, peers[other].id])
+      }
+    }
+  }
+  const kind = DYNAMIC_KINDS[Math.floor(Math.random() * DYNAMIC_KINDS.length)]
+  if (knownPairs.length > 0) {
+    const pair = knownPairs[Math.floor(Math.random() * knownPairs.length)]
+    return {
+      id: uid('npc-rel'),
+      aId: pair[0],
+      bId: pair[1],
+      kind,
+      intimacy: randomSecretIntimacy(kind),
+      known: false,
+      source: 'dynamic',
+    }
+  }
+  const anchor = peers[Math.floor(Math.random() * peers.length)]
+  const unknownId = uid('unknown-dynamic')
+  return {
+    id: uid('npc-rel'),
+    aId: anchor.id,
+    bId: unknownId,
+    kind,
+    intimacy: randomSecretIntimacy(kind),
+    known: false,
+    source: 'dynamic',
+  }
+}
+
 export function evolveNpcSocial(state: GameState): GameState {
   const peers = state.relationships.filter(
     (relation) => !isStaffKind(relation.kind),
   )
   if (peers.length === 0) return state
-  if (Math.random() > 0.09) return state
-  const relations = [...(state.npcRelations ?? [])]
-  const hidden = relations.filter((relation) => !relation.known)
-  if (hidden.length > 0 && Math.random() < 0.35) {
-    const target = hidden[Math.floor(Math.random() * hidden.length)]
-    const nextKind =
-      DYNAMIC_KINDS[Math.floor(Math.random() * DYNAMIC_KINDS.length)]
-    return {
-      ...state,
-      npcRelations: relations.map((relation) =>
-        relation.id === target.id ? { ...relation, kind: nextKind } : relation,
-      ),
-    }
+  const relations = normalizedRelations(state)
+  if (relations.length === 0) return state
+
+  const changed = [...relations]
+  const changeCount = 1 + (Math.random() < 0.5 ? 1 : 0)
+  const order = relations.map((_, index) => index)
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1))
+    ;[order[index], order[swap]] = [order[swap], order[index]]
   }
-  const playerBonded = new Set(
-    state.relationships
-      .filter((relation) => relation.partner || relation.bondType)
-      .map((relation) => relation.id),
-  )
-  const candidates = peers.filter((relation) => !playerBonded.has(relation.id))
-  if (candidates.length === 0 || relations.length >= 24) return state
-  const anchor = candidates[Math.floor(Math.random() * candidates.length)]
-  const unknownId = `unknown-dynamic-${relations.length + 1}`
-  const kind = DYNAMIC_KINDS[Math.floor(Math.random() * DYNAMIC_KINDS.length)]
+  for (let index = 0; index < Math.min(changeCount, order.length); index += 1) {
+    const position = order[index]
+    changed[position] = mutateNpcRelation(changed[position])
+  }
+
+  const hiddenCount = changed.filter((relation) => !relation.known).length
+  if ((hiddenCount === 0 || Math.random() < 0.65) && changed.length < 24) {
+    const secret = newHiddenRelation(state, changed)
+    if (secret) changed.push(secret)
+  }
+
+  const normalized = changed.map(normalizeNpcRelation)
   return {
     ...state,
-    npcRelations: [
-      ...relations,
-      {
-        id: uid('npc-rel'),
-        aId: anchor.id,
-        bId: unknownId,
-        kind,
-        intimacy: 35 + Math.floor(Math.random() * 35),
-        known: false,
-        source: 'dynamic',
-      },
-    ],
+    npcRelations: normalized,
+    npcProfiles: ensureNpcProfiles(state, normalized),
+    npcClueAsked: state.npcClueAsked ?? {},
   }
+}
+
+export interface NpcClueTarget {
+  relation: NpcRelation
+  relationLabel: string
+  unknownId: string
+  profile: NpcProfile
+  knownPartyId: string | null
+  knownPartyName: string | null
+}
+
+/** The unknown party attached to a revealed relation, if the clue still exists. */
+export function getNpcClueTarget(
+  state: GameState,
+  relationId: string,
+): NpcClueTarget | null {
+  const relation = (state.npcRelations ?? []).find((item) => item.id === relationId)
+  if (!relation) return null
+  const unknownId = [relation.aId, relation.bId].find(
+    (id) => !knownRelationship(state, id) && Boolean(state.npcProfiles?.[id]),
+  )
+  if (!unknownId) return null
+  const profile = state.npcProfiles?.[unknownId]
+  if (!profile) return null
+  const knownPartyId =
+    [relation.aId, relation.bId].find((id) => knownRelationship(state, id)) ?? null
+  return {
+    relation,
+    relationLabel: npcRelationLabel(relation.kind),
+    unknownId,
+    profile,
+    knownPartyId,
+    knownPartyName: knownPartyId
+      ? knownRelationship(state, knownPartyId)?.name ?? npcPersonName(state, knownPartyId)
+      : null,
+  }
+}
+
+export function npcClueAttemptedThisWeek(
+  state: GameState,
+  relationId: string,
+): boolean {
+  return (state.npcClueAsked ?? {})[relationId] === currentWeekKey(state)
+}
+
+export interface NpcClueResult {
+  state: GameState
+  success: boolean
+  chance: number
+  relationId: string
+  unknownId: string
+  name?: string
+  message: string
+  attemptedThisWeek: boolean
+}
+
+function applyNpcClueAttempt(
+  state: GameState,
+  target: NpcClueTarget,
+  chance: number,
+  roll: number,
+  partnerId: string | null,
+): NpcClueResult {
+  const weekKey = currentWeekKey(state)
+  if (npcClueAttemptedThisWeek(state, target.relation.id)) {
+    return {
+      state,
+      success: false,
+      chance,
+      relationId: target.relation.id,
+      unknownId: target.unknownId,
+      message: '这条线索本周已经追过了，下周再试试。',
+      attemptedThisWeek: true,
+    }
+  }
+
+  const success = roll < chance
+  const name = success ? target.profile.name : undefined
+  const message = success
+    ? `你从几条零碎的线索里把名字拼了出来：${target.profile.name}。现在关系网里不再是一个「？？」，但你们还没有正式认识。`
+    : '线索到这里就断了。对方只知道一个模糊的称呼，下周再问问看吧。'
+
+  const nextProfiles = success
+    ? {
+        ...(state.npcProfiles ?? {}),
+        [target.unknownId]: { ...target.profile, revealed: true },
+      }
+    : (state.npcProfiles ?? {})
+
+  let nextRecords = state.gossipRecords ?? []
+  if (partnerId) {
+    nextRecords = nextRecords.map((record) =>
+      record.partnerId === partnerId &&
+      record.relationId === target.relation.id &&
+      record.told
+        ? { ...record, clueNote: message }
+        : record,
+    )
+  }
+
+  return {
+    state: {
+      ...state,
+      npcProfiles: nextProfiles,
+      npcClueAsked: {
+        ...(state.npcClueAsked ?? {}),
+        [target.relation.id]: weekKey,
+      },
+      gossipRecords: nextRecords,
+    },
+    success,
+    chance,
+    relationId: target.relation.id,
+    unknownId: target.unknownId,
+    name,
+    message,
+    attemptedThisWeek: false,
+  }
+}
+
+/** Continue asking the bond who told the gossip. Chance grows with intimacy. */
+export function attemptNpcClueByChat(
+  state: GameState,
+  partnerId: string,
+  relationId: string,
+  roll = Math.random(),
+): NpcClueResult | null {
+  const target = getNpcClueTarget(state, relationId)
+  const partner = knownRelationship(state, partnerId)
+  if (!target || !partner) return null
+  const chance = Math.max(0.2, Math.min(0.92, 0.35 + partner.intimacy * 0.0055))
+  return applyNpcClueAttempt(state, target, chance, roll, partnerId)
+}
+
+/** Investigate an unknown node from the relationship graph. */
+export function attemptNpcClueByInvestigation(
+  state: GameState,
+  relationId: string,
+  roll = Math.random(),
+): NpcClueResult | null {
+  const target = getNpcClueTarget(state, relationId)
+  if (!target) return null
+  const social = state.player?.attrs.social ?? 0
+  const knownIntimacy = target.knownPartyId
+    ? knownRelationship(state, target.knownPartyId)?.intimacy ?? 0
+    : 0
+  const chance = Math.max(
+    0.05,
+    Math.min(0.95, (10 + social * 2 + knownIntimacy * 0.2) / 100),
+  )
+  return applyNpcClueAttempt(state, target, chance, roll, null)
 }
 
 export function gossipEligibleRelations(
@@ -257,7 +658,8 @@ export function gossipText(
 ): string {
   const known = npcPersonName(state, relation.aId)
   const other = npcPersonName(state, relation.bId)
-  const template = GOSSIP_TEXTS[Math.floor(Math.random() * GOSSIP_TEXTS.length)]
+  const pool = GOSSIP_TEXTS_BY_KIND[relation.kind] ?? GOSSIP_TEXTS
+  const template = pool[Math.floor(Math.random() * pool.length)]
   return template
     .replaceAll('{known}', known)
     .replaceAll('{other}', other)

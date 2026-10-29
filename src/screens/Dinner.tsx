@@ -12,6 +12,8 @@ import { Pill } from '../ui'
 interface DinnerModalProps {
   relationships: Relationship[]
   money: number
+  dinnerCount?: number
+  attendedIds?: string[]
   initialResults?: DinnerInviteResult[] | null
   onSaveResults?: (results: DinnerInviteResult[]) => void
   onConfirm: (acceptedIds: string[], declinedIds: string[], cost: number) => void
@@ -23,6 +25,8 @@ type DinnerResult = DinnerInviteResult
 export function DinnerModal({
   relationships,
   money,
+  dinnerCount = 0,
+  attendedIds = [],
   initialResults = null,
   onSaveResults,
   onConfirm,
@@ -80,7 +84,10 @@ export function DinnerModal({
           <div>
             <span className="dinner-eyebrow">DINNER INVITATION / 本周社交</span>
             <h2>今晚，组个什么局？</h2>
-            <p>选一位或多位朋友。赴约概率由你们之间的亲密度决定。</p>
+            <p>
+              选一位或多位朋友。赴约概率由你们之间的亲密度决定；本周已组局{' '}
+              {dinnerCount}/3，首次赴约 +3。
+            </p>
           </div>
           <Pill tone="gold">生活费 ¥{money}</Pill>
         </header>
@@ -115,6 +122,7 @@ export function DinnerModal({
                     </span>
                     <small>
                       {relationshipKindLabel(relation.kind)} · 亲密度 {relation.intimacy}
+                      {attendedIds.includes(relation.id) ? ' · 本周已赴约' : ''}
                     </small>
                   </span>
                   <span className="dinner-person-status">
@@ -139,7 +147,7 @@ export function DinnerModal({
           <div>
             <span>预计花费</span>
             <strong>{results ? `¥${cost}` : '¥50 起'}</strong>
-            <small>每多一位朋友赴约，总费用减少 ¥5；亲密度按赴约人数分配 +6。</small>
+            <small>每多一位朋友赴约，总费用减少 ¥5；只有首次赴约 +3，重复赴约不再增加。</small>
           </div>
           {!results ? (
             <div className="dinner-actions">
@@ -159,7 +167,15 @@ export function DinnerModal({
           ) : accepted.length > 0 ? (
             <div className="dinner-actions">
               <span className="dinner-summary">
-                {accepted.length} 人赴约 · 共 ¥{cost} · 每人亲密度 +{Math.max(1, Math.floor(6 / accepted.length))}
+                {accepted.length} 人赴约 · 共 ¥{cost} ·{' '}
+                {(() => {
+                  const firstTime = accepted.filter(
+                    (item) => !attendedIds.includes(item.id),
+                  ).length
+                  return firstTime > 0
+                    ? `首次赴约 ${firstTime} 人 · 每人 +3`
+                    : '没有新的首次赴约者'
+                })()}
               </span>
               <button
                 type="button"

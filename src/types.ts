@@ -260,6 +260,25 @@ export interface NoticeItem {
   text: string
 }
 
+export interface DebateCupRecord {
+  editionId: string
+  seasonId: string
+  label: string
+  appearances: boolean[]
+  watched: boolean[]
+  teamChampion: boolean
+  teamBestDebater: boolean
+  playerBestDebater: boolean
+  settled: boolean
+}
+
+export interface DebateHonorRecord {
+  id: string
+  editionLabel: string
+  kind: 'champion' | 'runner-up' | 'best-debater'
+  label: string
+}
+
 export interface WeekLog {
   week: number
   title: string
@@ -374,6 +393,13 @@ export interface NpcRelation {
   discoveredWeekKey?: string
 }
 
+export interface NpcProfile {
+  name: string
+  gender: Gender
+  orientation: SexualOrientation
+  revealed: boolean
+}
+
 export interface GossipRecord {
   id: string
   partnerId: string
@@ -389,6 +415,8 @@ export interface GossipRecord {
   atMs?: number
   /** 询问八卦时记录下来的时间标签，避免存档缺少字段时回退到当前时间。 */
   timeLabel?: string
+  /** 玩家对这条八卦里的“？？”追问后的结果，持久显示在聊天记录里。 */
+  clueNote?: string
 }
 
 export interface RelationshipStats {
@@ -476,6 +504,9 @@ export interface DinnerPlan {
   cost: number
   summary: string[]
   committed?: boolean
+  weekKey?: string
+  weekSlot?: number
+  firstTimerIds?: string[]
 }
 
 export interface DinnerInviteResult {
@@ -702,6 +733,24 @@ export interface Organization {
   benefit: OrganizationBenefit
 }
 
+export type ClubProjectPersonalOutcome = 'core' | 'helper' | 'audience' | 'prepared' | 'absent'
+
+export interface ClubProjectState {
+  projectId: string
+  seasonId: string
+  /** Fixed week in the season when the final event block happens. */
+  eventWeek: number
+  /** Fixed timetable slots reserved for the final event block. */
+  eventSlots: number[]
+  /** The player's choice for each weekly prep phase; null means did not participate. */
+  phaseChoices: Array<string | null>
+  contribution: number
+  /** Whether the player attended each final event slot. */
+  attendance: boolean[]
+  settled: boolean
+  personalOutcome: ClubProjectPersonalOutcome | null
+}
+
 export interface ClubMembership {
   orgId: string
   category: OrganizationCategory
@@ -716,6 +765,8 @@ export interface ClubMembership {
   highestRole: OrganizationRole
   activitySeasonIndex: number
   inactivityWarningIssued: boolean
+  project?: ClubProjectState | null
+  contribution?: number
 }
 
 export interface ClubHistoryEntry {
@@ -777,6 +828,27 @@ export interface SoloInvite {
   chat?: SoloChatLine[]
 }
 
+export interface CareerStats {
+  library: number
+  attend: number
+  skip: number
+  sleepIn: number
+  coffee: number
+  selfCare: number
+  exercise: number
+  social: number
+  partTime: number
+  research: number
+  club: number
+  english: number
+  electiveHomework: number
+  date: number
+  campusRun: number
+  dinner: number
+  travel: number
+  weeks: number
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -808,6 +880,8 @@ export interface GameState {
   pendingMakeups: Course[]
   outstandingFails: Record<string, number>
   semesterStats: SemesterStats
+  /** Five-year lifetime counters used by the graduation scorecard. */
+  careerStats: CareerStats
   expulsionText: string | null
   expulsionCredits: number
   expulsionCourses: string[]
@@ -825,6 +899,7 @@ export interface GameState {
   everFailed: boolean
   yearFailed: boolean
   socialGrowth: number
+  comprehensionGrowth: number
   mentorSelected: boolean
   labEntered: boolean
   highPressureDebuff: boolean
@@ -875,6 +950,8 @@ export interface GameState {
   socialModuleUnlocked: boolean
   relationships: Relationship[]
   dinnerPlan: DinnerPlan | null
+  /** All dinners arranged in the current week. */
+  dinnerPlans: DinnerPlan[]
   dinnerInvites: DinnerInvites | null
   romanceUnlocked: boolean
   courseRecords: CourseRecord[]
@@ -896,7 +973,9 @@ export interface GameState {
   labAccessMailSent: boolean
   labAccessPendingAtAbs: number | null
   projectOfferMailSent: boolean
+  projectOfferPendingAtAbs: number | null
   researchProgress: number
+  researchPreparation: number
   researchPublished: boolean
   researchJournal: string | null
   publishedPapers: number
@@ -908,10 +987,16 @@ export interface GameState {
   lastResearchWarningWeek: number
   lastHypothesisOfferSeason: string | null
   familyAffection: number
+  debateCups: DebateCupRecord[]
+  debateHonors: DebateHonorRecord[]
   familyCrisisRescued: boolean
   soloInvites: SoloInvite[]
   soloChatRecords: SoloChatRecord[]
   npcRelations: NpcRelation[]
+  /** 尚未成为正式联系人的“？？”NPC 档案；名字只有在线索成功后才公开。 */
+  npcProfiles: Record<string, NpcProfile>
+  /** relationId -> 尝试追问的周 key；聊天和关系网共享这一周一次机会。 */
+  npcClueAsked: Record<string, string>
   gossipAsked: Record<string, string>
   gossipRecords: GossipRecord[]
   soloRefusals: Record<string, string>

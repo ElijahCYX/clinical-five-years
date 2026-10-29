@@ -17,7 +17,6 @@ interface VacationScreenProps {
   state: GameState
   onToggleAction: (id: string) => void
   onEndWeek: () => void
-  onSave?: () => void
   onTitle?: () => void
   onWho?: () => void
   onTA?: () => void
@@ -43,7 +42,6 @@ export function VacationScreen({
   state,
   onToggleAction,
   onEndWeek,
-  onSave,
   onTitle,
   onWho,
   onTA,

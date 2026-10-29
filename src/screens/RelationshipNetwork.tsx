@@ -2,11 +2,31 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GameState, NpcRelation, Relationship } from '../types'
 import { bondLabel } from '../bonds'
 import { relationshipKindLabel } from '../social'
-import { npcGraphName, npcRelationLabel } from '../npcRelations'
+import {
+  getNpcClueTarget,
+  npcClueAttemptedThisWeek,
+  npcGraphName,
+  npcRelationLabel,
+  type NpcClueTarget,
+} from '../npcRelations'
 import { SectionLabel } from '../ui'
 
 interface RelationshipNetworkProps {
   state: GameState
+  onInvestigateNpcClue?: (relationId: string) => {
+    success: boolean
+    chance: number
+    message: string
+    name?: string
+    attemptedThisWeek: boolean
+  } | null
+}
+
+interface ClueResultView {
+  success: boolean
+  message: string
+  name?: string
+  attemptedThisWeek: boolean
 }
 
 type NodeKind = 'player' | 'relationship' | 'unknown'
@@ -124,7 +144,7 @@ function buildGraph(state: GameState): { nodes: GraphNode[]; edges: GraphEdge[] 
       knownIds.add(endpoint)
       nodes.push({
         id: endpoint,
-        name: '？？',
+        name: npcGraphName(state, endpoint),
         kind: 'unknown',
         intimacy: 28,
       })
@@ -281,7 +301,41 @@ function buildLayout(
   return positions
 }
 
-export function RelationshipNetwork({ state }: RelationshipNetworkProps) {
+export function RelationshipNetwork({
+  state,
+  onInvestigateNpcClue,
+}: RelationshipNetworkProps) {
+  const [clueTarget, setClueTarget] = useState<NpcClueTarget | null>(null)
+  const [clueResult, setClueResult] = useState<ClueResultView | null>(null)
+  const liveClueTarget = clueTarget
+    ? getNpcClueTarget(state, clueTarget.relation.id)
+    : null
+
+  const openUnknownClue = (npcId: string) => {
+    const relation = (state.npcRelations ?? []).find(
+      (item) =>
+        item.known &&
+        (item.aId === npcId || item.bId === npcId) &&
+        Boolean(state.relationships.some((known) => known.id === item.aId)) &&
+        Boolean(state.relationships.some((known) => known.id === item.bId)),
+    ) ?? (state.npcRelations ?? []).find(
+      (item) =>
+        item.known &&
+        (item.aId === npcId || item.bId === npcId),
+    )
+    if (!relation) return
+    const target = getNpcClueTarget(state, relation.id)
+    if (!target) return
+    setClueTarget(target)
+    setClueResult(null)
+  }
+
+  const investigate = () => {
+    if (!liveClueTarget || !onInvestigateNpcClue) return
+    const result = onInvestigateNpcClue(liveClueTarget.relation.id)
+    if (result) setClueResult(result)
+  }
+
   const graph = useMemo(() => buildGraph(state), [state])
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [size, setSize] = useState({ width: 900, height: 560 })
@@ -407,6 +461,20 @@ export function RelationshipNetwork({ state }: RelationshipNetworkProps) {
                   key={node.id}
                   className={`relationship-graph-node ${isPlayer ? 'is-player' : ''} ${isUnknown ? 'is-unknown' : ''}`}
                   transform={`translate(${point.x} ${point.y})`}
+                  role={isUnknown ? 'button' : undefined}
+                  tabIndex={isUnknown ? 0 : undefined}
+                  aria-label={isUnknown ? `调查 ${node.name} 的线索` : undefined}
+                  onClick={isUnknown ? () => openUnknownClue(node.id) : undefined}
+                  onKeyDown={
+                    isUnknown
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            openUnknownClue(node.id)
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   <circle
                     r={isPlayer ? 15 : isUnknown ? 8 : 11}
@@ -459,6 +527,82 @@ export function RelationshipNetwork({ state }: RelationshipNetworkProps) {
           </div>
         )}
       </div>
+
+      {clueTarget && liveClueTarget && (
+        <div
+          className="npc-clue-backdrop"
+          role="presentation"
+          onClick={() => {
+            setClueTarget(null)
+            setClueResult(null)
+          }}
+        >
+          <section
+            className="paper-card npc-clue-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="NPC 线索"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="npc-clue-kicker">RELATION CLUE / 线索</div>
+            <h3>顺着这条关系，也许能知道「？？」是谁</h3>
+            <dl className="npc-clue-facts">
+              <div>
+                <dt>已知当事人</dt>
+                <dd>{liveClueTarget.knownPartyName ?? '你还不认识的人'}</dd>
+              </div>
+              <div>
+                <dt>关系</dt>
+                <dd>{liveClueTarget.relationLabel}</dd>
+              </div>
+              <div>
+                <dt>未知一方</dt>
+                <dd>{liveClueTarget.profile.revealed ? liveClueTarget.profile.name : '？？'}</dd>
+              </div>
+            </dl>
+            {liveClueTarget.profile.revealed ? (
+              <p className="npc-clue-copy">
+                你已经知道 TA 叫 {liveClueTarget.profile.name}。等下一次校园偶遇，你们才能真正认识。
+              </p>
+            ) : npcClueAttemptedThisWeek(state, liveClueTarget.relation.id) ? (
+              <p className="npc-clue-copy">这条线索本周已经查过，下周再继续吧。</p>
+            ) : (
+              <>
+                <p className="npc-clue-copy">
+                  顺着已知当事人的关系去打听，不消耗时间段。成功率取决于你的交际和与当事人的熟悉程度。
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary npc-clue-action"
+                  onClick={investigate}
+                  disabled={!onInvestigateNpcClue}
+                >
+                  调查线索
+                </button>
+              </>
+            )}
+            {clueResult && (
+              <div
+                className={`npc-clue-result ${clueResult.success ? 'is-success' : 'is-failure'}`}
+              >
+                {clueResult.success && clueResult.name
+                  ? `你打听到了名字：${clueResult.name}。`
+                  : clueResult.message}
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn btn-ghost npc-clue-close"
+              onClick={() => {
+                setClueTarget(null)
+                setClueResult(null)
+              }}
+            >
+              收起
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

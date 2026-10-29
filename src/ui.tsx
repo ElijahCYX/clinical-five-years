@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { GAME_TITLE, SCHOOL_EN, SCHOOL_NAME } from './data'
-import { getSaveHandler, requestSave, subscribeSave } from './saveBridge'
 import {
   getExplanationSettings,
   setExplanationSettings,
@@ -29,26 +28,6 @@ interface TopBarProps {
   right?: ReactNode
   minimal?: boolean
   onTitle?: () => void
-}
-
-function SaveTopbarButton() {
-  const canSave = useSyncExternalStore(
-    subscribeSave,
-    () => Boolean(getSaveHandler()),
-    () => false,
-  )
-  if (!canSave) return null
-  return (
-    <button
-      className="save-chip"
-      type="button"
-      onClick={() => requestSave()}
-      title="保存当前进度"
-    >
-      <span className="save-chip-dot" aria-hidden="true" />
-      保存进度
-    </button>
-  )
 }
 
 const EXPLAIN_CATEGORIES: Array<{
@@ -296,7 +275,6 @@ export function TopBar({ right, minimal = false, onTitle }: TopBarProps) {
       <div className="topbar-right">
         <ExplanationToggle />
         <CanvasRatioButton />
-        <SaveTopbarButton />
         {right}
       </div>
     </header>

@@ -188,6 +188,14 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   <small className="stat-hint">成长 {Math.round(state.englishGrowth)}%</small>
                 </div>
                 <div>
+                  <span>科研准备度</span>
+                  <strong>
+                    {state.labEntered
+                      ? '已进组 · 100 / 100'
+                      : `${state.researchPreparation} / 100`}
+                  </strong>
+                </div>
+                <div>
                   <span>科研进度</span>
                   <strong>{state.researchStage < 6 ? '—' : `${state.researchProgress} / 100`}</strong>
                 </div>
@@ -204,6 +212,10 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                 <div>
                   <span>人际成长</span>
                   <strong>{Math.round(player.attrs.social >= 15 ? 0 : state.socialGrowth)}%</strong>
+                </div>
+                <div>
+                  <span>悟性成长</span>
+                  <strong>{Math.round(player.attrs.comprehension >= 15 ? 0 : state.comprehensionGrowth)}%</strong>
                 </div>
               </div>
             </section>
@@ -390,13 +402,23 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                     <strong>
                       {ORG_BY_ID[membership.orgId]?.name ?? '组织'} ·{' '}
                       {roleLabel(membership.category, membership.role)} · 累计活动{' '}
-                      {membership.totalActivities} 次
+                      {membership.totalActivities} 次 · 组织贡献 {membership.contribution ?? 0}
                     </strong>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="dossier-empty">还没有加入社团、学生会或辩论队。</p>
+            )}
+            {state.debateHonors.length > 0 && (
+              <div className="dossier-list dossier-honor-list">
+                {state.debateHonors.map((honor) => (
+                  <div key={honor.id}>
+                    <span>辩论荣誉</span>
+                    <strong>{honor.label}</strong>
+                  </div>
+                ))}
+              </div>
             )}
             {state.clubHistory.length > 0 && (
               <p className="dossier-muted">

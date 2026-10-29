@@ -5,6 +5,7 @@ export interface GrowthFields {
   appearanceGrowth: number
   socialGrowth: number
   englishGrowth: number
+  comprehensionGrowth?: number
 }
 
 export interface GrowthCarryInput extends GrowthFields {
@@ -15,6 +16,7 @@ export interface GrowthCarryInput extends GrowthFields {
 export interface GrowthCarryResult extends GrowthFields {
   attrs: Record<AttrKey, number>
   english: number
+  comprehensionGrowth: number
 }
 
 const ATTR_MIN = 1
@@ -31,6 +33,7 @@ export function applyGrowthCarry(input: GrowthCarryInput): GrowthCarryResult {
   let appearanceGrowth = input.appearanceGrowth
   let socialGrowth = input.socialGrowth
   let englishGrowth = input.englishGrowth
+  let comprehensionGrowth = input.comprehensionGrowth ?? 0
 
   const carryAttr = (key: AttrKey, rawValue: number): number => {
     // At the absolute panel cap, the corresponding growth is spent out:
@@ -56,6 +59,7 @@ export function applyGrowthCarry(input: GrowthCarryInput): GrowthCarryResult {
   constitutionGrowth = carryAttr('constitution', constitutionGrowth)
   appearanceGrowth = carryAttr('appearance', appearanceGrowth)
   socialGrowth = carryAttr('social', socialGrowth)
+  comprehensionGrowth = carryAttr('comprehension', comprehensionGrowth)
 
   let guard = 0
   while (englishGrowth >= 100 && guard < 100) {
@@ -77,5 +81,6 @@ export function applyGrowthCarry(input: GrowthCarryInput): GrowthCarryResult {
     appearanceGrowth,
     socialGrowth,
     englishGrowth,
+    comprehensionGrowth,
   }
 }

@@ -1,9 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ACTIONS,
-  ATTRS,
-  BACKGROUND_BY_ID,
-  TALENT_BY_ID,
 } from '../data'
 import {
   effectiveEnergyCost,
@@ -30,6 +27,7 @@ import { SkipRulesModal } from './SkipRules'
 import { NpcConfessionModal } from './NpcConfession'
 import { ConsumptionEventModal } from './ConsumptionEvent'
 import { ClubActivityModal } from './ClubActivity'
+import { ClubProjectModal } from './ClubProject'
 import { CampusNoticeBoard } from './CampusNotice'
 import { Mailbox } from './Mailbox'
 import { ChatScreen, type ChatLaunch } from './Chat'
@@ -46,6 +44,7 @@ import { ActionDoodle } from './ActionDoodle'
 import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
+import { clubProjectDefForProject, clubProjectForSeason, currentPhaseFor, personalOutcomeFor } from '../clubProjects'
 import {
   buildTimetable,
   timetableCourseAt,
@@ -58,6 +57,8 @@ import { hasAvailableBond, hasUnusedLoverContact } from '../bonds'
 import {
   currentWeekKey,
   academicYearForSeason,
+  DINNER_WEEKLY_LIMIT,
+  dinnerPlansThisWeek,
   isDinnerFriend,
   orientationLabel,
   patRemainingThisWeek,
@@ -82,14 +83,12 @@ type GameTab =
   | 'timetable'
   | 'week'
   | 'mail'
-  | 'people'
   | 'grades'
   | 'research'
   | 'club'
   | 'bond'
   | 'network'
   | 'chat'
-  | 'diary'
 
 function DailyActionIcon({
   kind,
@@ -167,6 +166,10 @@ interface WeekScreenProps {
   onSaveDinnerResults?: (results: DinnerInviteResult[]) => void
   onApplyClub?: () => void
   onArrangeClubActivity?: (orgId: string, acceptedIds: string[], declinedIds: string[]) => void
+  onRecordClubProjectPhase?: (orgId: string, choiceId: string | null) => void
+  onRecordClubProjectEvent?: (orgId: string, eventIndex: number, attend: boolean) => void
+  onAttendDebatePractice?: (orgId: string) => void
+  onResolveDebateCupRound?: (roundIndex: number, mode: 'play' | 'watch' | 'skip') => void
   onSaveClubInvites?: (results: DinnerInviteResult[], orgId: string) => void
   onQuitClub?: (orgId: string) => void
   onContactLover?: (relationshipId: string) => import('../types').LoverContactResult
@@ -185,10 +188,17 @@ interface WeekScreenProps {
   onChatFocusConsumed: () => void
   onBondNicknameChange: (relationshipId: string, nickname: string) => void
   onAskGossip: (relationshipId: string) => void
+  onFollowGossipClue?: (partnerId: string, relationId: string) => void
+  onInvestigateNpcClue?: (relationId: string) => {
+    success: boolean
+    chance: number
+    message: string
+    name?: string
+    attemptedThisWeek: boolean
+  } | null
   onBondNicknameDisplayChange: (relationshipId: string, enabled: boolean) => void
   interviewScene: MentorInterviewSceneData | null
   onConfirmMentorInterview: () => void
-  onSave?: () => void
   onTitle?: () => void
 }
 
@@ -219,6 +229,10 @@ export function WeekScreen({
   onSaveDinnerResults,
   onApplyClub,
   onArrangeClubActivity,
+  onRecordClubProjectPhase,
+  onRecordClubProjectEvent,
+  onAttendDebatePractice,
+  onResolveDebateCupRound,
   onSaveClubInvites,
   onQuitClub,
   onContactLover,
@@ -235,9 +249,10 @@ export function WeekScreen({
   onBondNicknameChange,
   onBondNicknameDisplayChange,
   onAskGossip,
+  onFollowGossipClue,
+  onInvestigateNpcClue,
   interviewScene,
   onConfirmMentorInterview,
-  onSave,
   onTitle,
 }: WeekScreenProps) {
   const [tab, setTab] = useState<GameTab>('week')
@@ -268,8 +283,13 @@ export function WeekScreen({
   const [actionFlowClip, setActionFlowClip] = useState('')
   const [focusPrompt, setFocusPrompt] = useState<'library' | 'adjust' | null>(null)
   const [dinnerOpen, setDinnerOpen] = useState(false)
+  const [dinnerPlanDetailsOpen, setDinnerPlanDetailsOpen] = useState(false)
   const [clubActivityOpen, setClubActivityOpen] = useState(false)
   const [clubPickerOpen, setClubPickerOpen] = useState(false)
+  const [ignoredCupSlot, setIgnoredCupSlot] = useState<string | null>(null)
+  const [clubProjectActivity, setClubProjectActivity] = useState<{
+    orgId: string
+  } | null>(null)
   const [soloInviteOpen, setSoloInviteOpen] = useState(false)
   const [skipClassOpen, setSkipClassOpen] = useState(false)
   const [skipRulesOpen, setSkipRulesOpen] = useState(false)
@@ -288,11 +308,8 @@ export function WeekScreen({
   const player = state.player
   if (!player) return null
 
-  const talent = TALENT_BY_ID[player.talent]
-  const background = BACKGROUND_BY_ID[player.background]
   const latestLog = state.logs[state.logs.length - 1]
   const remainingActions = Math.max(0, 2 - state.selected.length)
-  const archetype = player.archiveTitle
   const courses = state.season.courses
   const focusableCourses = courses.filter((course) => !course.electiveType)
   const focusCourse = courses.find((course) => course.id === state.weekFocus)
@@ -300,6 +317,8 @@ export function WeekScreen({
     state.weekFocus === 'balanced'
       ? '全部课程均衡分配'
       : focusCourse?.name ?? '尚未选择'
+  const focusShortLabel =
+    state.weekFocus === 'balanced' ? '均衡' : focusCourse?.name ?? '主攻'
   const showFocusModal = focusPrompt !== null
   const cumulativeGpa =
     state.cumulativeCredits > 0 ? state.cumulativePoints / state.cumulativeCredits : null
@@ -366,6 +385,20 @@ export function WeekScreen({
     (clubMemberships.length === 0 ||
       (clubMemberships.length === 1 && existingClubs.length === 1))
   const clubCommitted = Boolean(state.clubActivityPlan?.committed)
+  const clubProjectInfoFor = (membership: GameState['clubMemberships'][number]) => {
+    const project = clubProjectForSeason(membership, state.season.id)
+    const def = clubProjectDefForProject(project)
+    if (!def || !project) return null
+    const phase = currentPhaseFor(project, def, state.week)
+    return {
+      def,
+      project,
+      phase,
+      personal: project.settled && project.personalOutcome
+        ? def.personalFeedback[project.personalOutcome]
+        : null,
+    }
+  }
   const selectedMembership =
     clubMemberships.find((membership) => membership.orgId === selectedClubOrgId) ??
     null
@@ -374,7 +407,12 @@ export function WeekScreen({
         .map((id) => state.relationships.find((relation) => relation.id === id))
         .filter(Boolean) as typeof state.relationships)
     : []
-  const dinnerCommitted = Boolean(state.dinnerPlan?.committed)
+  const dinnerPlans = dinnerPlansThisWeek(state)
+  const dinnerCount = dinnerPlans.length
+  const dinnerLimitReached = dinnerCount >= DINNER_WEEKLY_LIMIT
+  const dinnerAttendedIds = Array.from(
+    new Set(dinnerPlans.flatMap((plan) => plan.acceptedIds)),
+  )
   const handleActionClick = (id: string) => {
     if (id === 'club') {
       if (clubCommitted) return
@@ -392,7 +430,7 @@ export function WeekScreen({
       }
       return
     }
-    if (id === 'social' && dinnerCommitted) return
+    if (id === 'social' && dinnerLimitReached) return
     if (
       id === 'library' &&
       courses.length > 1 &&
@@ -419,6 +457,7 @@ export function WeekScreen({
     setFocusPrompt(null)
   }
   const handleSlotActionClick = (id: string) => {
+    if (id === 'club' && clubCommitted) return
     if (
       id === 'library' &&
       focusableCourses.length > 1 &&
@@ -428,6 +467,10 @@ export function WeekScreen({
       return
     }
     if (id === 'social') {
+      if (dinnerLimitReached) {
+        setDinnerPlanDetailsOpen(true)
+        return
+      }
       setDinnerOpen(true)
       return
     }
@@ -586,6 +629,17 @@ export function WeekScreen({
   const activeSoloInvite = soloInviteAt(state, weekSlot)
   const bondContactUnused = hasUnusedLoverContact(state)
   const currentSlotActivity = timetableActivityAt(state, weekSlot)
+  const currentSlotClubMembership = currentSlotActivity
+    ? clubMemberships.find((item) => item.orgId === currentSlotActivity.orgId)
+    : null
+  const currentSlotProjectInfo = currentSlotClubMembership
+    ? clubProjectInfoFor(currentSlotClubMembership)
+    : null
+  const cupSlotKey =
+    currentSlotActivity?.kind === 'debateCup'
+      ? `${state.season.id}-${state.week}-${state.weekSlot}`
+      : ''
+  const cupIgnored = Boolean(cupSlotKey && ignoredCupSlot === cupSlotKey)
   const currentSlotCourse =
     !currentSlotActivity &&
     !state.weekSlotSkipped &&
@@ -847,80 +901,6 @@ export function WeekScreen({
     return null
   }
 
-  const renderAttributePanel = () => (
-    <div className="tab-panel">
-      <SectionLabel right={archetype}>人物档案</SectionLabel>
-      <div className="identity-card identity-in-tab">
-        <div className="identity-line">
-          <span>入学档案称号</span>
-          <strong>{archetype}</strong>
-        </div>
-        <div className="identity-line">
-          <span>天赋档位</span>
-          <strong>{talent.name}</strong>
-        </div>
-        <div className="identity-line">
-          <span>当前学业</span>
-          <strong>
-            {cumulativeGpa === null ? '第一学期' : `GPA ${cumulativeGpa.toFixed(2)}`}
-          </strong>
-        </div>
-        <div className="identity-line">
-          <span>姓名 / 性别</span>
-          <strong>{player.name} · {player.gender}</strong>
-        </div>
-        <div className="identity-line">
-          <span>家庭背景</span>
-          <strong>{background.name}</strong>
-        </div>
-      </div>
-      <div className="attr-readonly">
-        {ATTRS.map((attr) => (
-          <div className="attr-readonly-row" key={attr.key}>
-            <div className="attr-readonly-name">
-              <span>{attr.name}</span>
-              <small>{attr.en}</small>
-            </div>
-            <div className="segments">
-              {Array.from({ length: 15 }, (_, index) => (
-                <span
-                  key={index}
-                  className={`segment ${index < player.attrs[attr.key] ? 'segment-on' : ''}`}
-                />
-              ))}
-            </div>
-            <strong>{player.attrs[attr.key]}</strong>
-          </div>
-        ))}
-      </div>
-      <p className="attr-cap-note">
-        进度条红线为 10 点，是入学时能带进大学的天赋上限；15 为成长上限，达到后对应成长值归零。
-      </p>
-      <div className="people-meta">
-        <div>
-          <span>家庭背景</span>
-          <strong>{background.name}</strong>
-        </div>
-        <div>
-          <span>性别</span>
-          <strong>{player.gender}</strong>
-        </div>
-        <div>
-          <span>天赋</span>
-          <strong>{talent.name}</strong>
-        </div>
-        <div>
-          <span>体质成长</span>
-          <strong>{Math.round(state.constitutionGrowth)}%</strong>
-        </div>
-        <div>
-          <span>人际成长</span>
-          <strong>{Math.round(state.socialGrowth)}%</strong>
-        </div>
-      </div>
-      <p className="placeholder-note">人物关系与好感系统将在后续模块展开。</p>
-    </div>
-  )
 
   const renderDailyActions = () => (
     <section className="daily-actions-section" aria-label="每日行动">
@@ -1229,11 +1209,17 @@ export function WeekScreen({
                 : membership.role === 'officer'
                   ? 60
                   : null
+            const projectInfo = clubProjectInfoFor(membership)
             return (
               <div className="club-panel" key={membership.orgId}>
                 <div className="club-panel-head">
                   <div>
-                    <h3>{roleLabel(membership.category, membership.role)}</h3>
+                    <div className="club-panel-title-row">
+                      <h3>{org?.name ?? membership.orgId}</h3>
+                      <span className="club-panel-role">
+                        {roleLabel(membership.category, membership.role)}
+                      </span>
+                    </div>
                     <p>{org?.description}</p>
                   </div>
                   <Pill tone="green">
@@ -1257,7 +1243,79 @@ export function WeekScreen({
                     <span>组织朋友</span>
                     <strong>{members.length} 人</strong>
                   </div>
+                  <div>
+                    <span>组织贡献</span>
+                    <strong>{membership.contribution ?? 0}</strong>
+                  </div>
                 </div>
+                {projectInfo && (
+                  <div className="club-project-summary">
+                    <div className="club-project-summary-head">
+                      <span>SEASON PROJECT</span>
+                      <strong>{projectInfo.def.title}</strong>
+                      <small>
+                        {projectInfo.project.settled
+                          ? '本季已结算'
+                          : `贡献 ${projectInfo.project.contribution} · 出席 ${projectInfo.project.attendance.filter(Boolean).length} 场`}
+                      </small>
+                    </div>
+                    {projectInfo.project.settled && projectInfo.personal ? (
+                      <div className="club-project-summary-result">
+                        <strong>{projectInfo.def.worldTitle}</strong>
+                        <p>{projectInfo.def.worldText}</p>
+                        <div className="club-project-personal">
+                          <b>{projectInfo.personal.title}</b>
+                          <span>{projectInfo.personal.text}</span>
+                        </div>
+                      </div>
+                    ) : projectInfo.phase ? (
+                      <>
+                        <h4>
+                          第 {state.week} 周例会 · {projectInfo.phase.stage.title}
+                        </h4>
+                        <p>{projectInfo.phase.stage.description}</p>
+                        <div className="club-project-phase-track">
+                          {projectInfo.def.stages.map((stage, index) => (
+                            <span
+                              key={stage.title}
+                              className={
+                                projectInfo.project.phaseChoices[index] === '__skip__'
+                                  ? 'is-skipped'
+                                  : projectInfo.project.phaseChoices[index]
+                                    ? 'is-done'
+                                    : index === projectInfo.phase?.index
+                                      ? 'is-current'
+                                      : ''
+                              }
+                            >
+                              {index + 1}. {stage.title}
+                            </span>
+                          ))}
+                        </div>
+                        <small>
+                          最终活动：第 {projectInfo.def.eventWeek} 周 ·{' '}
+                          {projectInfo.project.eventSlots
+                            .map(
+                              (slot) =>
+                                `${TIMETABLE_DAYS[Math.floor(slot / 3)]}${TIMETABLE_SLOTS[slot % 3]}`,
+                            )
+                            .join(' / ')}
+                          {' '}· 无论是否参与都会如期举行
+                        </small>
+                      </>
+                    ) : (
+                      <p>本季项目正在推进。第一周例会已公布活动安排。</p>
+                    )}
+                  </div>
+                )}
+                {membership.orgId === 'org-debate' && state.debateHonors.length > 0 && (
+                  <div className="club-honor-list">
+                    <span>辩论荣誉</span>
+                    {state.debateHonors.map((honor) => (
+                      <strong key={honor.id}>{honor.label}</strong>
+                    ))}
+                  </div>
+                )}
                 <div className="club-panel-actions">
                   <p>
                     {org?.name} · 每学期第 3 周后可领取一次组织福利。
@@ -1283,31 +1341,6 @@ export function WeekScreen({
     )
   }
 
-  const renderDiary = () => (
-    <div className="tab-panel">
-      <SectionLabel right={`${state.logs.length} 条记录`}>日记</SectionLabel>
-      {state.logs.length === 0 ? (
-        <p className="placeholder-note">第一周还没有结束。做点什么，再回来写日记。</p>
-      ) : (
-        <div className="diary-list">
-          {state.logs.map((log) => (
-            <article key={log.week} className="diary-item">
-              <span className="diary-week">W{String(log.week).padStart(2, '0')}</span>
-              <div>
-                <h4>{log.title}</h4>
-                <p>{log.text}</p>
-                <div className="delta-row">
-                  {log.deltas.map((delta) => (
-                    <span key={delta}>{delta}</span>
-                  ))}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
-  )
 
   return (
     <div className="screen game-screen">
@@ -1444,14 +1477,12 @@ export function WeekScreen({
                   ['timetable', '课表'],
                   ['week', '本周安排'],
                   ['mail', '邮箱'],
-                  ['people', '档案'],
                   ['grades', '成绩'],
                   ['research', '科研'],
                   ['club', '组织'],
                   ['bond', '羁绊'],
                   ['network', '关系网'],
                   ['chat', '聊天'],
-                  ['diary', '日记'],
                 ] as Array<[GameTab, string]>
               ).map(([key, label]) => (
                 <button
@@ -1670,39 +1701,221 @@ export function WeekScreen({
 
                 </div>
 
-                {currentSlotActivity ? (
+                {currentSlotActivity && !cupIgnored ? (
                   <>
-                  <section className="paper-card slot-course-panel slot-club-panel">
-                    <div className="slot-course-meta">
-                      <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
-                      <Pill tone="gold">组织活动</Pill>
-                    </div>
-                    <h3>{currentSlotActivity.name} · 活动</h3>
-                    <p>
-                      这格时间被组织活动占住了。参加活动会消耗 5 点精力，并可能遇到一点组织里的事；
-                      因故请假会把时间还给你，但请假记录会留在期末。
-                    </p>
-                    <div className="slot-course-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={onAttendClubActivity}
-                      >
-                        参加活动 <small>精力 -5</small>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={onLeaveClubActivity}
-                      >
-                        因故请假 <small>本学期已请假 {state.clubMemberships.find((m) => m.orgId === currentSlotActivity.orgId)?.semesterLeaves ?? 0} 次</small>
-                      </button>
-                    </div>
-                  </section>
                   {renderDailyActions()}
+                  {currentSlotActivity.kind === 'meeting' && currentSlotProjectInfo?.phase ? (
+                    <section className="paper-card slot-course-panel slot-club-panel slot-project-meeting">
+                      <div className="slot-course-meta">
+                        <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                        <Pill tone="gold">本学期项目例会</Pill>
+                      </div>
+                      <h3>
+                        {currentSlotProjectInfo.def.title} · 第 {state.week} 周例会
+                      </h3>
+                      <p>{currentSlotProjectInfo.phase.stage.description}</p>
+                      <p className="slot-project-rule">
+                        本周例会将公布并推进「{currentSlotProjectInfo.phase.stage.title}」。
+                        参与与否都不会影响活动如期举办，只会影响你的项目贡献。
+                      </p>
+                      {currentSlotProjectInfo.project.phaseChoices[currentSlotProjectInfo.phase.index] ? (
+                        <div className="slot-project-done">
+                          本周任务已决定 · 当前累计贡献{' '}
+                          {currentSlotProjectInfo.project.contribution}
+                        </div>
+                      ) : (
+                        <div className="slot-course-actions">
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() =>
+                              setClubProjectActivity({
+                                orgId: currentSlotActivity.orgId,
+                              })
+                            }
+                          >
+                            参加本周例会 <small>精力 -5</small>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            onClick={() =>
+                              onRecordClubProjectPhase?.(
+                                currentSlotActivity.orgId,
+                                null,
+                              )
+                            }
+                          >
+                            本周不参与
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  ) : currentSlotActivity.kind === 'event' ? (
+                    <section className="paper-card slot-course-panel slot-club-panel slot-project-event">
+                      <div className="slot-course-meta">
+                        <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                        <Pill tone="green">活动进行中</Pill>
+                      </div>
+                      <h3>
+                        {currentSlotActivity.projectTitle} ·{' '}
+                        {currentSlotActivity.phaseTitle}
+                      </h3>
+                      <p>{currentSlotActivity.phaseDescription}</p>
+                      <p className="slot-project-rule">
+                        活动无论你是否到场都会如期举办。你只需要决定要不要亲自见证这一格。
+                      </p>
+                      <div className="slot-course-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() =>
+                            onRecordClubProjectEvent?.(
+                              currentSlotActivity.orgId,
+                              currentSlotActivity.eventIndex ?? 0,
+                              true,
+                            )
+                          }
+                        >
+                          出席活动
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() =>
+                            onRecordClubProjectEvent?.(
+                              currentSlotActivity.orgId,
+                              currentSlotActivity.eventIndex ?? 0,
+                              false,
+                            )
+                          }
+                        >
+                          缺席
+                        </button>
+                      </div>
+                    </section>
+                  ) : currentSlotActivity.kind === 'debatePractice' ? (
+                    <section className="paper-card slot-course-panel slot-club-panel">
+                      <div className="slot-course-meta">
+                        <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                        <Pill tone="gold">队内模辩</Pill>
+                      </div>
+                      <h3>医学院辩论队 · 队内模辩</h3>
+                      <p>
+                        这一周的辩论队例会是一场队内模辩。参加后获得悟性成长值 +10%，
+                        并累计活动次数和组织贡献。
+                      </p>
+                      <div className="slot-course-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => onAttendDebatePractice?.('org-debate')}
+                        >
+                          参加队内模辩 <small>精力 -5</small>
+                        </button>
+                      </div>
+                    </section>
+                  ) : currentSlotActivity.kind === 'debateCup' ? (
+                    <section className="paper-card slot-course-panel slot-club-panel">
+                      <div className="slot-course-meta">
+                        <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                        <Pill tone="green">永昰杯</Pill>
+                      </div>
+                      <h3>
+                        永昰杯 · {['小组赛', '预决赛', '总决赛'][currentSlotActivity.roundIndex ?? 0]}
+                      </h3>
+                      <p>
+                        {clubMemberships.some((item) => item.orgId === 'org-debate')
+                          ? '医学院辩论队将照常参赛。你可以决定是否出场；比赛结果不受玩家是否出场影响。'
+                          : '这是全校开放的观赛时段。观赛后悟性成长值 +20%，压力 -5，综测 +1；也可以选择不参与。'}
+                      </p>
+                      <div className="slot-course-actions">
+                        {clubMemberships.some((item) => item.orgId === 'org-debate') ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => onResolveDebateCupRound?.(currentSlotActivity.roundIndex ?? 0, 'play')}
+                            >
+                              出场
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              onClick={() => onResolveDebateCupRound?.(currentSlotActivity.roundIndex ?? 0, 'skip')}
+                            >
+                              不出场
+                            </button>
+                            {clubMemberships.some((item) => item.orgId !== 'org-debate') && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={() => setIgnoredCupSlot(cupSlotKey)}
+                              >
+                                去参加其他组织活动
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => onResolveDebateCupRound?.(currentSlotActivity.roundIndex ?? 0, 'watch')}
+                            >
+                              报名观赛
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              onClick={() => setIgnoredCupSlot(cupSlotKey)}
+                            >
+                              不观赛
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </section>
+                  ) : (
+                    <section className="paper-card slot-course-panel slot-club-panel">
+                      <div className="slot-course-meta">
+                        <span>当前时间段 · {currentSlotDay} {currentSlotPhase}</span>
+                        <Pill tone="gold">组织活动</Pill>
+                      </div>
+                      <h3>{currentSlotActivity.name} · 活动</h3>
+                      <p>
+                        这格时间被组织活动占住了。参加活动会消耗 5 点精力；
+                        因故请假会把时间还给你，但请假记录会留在期末。
+                      </p>
+                      <div className="slot-course-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={onAttendClubActivity}
+                        >
+                          参加活动 <small>精力 -5</small>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={onLeaveClubActivity}
+                        >
+                          因故请假{' '}
+                          <small>
+                            本学期已请假{' '}
+                            {state.clubMemberships.find(
+                              (m) => m.orgId === currentSlotActivity.orgId,
+                            )?.semesterLeaves ?? 0}{' '}
+                            次
+                          </small>
+                        </button>
+                      </div>
+                    </section>
+                  )}
                   </>
                 ) : currentSlotCourse ? (
                   <>
+                  {renderDailyActions()}
                   <section className="paper-card slot-course-panel">
                     <div className="slot-course-meta">
                       <span>当前时间段有课 · {currentSlotDay} {currentSlotPhase}</span>
@@ -1742,7 +1955,6 @@ export function WeekScreen({
                       </div>
                     </div>
                   </section>
-                  {renderDailyActions()}
                   </>
                 ) : (
                   <>
@@ -1978,14 +2190,16 @@ export function WeekScreen({
                     const selected = selectedCount > 0
                     const disabled = Boolean(locked)
                     const committed =
-                      (action.id === 'social' && dinnerCommitted) ||
+                      (action.id === 'social' && dinnerLimitReached) ||
                       (action.id === 'club' && clubCommitted)
+                    const canViewCommittedDinner =
+                      committed && action.id === 'social'
                     return (
                       <div
                         key={action.id}
                         role="button"
-                        tabIndex={disabled || committed ? -1 : 0}
-                        aria-disabled={disabled || committed}
+                        tabIndex={disabled || (committed && !canViewCommittedDinner) ? -1 : 0}
+                        aria-disabled={disabled || (committed && !canViewCommittedDinner)}
                         className={`action-card mobile-category-${mobileActionGroup(action.id)} ${selected ? 'is-selected' : ''} ${
                           disabled ? 'is-locked' : ''
                         } ${committed ? 'is-committed' : ''}`}
@@ -2003,7 +2217,21 @@ export function WeekScreen({
                         <ActionDoodle kind={action.id} />
                         <div className="action-meta">
                           <span>{action.category}</span>
-                          <span className="action-no">{action.no}</span>
+                          <span
+                            className={`action-no ${
+                              committed || (action.id === 'social' && dinnerCount > 0)
+                                ? 'is-committed-label'
+                                : ''
+                            }`}
+                          >
+                            {action.id === 'social' && dinnerCount > 0
+                              ? dinnerLimitReached
+                                ? `已组满 ${dinnerCount}/${DINNER_WEEKLY_LIMIT}`
+                                : `组局 ${dinnerCount}/${DINNER_WEEKLY_LIMIT}`
+                              : committed
+                                ? '已安排'
+                                : action.no}
+                          </span>
                         </div>
                         <h3>
                           {minimalWeekMode && action.id === 'electiveHomework'
@@ -2012,6 +2240,55 @@ export function WeekScreen({
                         </h3>
                         <p className="action-flavor">{action.flavor}</p>
                         <p className="action-effect">{actionEffectText(action)}</p>
+                        {action.id === 'social' && dinnerCount > 0 && (
+                          <button
+                            type="button"
+                            className="action-dinner-detail-btn"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setDinnerPlanDetailsOpen(true)
+                            }}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            查看本周组局 · {dinnerCount}/{DINNER_WEEKLY_LIMIT}
+                          </button>
+                        )}
+                        {action.id === 'library' &&
+                          courses.length > 1 &&
+                          state.weekFocus && (
+                            <button
+                              type="button"
+                              className="action-library-focus"
+                              aria-label={`调整本周主攻，当前为${focusLabel}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setFocusPrompt('adjust')
+                              }}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              <span>本周主攻</span>
+                              <strong>{focusLabel}</strong>
+                              <span className="action-focus-adjust">调整 →</span>
+                            </button>
+                          )}
+                        {minimalWeekMode &&
+                          action.id === 'library' &&
+                          courses.length > 1 &&
+                          state.weekFocus && (
+                            <button
+                              type="button"
+                              className="action-library-focus-minimal"
+                              aria-label={`调整本周主攻，当前为${focusLabel}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setFocusPrompt('adjust')
+                              }}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              <span>主攻</span>
+                              <strong>{focusShortLabel}</strong>
+                            </button>
+                          )}
                         <div className="action-bottom">
                           <span className="action-en">{action.en}</span>
                           {!locked && (
@@ -2073,7 +2350,6 @@ export function WeekScreen({
               />
             )}
 
-            {tab === 'people' && renderAttributePanel()}
             {tab === 'grades' && renderGrades()}
             {tab === 'research' && (
               <ResearchHub
@@ -2117,7 +2393,12 @@ export function WeekScreen({
                 }
               />
             )}
-            {tab === 'network' && <RelationshipNetwork state={state} />}
+            {tab === 'network' && (
+              <RelationshipNetwork
+                state={state}
+                onInvestigateNpcClue={onInvestigateNpcClue}
+              />
+            )}
             {tab === 'chat' && (
               <ChatScreen
                 state={state}
@@ -2127,9 +2408,9 @@ export function WeekScreen({
                 onBondNicknameChange={onBondNicknameChange}
                 onBondNicknameDisplayChange={onBondNicknameDisplayChange}
                 onAskGossip={onAskGossip}
+                onFollowGossipClue={onFollowGossipClue}
               />
             )}
-            {tab === 'diary' && renderDiary()}
           </section>
 
           <aside className="game-right">
@@ -2352,6 +2633,34 @@ export function WeekScreen({
         </div>
       )}
 
+      {clubProjectActivity &&
+        (() => {
+          const membership = clubMemberships.find(
+            (item) => item.orgId === clubProjectActivity.orgId,
+          )
+          const info = membership ? clubProjectInfoFor(membership) : null
+          if (!membership || !info?.phase) return null
+          return (
+            <ClubProjectModal
+              project={info.def}
+              phase={info.phase.stage}
+              projectState={info.project}
+              phaseIndex={info.phase.index}
+              week={state.week}
+              roleLabel={roleLabel(membership.category, membership.role)}
+              onCancel={() => setClubProjectActivity(null)}
+              onChoose={(choiceId) => {
+                setClubProjectActivity(null)
+                onRecordClubProjectPhase?.(membership.orgId, choiceId)
+              }}
+              onSkip={() => {
+                setClubProjectActivity(null)
+                onRecordClubProjectPhase?.(membership.orgId, null)
+              }}
+            />
+          )
+        })()}
+
       {clubActivityOpen && selectedMembership && (
         <ClubActivityModal
           organizationName={ORG_BY_ID[selectedMembership.orgId]?.name ?? selectedMembership.orgId}
@@ -2402,10 +2711,65 @@ export function WeekScreen({
         />
       )}
 
+      {dinnerPlanDetailsOpen && dinnerPlans.length > 0 && (
+        <div
+          className="dinner-plan-detail-overlay"
+          role="presentation"
+          onClick={() => setDinnerPlanDetailsOpen(false)}
+        >
+          <section
+            className="paper-card dinner-plan-detail-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="本周组局详情"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="dinner-plan-detail-kicker">WEEKLY DINNER / 本周组局</div>
+            <h2>本周组局 · {dinnerCount} / {DINNER_WEEKLY_LIMIT}</h2>
+            <p className="dinner-plan-detail-copy">
+              本周最多可以组 {DINNER_WEEKLY_LIMIT} 次局。只有首次赴约的人会增加亲密度。
+            </p>
+            <div className="dinner-plan-detail-list">
+              {dinnerPlans.map((plan, index) => {
+                const firstNames = (plan.firstTimerIds ?? [])
+                  .map((id) => state.relationships.find((relation) => relation.id === id)?.name)
+                  .filter(Boolean) as string[]
+                return (
+                  <article className="dinner-plan-detail-item" key={`${plan.weekKey ?? 'week'}-${index}`}>
+                    <div className="dinner-plan-detail-item-head">
+                      <strong>第 {index + 1} 顿</strong>
+                      <span>¥{plan.cost}</span>
+                    </div>
+                    <p>
+                      约了谁：
+                      {plan.summary.length > 0 ? plan.summary.join('、') : '这次没有朋友应邀'}
+                    </p>
+                    <small>
+                      {firstNames.length > 0
+                        ? `首次赴约 +3：${firstNames.join('、')}`
+                        : '本次没有新的首次赴约者'}
+                    </small>
+                  </article>
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary dinner-plan-detail-close"
+              onClick={() => setDinnerPlanDetailsOpen(false)}
+            >
+              知道了
+            </button>
+          </section>
+        </div>
+      )}
+
       {dinnerOpen && (
         <DinnerModal
           relationships={state.relationships}
           money={state.money}
+          dinnerCount={dinnerCount}
+          attendedIds={dinnerAttendedIds}
           initialResults={
             state.dinnerInvites?.weekKey === currentWeekKey(state)
               ? state.dinnerInvites.results

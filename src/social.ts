@@ -4,11 +4,25 @@ import type {
   AttrKey,
   GameState,
   Gender,
+  DinnerPlan,
+  NpcProfile,
   Player,
   Relationship,
   RelationshipStats,
   SexualOrientation,
 } from './types'
+
+export const DINNER_WEEKLY_LIMIT = 3
+
+/** Dinners arranged during the current week, with old-save fallback. */
+export function dinnerPlansThisWeek(state: GameState): DinnerPlan[] {
+  const weekKey = currentWeekKey(state)
+  const plans = (state.dinnerPlans ?? []).filter(
+    (plan) => !plan.weekKey || plan.weekKey === weekKey,
+  )
+  if (plans.length > 0) return plans
+  return state.dinnerPlan?.committed ? [state.dinnerPlan] : []
+}
 
 const ORIENTATIONS: SexualOrientation[] = [
   'heterosexual',
@@ -158,6 +172,28 @@ export function createInitialRelationships(player: Player): Relationship[] {
     ),
   )
   return relationships
+}
+
+export function createNpcContactFromProfile(
+  player: Player,
+  profile: NpcProfile,
+  id: string,
+  metAbsWeek = 1,
+): Relationship {
+  const relation = makeRelationship(
+    player,
+    'classmate',
+    '八卦里认识的人',
+    profile.gender,
+    randInt(8, 20),
+  )
+  return {
+    ...relation,
+    id,
+    name: profile.name,
+    orientation: profile.orientation,
+    metAbsWeek,
+  }
 }
 
 export function createEventFriend(player: Player): Relationship {

@@ -111,11 +111,12 @@ import type { ChatLaunch } from './screens/Chat'
 import { PlanScreen } from './screens/Plan'
 import {
   BaoyanResultScreen,
-  GraduationScreen,
   KaoyanExamScreen,
   KaoyanResultScreen,
   RouteScreen,
 } from './screens/Postgrad'
+import { GraduationScoreScreen } from './screens/GraduationScore'
+import { createPreGraduationState } from './devPreGraduation'
 import { PrepScreen } from './screens/Prep'
 import { ScholarshipScreen } from './screens/Scholarship'
 import { CrisisScreen, type CrisisKind } from './screens/Crisis'
@@ -126,7 +127,6 @@ import { WeekScreen } from './screens/Week'
 import { WhoAmIScreen } from './screens/WhoAmI'
 import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
-import { setSaveHandler } from './saveBridge'
 import {
   applyEvent,
   createFamilyReliefEvent,
@@ -201,6 +201,7 @@ import {
 } from './mentorMail'
 import { ClubRecruitment } from './screens/ClubRecruitment'
 import { pushCampusNotice } from './campusBroadcast'
+import { bumpCareerStats, bumpCareerMonths } from './careerStats'
 import { pickConfessionText } from './confessionOutcomes'
 import { pickLoverEvent } from './loverEvents'
 import { pickBondReaction } from './bondTexts'
@@ -210,6 +211,15 @@ import {
   pickClubEvent,
   type ClubEvent,
 } from './clubEvents'
+import {
+  clubProjectDefForOrg,
+  clubProjectDefForProject,
+  clubProjectForSeason,
+  createClubProjectState,
+  currentPhaseFor,
+  personalOutcomeFor,
+  projectEffectLine,
+} from './clubProjects'
 import {
   CLUB_LEAVE_EXPEL_TEXT,
   CLUB_LEAVE_WARNING_TEXT,
@@ -227,7 +237,17 @@ import {
 } from './organizations'
 import { pickHypothesis } from './hypotheses'
 import {
+  DEBATE_ORG_ID,
+  bestDebaterChance,
+  createDebateCupRecord,
+  debateCupRecordFor,
+  debateEditionForState,
+  debateMember,
+} from './debateCup'
+import {
   askGossip,
+  attemptNpcClueByChat,
+  attemptNpcClueByInvestigation,
   createInitialNpcSocial,
   ensureNpcSocial,
   maybeCreateNpcRevealEvent,
@@ -240,7 +260,10 @@ import {
   createCourseFriend,
   createEventFriend,
   createInitialRelationships,
+  createNpcContactFromProfile,
   createSeniorRelationship,
+  DINNER_WEEKLY_LIMIT,
+  dinnerPlansThisWeek,
   nextRoommateAction,
   normalizeRelationships,
   adjustIntimacyDelta,
@@ -265,7 +288,7 @@ import {
   isYearFinalSeasonIndex,
 } from './social'
 
-const SAVE_KEY = 'clinical-five-years-save-v45'
+const SAVE_KEY = 'clinical-five-years-save-v46'
 const GAME_SAVE_PREFIX = 'clinical-five-years-save-'
 
 /** 新科研/邮箱系统上线后，旧版本存档全部作废，避免半迁移状态。 */
@@ -407,11 +430,22 @@ function readSave(): GameState | null {
     ).clubMembership
     const clubMemberships = (
       game.clubMemberships ?? (legacyMembership ? [legacyMembership] : [])
-    ).map((membership) => ({
-      ...membership,
-      inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
-      semesterLeaves: membership.semesterLeaves ?? 0,
-    }))
+    ).map((membership) => {
+      const projectDef = clubProjectDefForOrg(membership.orgId)
+      return {
+        ...membership,
+        inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
+        semesterLeaves: membership.semesterLeaves ?? 0,
+        project:
+          membership.project?.seasonId === game.season.id &&
+          Array.isArray(membership.project.phaseChoices)
+            ? membership.project
+            : projectDef
+              ? createClubProjectState(membership.orgId, game.season.id)
+              : null,
+        contribution: membership.contribution ?? 0,
+      }
+    })
     return {
       ...game,
       screen: game.screen === 'randomEvent' ? 'week' : game.screen,
@@ -430,6 +464,9 @@ function readSave(): GameState | null {
             ? createInitialRelationships(game.player)
             : [],
       dinnerPlan: game.dinnerPlan ?? null,
+      dinnerPlans:
+        game.dinnerPlans ??
+        (game.dinnerPlan?.committed ? [game.dinnerPlan] : []),
       dinnerInvites: game.dinnerInvites ?? null,
       romanceUnlocked: game.romanceUnlocked ?? false,
       courseRecords: game.courseRecords ?? [],
@@ -469,7 +506,9 @@ function readSave(): GameState | null {
       labAccessMailSent: game.labAccessMailSent ?? false,
       labAccessPendingAtAbs: game.labAccessPendingAtAbs ?? null,
       projectOfferMailSent: game.projectOfferMailSent ?? false,
+      projectOfferPendingAtAbs: game.projectOfferPendingAtAbs ?? null,
       researchProgress: game.researchProgress ?? 0,
+      researchPreparation: game.researchPreparation ?? 0,
       researchPublished: game.researchPublished ?? false,
       researchJournal: game.researchJournal ?? null,
       publishedPapers: game.publishedPapers ?? 0,
@@ -481,10 +520,15 @@ function readSave(): GameState | null {
       lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
       familyAffection: game.familyAffection ?? 0,
+      comprehensionGrowth: game.comprehensionGrowth ?? 0,
+      debateCups: game.debateCups ?? [],
+      debateHonors: game.debateHonors ?? [],
       familyCrisisRescued: game.familyCrisisRescued ?? false,
       soloInvites: game.soloInvites ?? [],
       soloChatRecords: game.soloChatRecords ?? [],
       npcRelations: game.npcRelations ?? [],
+      npcProfiles: game.npcProfiles ?? {},
+      npcClueAsked: game.npcClueAsked ?? {},
       gossipAsked: game.gossipAsked ?? {},
       gossipRecords: game.gossipRecords ?? [],
       soloRefusals: game.soloRefusals ?? {},
@@ -517,6 +561,12 @@ function readSave(): GameState | null {
         library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
         exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
         english: 0, electiveHomework: 0, date: 0,
+      },
+      careerStats: game.careerStats ?? {
+        library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
+        exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
+        english: 0, electiveHomework: 0, date: 0, campusRun: 0, dinner: 0,
+        travel: 0, weeks: 0,
       },
       expulsionText: game.expulsionText ?? null,
       expulsionCredits: game.expulsionCredits ?? 0,
@@ -760,6 +810,15 @@ function prepareSeason(base: GameState, index: number): GameState {
     examAllNighter: false,
     examEnglishPrep: false,
     pendingMakeups: pending,
+    clubMemberships: (base.clubMemberships ?? []).map((membership) => {
+      const projectDef = clubProjectDefForOrg(membership.orgId)
+      if (!projectDef) return membership
+      if (membership.project?.seasonId === baseSeason.id) return membership
+      return {
+        ...membership,
+        project: createClubProjectState(membership.orgId, baseSeason.id),
+      }
+    }),
     semesterStats: {
       library: 0, attend: 0, skip: 0, sleepIn: 0, coffee: 0, selfCare: 0,
       exercise: 0, social: 0, partTime: 0, research: 0, club: 0,
@@ -789,6 +848,7 @@ function growAttributes(
   constitutionGrowth: number,
   appearanceGrowth: number,
   socialGrowth: number,
+  comprehensionGrowth: number,
   english: number,
   englishGrowth: number,
 ) {
@@ -811,6 +871,7 @@ function carryGrowthState(state: GameState): GameState {
     constitutionGrowth: state.constitutionGrowth,
     appearanceGrowth: state.appearanceGrowth,
     socialGrowth: state.socialGrowth,
+    comprehensionGrowth: state.comprehensionGrowth,
   })
   return {
     ...state,
@@ -820,6 +881,7 @@ function carryGrowthState(state: GameState): GameState {
     constitutionGrowth: grown.constitutionGrowth,
     appearanceGrowth: grown.appearanceGrowth,
     socialGrowth: grown.socialGrowth,
+    comprehensionGrowth: grown.comprehensionGrowth,
   }
 }
 
@@ -899,6 +961,9 @@ function RealApp() {
   const { showTravelEvents } = useTravelEvents()
   const [view, setView] = useState<View>('title')
   const [game, setGame] = useState<GameState | null>(null)
+  const gameRef = useRef<GameState | null>(null)
+  gameRef.current = game
+  const interfaceOriginView = useRef<View>('week')
   const [hasSave, setHasSave] = useState(false)
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
@@ -911,6 +976,21 @@ function RealApp() {
   const [mentorInterviewScene, setMentorInterviewScene] =
     useState<MentorInterviewSceneData | null>(null)
   const [chatFocus, setChatFocus] = useState<ChatLaunch | null>(null)
+  const devPreGraduationLoaded = useRef(false)
+
+  useEffect(() => {
+    if (devPreGraduationLoaded.current) return
+    devPreGraduationLoaded.current = true
+    if (!import.meta.env.DEV) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('dev') !== 'pre-graduation') return
+    const seeded = createPreGraduationState()
+    persist(seeded)
+    setGame(seeded)
+    setView('result')
+    setHasSave(true)
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [])
 
   const openPublicationNotice = (
     journal: string,
@@ -929,21 +1009,51 @@ function RealApp() {
     })
   }
 
+  /**
+   * TA/overlay actions receive a snapshot, but only patch the fields they
+   * actually changed. The week loop remains the sole owner of the clock.
+   * This prevents a stale snapshot from restoring an earlier week, slot,
+   * prep value, or any other unrelated field.
+   */
+  const commitTaState = (next: GameState, base: GameState | null = game) => {
+    const latest = gameRef.current
+    if (!latest) {
+      setGame(next)
+      persist(next)
+      return
+    }
+    const timeFields = new Set<keyof GameState>([
+      'screen',
+      'season',
+      'seasonIndex',
+      'week',
+      'weekSlot',
+      'weekSlotSkipped',
+      'weekSlotActions',
+      'logs',
+      'eventWeek',
+      'eventHistory',
+    ])
+    const patch: Partial<GameState> = {}
+    if (base) {
+      for (const rawKey of Object.keys(next)) {
+        const key = rawKey as keyof GameState
+        if (timeFields.has(key)) continue
+        if (next[key] !== base[key]) {
+          ;(patch as Record<string, unknown>)[key] = next[key]
+        }
+      }
+    }
+    const merged: GameState = { ...latest, ...patch }
+    gameRef.current = merged
+    setGame(merged)
+    persist(merged)
+  }
+
   useEffect(() => {
     setHasSave(Boolean(readSave()))
   }, [])
 
-  useEffect(() => {
-    if (!game || view === 'title' || view === 'create') {
-      setSaveHandler(null)
-      return
-    }
-    setSaveHandler(() => {
-      persist(game)
-      setHasSave(true)
-    })
-    return () => setSaveHandler(null)
-  }, [game, view])
 
   useEffect(() => {
     const body = document.body
@@ -1123,6 +1233,41 @@ function RealApp() {
             ...membership,
             role: 'honorary' as const,
             roleSinceSeasonIndex: game.seasonIndex,
+            highestRole: 'president' as const,
+          }
+        }
+        if (
+          membership.orgId === DEBATE_ORG_ID &&
+          membership.role === 'member' &&
+          membership.totalActivities >= 15 &&
+          (membership.contribution ?? 0) >= 15 &&
+          game.seasonIndex - membership.roleSinceSeasonIndex >= 1
+        ) {
+          notices.push(
+            `${orgName}的秋季例会上，你凭借累计活动和赛事贡献，被推选为${roleLabel('debate', 'officer')}。`,
+          )
+          return {
+            ...membership,
+            role: 'officer' as const,
+            roleSinceSeasonIndex: game.seasonIndex,
+            highestRole: 'officer' as const,
+          }
+        }
+        if (
+          membership.orgId === DEBATE_ORG_ID &&
+          membership.role === 'officer' &&
+          membership.totalActivities >= 30 &&
+          (membership.contribution ?? 0) >= 30 &&
+          game.seasonIndex - membership.roleSinceSeasonIndex >= 1
+        ) {
+          notices.push(
+            `${orgName}的换届会上，你成为新一任${roleLabel('debate', 'president')}。`,
+          )
+          return {
+            ...membership,
+            role: 'president' as const,
+            roleSinceSeasonIndex: game.seasonIndex,
+            presidentStartSeasonIndex: game.seasonIndex,
             highestRole: 'president' as const,
           }
         }
@@ -1413,6 +1558,96 @@ function RealApp() {
       game.walkEncounterWeekKey === weekKey ? game.walkEncounterCount : 0
     if (count >= 2) return
     if (Math.random() >= 0.25) return
+
+    // A “？？” met during a previous gossip clue can appear on campus.
+    // First encounter reveals the name; the next one turns them into a contact.
+    const pendingNpc = Object.entries(game.npcProfiles ?? {}).filter(
+      ([id, profile]) =>
+        !game.relationships.some((relation) => relation.id === id) &&
+        (game.npcRelations ?? []).some(
+          (relation) =>
+            relation.known &&
+            (relation.aId === id || relation.bId === id),
+        ),
+    )
+    if (pendingNpc.length > 0 && Math.random() < 0.55) {
+      const [npcId, profile] = pendingNpc[Math.floor(Math.random() * pendingNpc.length)]
+      const chat =
+        ENCOUNTER_CHATS[Math.floor(Math.random() * ENCOUNTER_CHATS.length)]
+      const baseNext: GameState = {
+        ...game,
+        eventWeek: game.week,
+        walkEncounterWeekKey: weekKey,
+        walkEncounterDayKey: dayKey,
+        walkEncounterCount: count + 1,
+        pendingEvent: null,
+        pendingConfession: null,
+        screen: 'week',
+      }
+      if (!profile.revealed) {
+        const next = {
+          ...baseNext,
+          npcProfiles: {
+            ...(game.npcProfiles ?? {}),
+            [npcId]: { ...profile, revealed: true },
+          },
+        }
+        setGame(next)
+        persist(next)
+        showEncounter({
+          name: profile.name,
+          identity: '校园偶遇的陌生同学',
+          chat,
+          intimacyMultiplier: 1,
+          onResolve: () => undefined,
+        })
+        return
+      }
+      const relation = createNpcContactFromProfile(
+        game.player!,
+        profile,
+        npcId,
+        progressWeek(game),
+      )
+      const next: GameState = {
+        ...baseNext,
+        relationships: [...game.relationships, relation],
+      }
+      setGame(next)
+      persist(next)
+      showEncounter({
+        name: relation.name,
+        identity: relation.identity,
+        chat,
+        intimacyMultiplier: intimacyMultiplier(next, relation),
+        onResolve: (intimacy) => {
+          setGame((previous) => {
+            if (!previous) return previous
+            const updated: GameState = {
+              ...previous,
+              relationships: previous.relationships.map((item) =>
+                item.id === relation.id
+                  ? {
+                      ...item,
+                      intimacy: Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          item.intimacy +
+                            adjustIntimacyDelta(previous, item, intimacy),
+                        ),
+                      ),
+                    }
+                  : item,
+              ),
+            }
+            persist(updated)
+            return updated
+          })
+        },
+      })
+      return
+    }
 
     const known = game.relationships.filter(
       (relation) =>
@@ -1833,6 +2068,8 @@ function RealApp() {
           highestRole: 'member',
           activitySeasonIndex: base.seasonIndex,
           inactivityWarningIssued: false,
+          project: createClubProjectState(org.id, base.season.id),
+          contribution: 0,
         },
       ],
       clubInitialRecruitmentDone: true,
@@ -2078,28 +2315,35 @@ function RealApp() {
     return { ...prev, selected: [...prev.selected, id] }
   }
 
+  const rememberInterfaceOrigin = () => {
+    // Overlays are reached from several hosts. Remember the host view rather
+    // than guessing from game.screen, which can be deliberately out of sync
+    // during prep/vacation transitions.
+    if (view === 'week' || view === 'prep' || view === 'vacation' || view === 'plan') {
+      interfaceOriginView.current = view
+    }
+  }
+
   const openWhoAmI = () => {
-    if (!game) return
+    const latest = gameRef.current ?? game
+    if (!latest) return
+    rememberInterfaceOrigin()
+    persist(latest)
     setView('whoami')
   }
 
   const openWhoIs = () => {
-    if (!game) return
+    const latest = gameRef.current ?? game
+    if (!latest) return
+    rememberInterfaceOrigin()
+    persist(latest)
     setView('whois')
   }
 
   const returnToMain = () => {
-    if (game?.screen === 'plan') {
-      setView('plan')
-      return
-    }
-    // WhoAmI / WhoIsTA are overlays reached from both the semester and the
-    // vacation screen; returning must restore the originating screen.
-    if (game?.screen === 'vacation') {
-      setView('vacation')
-      return
-    }
-    setView('week')
+    const latest = gameRef.current ?? game
+    if (latest) persist(latest)
+    setView(interfaceOriginView.current)
   }
 
   const markRelationSeen = (relationshipId: string) => {
@@ -2172,8 +2416,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(updated)
-    persist(updated)
+    commitTaState(updated, game)
     return {
       message: `你送出了生日礼物。${relation.name} 的亲密度 +${gain}。`,
       gain,
@@ -2220,8 +2463,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(updated)
-    persist(updated)
+    commitTaState(updated, game)
     return {
       message: `你送上了生日祝福。${relation.name} 的亲密度 +${gain}。`,
       gain,
@@ -2236,8 +2478,7 @@ function RealApp() {
       ...game,
       dinnerInvites: { weekKey: currentWeekKey(game), results },
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
   }
 
   const quitClub = (orgId: string) => {
@@ -2262,8 +2503,7 @@ function RealApp() {
         },
       ],
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
   }
 
   const saveClubInvites = (results: DinnerInviteResult[], orgId: string) => {
@@ -2272,8 +2512,7 @@ function RealApp() {
       ...game,
       clubInvites: { weekKey: currentWeekKey(game), orgId, results },
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
   }
 
   const applyClubEvent = (
@@ -2337,6 +2576,26 @@ function RealApp() {
         lines.push(`与${relation.name}亲密度 +${gain}`)
       }
     }
+    if (membership.category === 'academic' && !base.labEntered && next.researchPreparation < 100) {
+      const prepGain = 2
+      next = {
+        ...next,
+        researchPreparation: Math.min(100, next.researchPreparation + prepGain),
+      }
+      lines.push(`科研准备度 +${prepGain}%`)
+    } else if (
+      membership.category === 'academic' &&
+      base.labEntered &&
+      !base.researchPublished
+    ) {
+      const progressGain = 0.5
+      next = {
+        ...next,
+        researchProgress: Math.min(100, next.researchProgress + progressGain),
+        research: next.research + progressGain,
+      }
+      lines.push('科研进度 +0.5%')
+    }
     if (next.player) {
       const grown = applyGrowthCarry({
         attrs: next.player.attrs,
@@ -2345,6 +2604,7 @@ function RealApp() {
         constitutionGrowth: next.constitutionGrowth,
         appearanceGrowth: next.appearanceGrowth,
         socialGrowth: next.socialGrowth,
+        comprehensionGrowth: next.comprehensionGrowth,
       })
       next = {
         ...next,
@@ -2354,6 +2614,7 @@ function RealApp() {
         constitutionGrowth: grown.constitutionGrowth,
         appearanceGrowth: grown.appearanceGrowth,
         socialGrowth: grown.socialGrowth,
+        comprehensionGrowth: grown.comprehensionGrowth,
       }
     }
     return { next, lines }
@@ -2444,6 +2705,368 @@ function RealApp() {
     }
   }
 
+  const recordClubProjectPhase = (orgId: string, choiceId: string | null) => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return
+    const membership = current.clubMemberships.find(
+      (item) => item.orgId === orgId,
+    )
+    if (!membership) return
+    const project = clubProjectForSeason(membership, current.season.id)
+    const def = clubProjectDefForProject(project)
+    if (!def || !project || project.settled) return
+    const phase = currentPhaseFor(project, def, current.week)
+    if (!phase) return
+    if (project.phaseChoices[phase.index] !== null) return
+    const choice = choiceId
+      ? phase.stage.choices.find((item) => item.id === choiceId)
+      : null
+    if (choiceId && !choice) return
+
+    const activityMembership = {
+      ...membership,
+      totalActivities: membership.totalActivities + 1,
+      semesterActivities: membership.semesterActivities + 1,
+    }
+    let next: GameState = {
+      ...current,
+      energy: Math.max(0, Math.min(100, current.energy - 5)),
+      clubInvites: null,
+      clubMemberships: current.clubMemberships.map((item) =>
+        item.orgId === orgId ? activityMembership : item,
+      ),
+    }
+    const lines: string[] = ['精力 -5']
+    if (choice) {
+      const applied = applyClubEvent(next, activityMembership, {
+        id: choice.id,
+        category:
+          membership.category === 'academic' ||
+          membership.category === 'interest' ||
+          membership.category === 'practice'
+            ? membership.category
+            : 'interest',
+        title: `${def.title} · ${phase.stage.title}`,
+        text: phase.stage.description,
+        effects: choice.effects,
+      })
+      next = applied.next
+      lines.push(...applied.lines, `贡献 +${choice.contribution}`)
+    }
+
+    const updatedProject = {
+      ...project,
+      phaseChoices: project.phaseChoices.map((item, index) =>
+        index === phase.index ? choice?.id ?? '__skip__' : item,
+      ),
+      contribution: project.contribution + (choice?.contribution ?? 0),
+    }
+    next = {
+      ...next,
+      clubMemberships: next.clubMemberships.map((item) =>
+        item.orgId === orgId ? { ...item, project: updatedProject } : item,
+      ),
+    }
+    finishWeekSlot(next, 'club')
+    showResearchNotice({
+      kind: 'club',
+      title: `${def.title} · ${phase.stage.title}`,
+      text: choice
+        ? `${phase.stage.description}\n\n你负责：${choice.description}`
+        : '这次例会你只是来听了听，没有接下本周的具体任务。活动仍会按计划推进，你可以在最终活动时去看它办成什么样。',
+      ruleText: lines.length > 0 ? lines.join('；') : undefined,
+      ruleLabel: '本周例会',
+    })
+  }
+
+  const recordClubProjectEvent = (
+    orgId: string,
+    eventIndex: number,
+    attend: boolean,
+  ) => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return
+    const membership = current.clubMemberships.find(
+      (item) => item.orgId === orgId,
+    )
+    if (!membership) return
+    const project = clubProjectForSeason(membership, current.season.id)
+    const def = clubProjectDefForProject(project)
+    if (!def || !project || project.settled) return
+    if (current.week !== project.eventWeek) return
+    if (current.weekSlot !== project.eventSlots[eventIndex]) return
+    if (project.attendance[eventIndex]) return
+
+    const attendance = project.attendance.map((value, index) =>
+      index === eventIndex ? attend : value,
+    )
+    let next: GameState = {
+      ...current,
+      clubMemberships: current.clubMemberships.map((item) =>
+        item.orgId === orgId
+          ? {
+              ...item,
+              project: { ...project, attendance },
+            }
+          : item,
+      ),
+    }
+    const lastEvent = eventIndex >= project.eventSlots.length - 1
+    let result: { title: string; text: string; lines: string[] } | null = null
+    if (lastEvent) {
+      const outcome = personalOutcomeFor({ ...project, attendance })
+      const feedback = def.personalFeedback[outcome]
+      const settledProject = {
+        ...project,
+        attendance,
+        settled: true,
+        personalOutcome: outcome,
+      }
+      const settledMembership = {
+        ...next.clubMemberships.find((item) => item.orgId === orgId)!,
+        project: settledProject,
+      }
+      const applied = applyClubEvent(next, settledMembership, {
+        id: `settle-${def.id}`,
+        category: 'interest',
+        title: def.worldTitle,
+        text: def.worldText,
+        effects: feedback.effects,
+      })
+      next = applied.next
+      next = pushCampusNotice(
+        next,
+        `${def.title} · ${def.worldTitle}`,
+        `${def.worldText}\n\n${feedback.text}`,
+      )
+      result = {
+        title: `${def.title} · ${def.worldTitle}`,
+        text: `${def.worldText}\n\n${feedback.title}：${feedback.text}`,
+        lines: [...projectEffectLine(feedback.effects)],
+      }
+      next = {
+        ...next,
+        clubMemberships: next.clubMemberships.map((item) =>
+          item.orgId === orgId
+            ? { ...item, project: settledProject }
+            : item,
+        ),
+      }
+    }
+    finishWeekSlot(next, 'club')
+    if (result) {
+      showResearchNotice({
+        kind: 'club',
+        title: result.title,
+        text: result.text,
+        ruleText: result.lines.length > 0 ? result.lines.join('；') : undefined,
+        ruleLabel: '活动结算',
+      })
+    }
+  }
+
+  const addComprehensionGrowth = (state: GameState, amount: number): GameState =>
+    carryGrowthState({
+      ...state,
+      comprehensionGrowth: state.comprehensionGrowth + amount,
+    })
+
+  const finishDebateRound = (
+    next: GameState,
+    editionLabel: string,
+    roundLabel: string,
+    noticeTitle: string,
+    noticeText: string,
+    lines: string[],
+  ) => {
+    finishWeekSlot(next, 'club')
+    showResearchNotice({
+      kind: 'club',
+      title: noticeTitle,
+      text: noticeText,
+      ruleText: lines.length > 0 ? lines.join('；') : undefined,
+      ruleLabel: roundLabel,
+    })
+  }
+
+  const attendDebatePractice = (orgId: string) => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return
+    const membership = current.clubMemberships.find((item) => item.orgId === orgId)
+    if (!membership || orgId !== DEBATE_ORG_ID) return
+    let next: GameState = {
+      ...current,
+      energy: Math.max(0, current.energy - 5),
+      clubMemberships: current.clubMemberships.map((item) =>
+        item.orgId === orgId
+          ? {
+              ...item,
+              totalActivities: item.totalActivities + 1,
+              semesterActivities: item.semesterActivities + 1,
+              contribution: (item.contribution ?? 0) + 1,
+            }
+          : item,
+      ),
+    }
+    next = addComprehensionGrowth(next, 10)
+    finishDebateRound(
+      next,
+      current.season.seasonLabel,
+      '队内模辩',
+      '队内模辩',
+      '这一周的例会是一场队内模辩。你完成了一次立论和一轮攻防，悟性成长值 +10%。',
+      ['精力 -5', '悟性成长 +10%', '活动次数 +1', '组织贡献 +1'],
+    )
+  }
+
+  const resolveDebateCupRound = (
+    roundIndex: number,
+    mode: 'play' | 'watch' | 'skip',
+  ) => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return
+    const edition = debateEditionForState(current)
+    if (!edition) return
+    const membership = debateMember(current)
+    const isMember = Boolean(membership)
+    if (isMember && mode === 'watch') return
+    if (!isMember && mode === 'play') return
+    const record =
+      debateCupRecordFor(current, edition.id) ?? createDebateCupRecord(edition)
+    const appearances = [...record.appearances]
+    const watched = [...record.watched]
+    let next: GameState = { ...current }
+    const lines: string[] = []
+    if (isMember && mode === 'play' && roundIndex >= 0 && roundIndex < 3) {
+      appearances[roundIndex] = true
+      lines.push('比赛出场', '悟性成长 +10%', '活动次数 +1', '组织贡献 +5', '综测 +1')
+      next = addComprehensionGrowth(next, 10)
+      next = {
+        ...next,
+        composite: next.composite + 1,
+        clubMemberships: next.clubMemberships.map((item) =>
+          item.orgId === DEBATE_ORG_ID
+            ? {
+                ...item,
+                totalActivities: item.totalActivities + 1,
+                semesterActivities: item.semesterActivities + 1,
+                contribution: (item.contribution ?? 0) + 5,
+              }
+            : item,
+        ),
+      }
+    } else if (!isMember && mode === 'watch' && roundIndex >= 0 && roundIndex < 3) {
+      watched[roundIndex] = true
+      lines.push('观赛', '悟性成长 +20%', '压力 -5', '综测 +1')
+      next = addComprehensionGrowth(next, 20)
+      next = {
+        ...next,
+        stress: Math.max(0, next.stress - 5),
+        composite: next.composite + 1,
+      }
+    }
+
+    let playerBest = record.playerBestDebater
+    let honors = next.debateHonors
+    let noticeTitle = `永昰杯 · ${record.label} · ${['小组赛', '预决赛', '总决赛'][roundIndex]}`
+    let noticeText = isMember
+      ? mode === 'play'
+        ? '你作为医学院辩论队成员出场。队伍赢下了这一轮。'
+        : '你没有出场，在台下看完了这一轮。医学院辩论队照常获胜。'
+      : mode === 'watch'
+        ? '你坐在观众席看完了这一轮。医学院辩论队赢下了比赛。'
+        : '你没有去观赛。'
+    if (record.teamChampion) {
+      // Team outcome is fixed independently of player participation.
+      noticeText += ''
+    }
+
+    if (roundIndex === 2) {
+      const appearedAny = appearances.some(Boolean)
+      playerBest =
+        isMember &&
+        appearances[2] &&
+        record.teamBestDebater &&
+        Math.random() < bestDebaterChance(current.player.attrs.comprehension)
+      const newHonors: typeof honors = [...honors]
+      if (isMember && appearedAny) {
+        const teamKind = record.teamChampion ? 'champion' : 'runner-up'
+        const teamLabel = record.teamChampion
+          ? `永昰杯 · ${record.label}冠军`
+          : `永昰杯 · ${record.label}亚军`
+        const teamHonorId = `${edition.id}-${teamKind}`
+        if (!newHonors.some((item) => item.id === teamHonorId)) {
+          newHonors.push({
+            id: teamHonorId,
+            editionLabel: record.label,
+            kind: teamKind,
+            label: teamLabel,
+          })
+        }
+        next = {
+          ...next,
+          composite: next.composite + (record.teamChampion ? 8 : 5),
+          clubMemberships: next.clubMemberships.map((item) =>
+            item.orgId === DEBATE_ORG_ID
+              ? {
+                  ...item,
+                  contribution: (item.contribution ?? 0) + (record.teamChampion ? 8 : 5),
+                }
+              : item,
+          ),
+        }
+        lines.push(record.teamChampion ? '冠军 · 综测 +8 · 组织贡献 +8' : '亚军 · 综测 +5 · 组织贡献 +5')
+      }
+      if (playerBest) {
+        const bestId = `${edition.id}-best-debater`
+        if (!newHonors.some((item) => item.id === bestId)) {
+          newHonors.push({
+            id: bestId,
+            editionLabel: record.label,
+            kind: 'best-debater',
+            label: `永昰杯 · ${record.label}最佳辩手`,
+          })
+        }
+        next = {
+          ...next,
+          composite: next.composite + 4,
+          clubMemberships: next.clubMemberships.map((item) =>
+            item.orgId === DEBATE_ORG_ID
+              ? { ...item, contribution: (item.contribution ?? 0) + 4 }
+              : item,
+          ),
+        }
+        lines.push('最佳辩手 · 综测 +4 · 组织贡献 +4')
+      }
+      honors = newHonors
+      noticeTitle = `永昰杯 · ${record.label}结算`
+      noticeText = `医学院辩论队获得${record.teamChampion ? '冠军' : '亚军'}。${
+        record.teamBestDebater
+          ? playerBest
+            ? '最佳辩手也落在了你身上。'
+            : '队伍拿到了最佳辩手，但这次不是你。'
+          : '这次没有拿到最佳辩手。'
+      }`
+    }
+
+    const updatedRecord = {
+      ...record,
+      appearances,
+      watched,
+      playerBestDebater: playerBest,
+      settled: roundIndex === 2 ? true : record.settled,
+    }
+    next = {
+      ...next,
+      debateHonors: honors,
+      debateCups: [
+        ...next.debateCups.filter((item) => item.editionId !== edition.id),
+        updatedRecord,
+      ],
+    }
+    finishDebateRound(next, edition.label, lines[0] ?? '赛事', noticeTitle, noticeText, lines)
+  }
+
   const arrangeDinner = (
     acceptedIds: string[],
     declinedIds: string[],
@@ -2451,49 +3074,51 @@ function RealApp() {
   ) => {
     if (
       !game ||
-      game.selected.includes('social') ||
       game.selected.length >= 2 ||
       acceptedIds.length === 0 ||
-      cost > game.money
+      cost >game.money
     ) {
       return
     }
+    const plans = dinnerPlansThisWeek(game)
+    if (plans.length >= DINNER_WEEKLY_LIMIT) return
     const summary = acceptedIds
       .map((id) => game.relationships.find((relation) => relation.id === id)?.name)
       .filter(Boolean) as string[]
-    const dinnerIntimacyGain = Math.max(
-      1,
-      Math.floor(6 / acceptedIds.length),
-    )
+    const attendedIds = new Set(plans.flatMap((plan) => plan.acceptedIds))
+    const firstTimerIds = acceptedIds.filter((id) => !attendedIds.has(id))
+    const plan = {
+      acceptedIds,
+      declinedIds,
+      cost,
+      summary,
+      committed: true,
+      weekKey: currentWeekKey(game),
+      weekSlot: game.weekSlot,
+      firstTimerIds,
+    }
     const next: GameState = {
       ...game,
-      selected: [...game.selected, 'social'],
+      selected: game.selected.includes('social')
+        ? game.selected
+        : [...game.selected, 'social'],
       energy: Math.min(100, game.energy + 8),
       stress: Math.max(0, game.stress - 8),
       money: game.money - cost,
-      dinnerPlan: {
-        acceptedIds,
-        declinedIds,
-        cost,
-        summary,
-        committed: true,
-      },
+      dinnerPlan: plan,
+      dinnerPlans: [...plans, plan],
+      careerStats: bumpCareerStats(game.careerStats, 'dinner'),
       dinnerInvites: null,
       relationships: game.relationships.map((relation) =>
-        acceptedIds.includes(relation.id)
+        firstTimerIds.includes(relation.id)
           ? revealMaybe({
               ...relation,
-              intimacy: Math.min(
-                100,
-                relation.intimacy +
-                  adjustIntimacyDelta(game, relation, dinnerIntimacyGain),
-              ),
+              intimacy: Math.min(100, relation.intimacy + 3),
             })
           : relation,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
   }
 
   const patOutcome = (
@@ -2661,8 +3286,7 @@ function RealApp() {
       events.push(...outcome.events)
       if (outcome.publication) publication = outcome.publication
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     if (publication) {
       openPublicationNotice(
         publication.journal,
@@ -2684,8 +3308,7 @@ function RealApp() {
     const relation = game.relationships.find((item) => item.id === id)
     if (!relation) return { message: '你找不到这个人。', events: [] }
     const outcome = patOutcome(game, relation)
-    setGame(outcome.next)
-    persist(outcome.next)
+    commitTaState(outcome.next, game)
     if (outcome.publication) {
       openPublicationNotice(
         outcome.publication.journal,
@@ -2759,8 +3382,7 @@ function RealApp() {
       ),
       romanceUnlocked: game.romanceUnlocked || success,
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     return { success, name: relation.name, text, bondType: 'lover' }
   }
 
@@ -2809,8 +3431,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     return {
       success: true,
       type,
@@ -2885,8 +3506,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     return {
       success,
       type,
@@ -2985,8 +3605,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     const lines: string[] = []
     if (moneyCost > 0) lines.push(`生活费 -${moneyCost}`)
     if (intimacyGain > 0) lines.push(`亲密度 +${intimacyGain}`)
@@ -3052,8 +3671,7 @@ function RealApp() {
           : item,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, game)
     return {
       success: true,
       name: relation.name,
@@ -3147,8 +3765,30 @@ function RealApp() {
     if (!game) return
     if (game.gossipAsked?.[relationshipId] === currentWeekKey(game)) return
     const result = askGossip(game, relationshipId)
+    commitTaState(result.state, game)
+  }
+
+  const followBondGossipClue = (partnerId: string, relationId: string) => {
+    if (!game) return
+    const result = attemptNpcClueByChat(game, partnerId, relationId)
+    if (!result) return
     setGame(result.state)
     persist(result.state)
+  }
+
+  const investigateNpcClue = (relationId: string) => {
+    if (!game) return null
+    const result = attemptNpcClueByInvestigation(game, relationId)
+    if (!result) return null
+    setGame(result.state)
+    persist(result.state)
+    return {
+      success: result.success,
+      chance: result.chance,
+      message: result.message,
+      name: result.name,
+      attemptedThisWeek: result.attemptedThisWeek,
+    }
   }
 
   const withdrawElective = (courseId: string) => {
@@ -3240,6 +3880,7 @@ function RealApp() {
       sim.constitutionGrowth,
       sim.appearanceGrowth,
       sim.socialGrowth,
+      sim.comprehensionGrowth,
       sim.english,
       sim.englishGrowth,
     )
@@ -3331,6 +3972,8 @@ function RealApp() {
       screen: isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
       relationships,
       dinnerPlan: null,
+      dinnerPlans: [],
+      careerStats: bumpCareerMonths(base.careerStats, 'weeks'),
       dinnerInvites: null,
       clubActivityPlan: null,
       clubInvites: null,
@@ -3354,6 +3997,9 @@ function RealApp() {
       ),
       mentorRecognition: base.mentorRecognition + sim.mentorRecognitionGain,
       researchProgress,
+      researchPreparation: base.labEntered
+        ? 100
+        : Math.min(100, base.researchPreparation + sim.researchPreparationGain),
       researchPublished: base.researchPublished || publishedNow,
       researchJournal: publishedJournal,
       publishedPapers:
@@ -3579,7 +4225,11 @@ function RealApp() {
 
   const finishWeekSlot = (base: GameState, actionId?: string) => {
     const withStats = actionId
-      ? { ...base, semesterStats: bumpSemesterStats(base.semesterStats, actionId) }
+      ? {
+          ...base,
+          semesterStats: bumpSemesterStats(base.semesterStats, actionId),
+          careerStats: bumpCareerStats(base.careerStats, actionId),
+        }
       : base
     const normalized = carryGrowthState(withStats)
     const advancedResult = advanceWeekSlot({
@@ -3695,6 +4345,7 @@ function RealApp() {
       ...game,
       weekSlotSkipped: true,
       semesterStats: bumpSemesterStats(game.semesterStats, 'skip'),
+      careerStats: bumpCareerStats(game.careerStats, 'skip'),
       stress: success ? game.stress : clamp(game.stress + 5, 0, 100),
       skipCaught: success
         ? game.skipCaught
@@ -3724,6 +4375,7 @@ function RealApp() {
       money: Math.max(0, game.money - coffeeCost),
       coffeeDayKey: key,
       semesterStats: bumpSemesterStats(game.semesterStats, 'coffee'),
+      careerStats: bumpCareerStats(game.careerStats, 'coffee'),
       eveningCoffeeDayKey:
         game.weekSlot % 3 === 2 ? key : game.eveningCoffeeDayKey,
     }
@@ -3742,6 +4394,7 @@ function RealApp() {
       constitutionGrowth: game.constitutionGrowth + 1,
       weekSlotActions: [...game.weekSlotActions, 'campusRun'],
       semesterStats: bumpSemesterStats(game.semesterStats, 'exercise'),
+      careerStats: bumpCareerStats(game.careerStats, 'campusRun'),
       peRunCount: game.peRunCount + 1,
       campusRunDayKey: key,
     })
@@ -3851,34 +4504,38 @@ function RealApp() {
     declinedIds: string[],
     cost: number,
   ) => {
-    if (!game || cost > game.money) return
+    if (!game || acceptedIds.length === 0 || cost > game.money) return
+    const plans = dinnerPlansThisWeek(game)
+    if (plans.length >= DINNER_WEEKLY_LIMIT) return
     const summary = acceptedIds
       .map((id) => game.relationships.find((relation) => relation.id === id)?.name)
       .filter(Boolean) as string[]
-    const intimacyGain =
-      acceptedIds.length > 0 ? Math.max(1, Math.floor(6 / acceptedIds.length)) : 0
+    const attendedIds = new Set(plans.flatMap((plan) => plan.acceptedIds))
+    const firstTimerIds = acceptedIds.filter((id) => !attendedIds.has(id))
+    const plan = {
+      acceptedIds,
+      declinedIds,
+      cost,
+      summary,
+      committed: true,
+      weekKey: currentWeekKey(game),
+      weekSlot: game.weekSlot,
+      firstTimerIds,
+    }
     const next: GameState = {
       ...game,
       energy: clamp(game.energy + 8, 0, 100),
       stress: clamp(game.stress - 15, 0, 100),
       money: Math.max(0, game.money - cost),
-      dinnerPlan: {
-        acceptedIds,
-        declinedIds,
-        cost,
-        summary,
-        committed: true,
-      },
+      dinnerPlan: plan,
+      dinnerPlans: [...plans, plan],
+      careerStats: bumpCareerStats(game.careerStats, 'dinner'),
       dinnerInvites: null,
       relationships: game.relationships.map((relation) =>
-        acceptedIds.includes(relation.id)
+        firstTimerIds.includes(relation.id)
           ? {
               ...relation,
-              intimacy: Math.min(
-                100,
-                relation.intimacy +
-                  adjustIntimacyDelta(game, relation, intimacyGain),
-              ),
+              intimacy: Math.min(100, relation.intimacy + 3),
             }
           : relation,
       ),
@@ -4308,6 +4965,7 @@ function RealApp() {
       constitutionGrowth: game.constitutionGrowth - 5,
       selfCareDayKey: key,
       semesterStats: bumpSemesterStats(game.semesterStats, 'selfCare'),
+      careerStats: bumpCareerStats(game.careerStats, 'selfCare'),
     })
     setGame(next)
     persist(next)
@@ -4751,6 +5409,7 @@ function RealApp() {
         committed: true,
       },
       vacationTravelInvites: null,
+      careerStats: bumpCareerStats(game.careerStats, 'travel'),
     }
     setGame(next)
     persist(next)
@@ -4931,7 +5590,7 @@ function RealApp() {
     stress = clamp(stress, 0, 100)
     // 假期在家，不扣本学期每日固定生活费
 
-    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth, english, englishGrowth)
+    const grown = growAttributes(attrs, constitutionGrowth, appearanceGrowth, socialGrowth, game.comprehensionGrowth, english, englishGrowth)
     const log = buildVacationLog(game, { energy, stress, money, habitApplied: vacationHabitApplied })
     const isLastWeek = game.vacation.week >= game.vacation.totalWeeks
     const vacationPublished =
@@ -5104,12 +5763,6 @@ function RealApp() {
     )
   }
 
-  const saveNow = () => {
-    if (game) {
-      persist(game)
-      setHasSave(true)
-    }
-  }
 
   const handleRestart = () => {
     setCrisisKind(null)
@@ -5534,19 +6187,22 @@ function RealApp() {
       next.researchStage === 4 &&
       next.seniorsGenerated &&
       !next.labAccessMailSent &&
+      next.researchPreparation >= 100 &&
       mentorRelation.intimacy >= 40
     ) {
       next = {
         ...next,
         emails: [...next.emails, createLabAccessEmail(next, mentorProfile)],
         labAccessMailSent: true,
+        projectOfferPendingAtAbs: nextGameDayStartAbs(next),
       }
       changed = true
     }
 
     if (
       next.labAccessPendingAtAbs !== null &&
-      nowAbs >= next.labAccessPendingAtAbs
+      nowAbs >= next.labAccessPendingAtAbs &&
+      next.researchPreparation >= 100
     ) {
       next = {
         ...next,
@@ -5563,7 +6219,8 @@ function RealApp() {
       mentorRelation &&
       next.researchStage >= 5 &&
       !next.projectOfferMailSent &&
-      mentorRelation.intimacy >= 60
+      next.projectOfferPendingAtAbs !== null &&
+      nowAbs >= next.projectOfferPendingAtAbs
     ) {
       const hypothesis = pickHypothesis(mentorProfile.id)
       if (hypothesis) {
@@ -5574,6 +6231,7 @@ function RealApp() {
             createProjectOfferEmail(next, mentorProfile, hypothesis),
           ],
           projectOfferMailSent: true,
+          projectOfferPendingAtAbs: null,
         }
         changed = true
       }
@@ -5835,7 +6493,13 @@ function RealApp() {
   }
 
   if (view === 'graduation') {
-    return <GraduationScreen state={game} onRestart={handleRestart} onTitle={goTitle} />
+    return (
+      <GraduationScoreScreen
+        state={game}
+        onRestart={handleRestart}
+        onTitle={goTitle}
+      />
+    )
   }
 
   if (view === 'plan') {
@@ -5893,6 +6557,10 @@ function RealApp() {
           onSaveDinnerResults={saveDinnerResults}
           onApplyClub={startClubApplication}
           onArrangeClubActivity={arrangeClubActivity}
+          onRecordClubProjectPhase={recordClubProjectPhase}
+          onRecordClubProjectEvent={recordClubProjectEvent}
+          onAttendDebatePractice={attendDebatePractice}
+          onResolveDebateCupRound={resolveDebateCupRound}
           onSaveClubInvites={saveClubInvites}
           onQuitClub={quitClub}
           onContactLover={contactLover}
@@ -5909,9 +6577,10 @@ function RealApp() {
           onBondNicknameChange={changeBondNickname}
           onBondNicknameDisplayChange={changeBondNicknameDisplay}
           onAskGossip={askBondGossip}
+          onFollowGossipClue={followBondGossipClue}
+          onInvestigateNpcClue={investigateNpcClue}
           interviewScene={mentorInterviewScene}
           onConfirmMentorInterview={confirmMentorInterview}
-          onSave={saveNow}
           onTitle={goTitle}
         />
         {game.pendingEvent && (
@@ -5973,7 +6642,6 @@ function RealApp() {
           state={game}
           nextLabel={resultNextLabel(game.seasonIndex)}
           onContinue={handleResultContinue}
-          onSave={saveNow}
           onAbandonElective={abandonElective}
           onTitle={goTitle}
         />
@@ -5996,7 +6664,6 @@ function RealApp() {
         state={game}
         onToggleAction={toggleVacationAction}
         onEndWeek={endVacationWeek}
-        onSave={saveNow}
         onTitle={goTitle}
         onWho={openWhoAmI}
         onTA={openWhoIs}
@@ -6130,7 +6797,6 @@ function DemoWeek() {
       onAskGossip={() => undefined}
       interviewScene={null}
       onConfirmMentorInterview={() => undefined}
-      onSave={() => undefined}
       onTitle={() => goDemo('title')}
     />
   )
@@ -6209,7 +6875,6 @@ function DemoApp({ screen }: { screen: DemoName }) {
         state={buildDemoState('vacation')}
         onToggleAction={() => undefined}
         onEndWeek={() => goDemo('yearend')}
-        onSave={() => undefined}
         onTitle={() => goDemo('title')}
       />
     )

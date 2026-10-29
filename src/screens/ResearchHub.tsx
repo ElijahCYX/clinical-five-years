@@ -87,7 +87,15 @@ export function ResearchHub({ state, onComposeMentor }: ResearchHubProps) {
               </strong>
             )}
             {stage === 4 && activeRelation && activeRelation.intimacy < 40 && (
-              <small>与导师亲密度达到 40 后，会收到进入实验室的邮件。</small>
+              <small>
+                科研准备度 {state.researchPreparation} / 100 · 与导师亲密度达到 40
+                后，准备度满 100 才会收到进入实验室的邮件。
+              </small>
+            )}
+            {stage === 4 && activeRelation && activeRelation.intimacy >= 40 && state.researchPreparation < 100 && (
+              <small>
+                科研准备度 {state.researchPreparation} / 100 · 达到 100 后导师会发进组邮件。
+              </small>
             )}
             {stage === 5 && <strong>实验室学习中 · 科研进度尚未开始</strong>}
             {stage === 6 && <strong>科研进度 {state.researchProgress} / 100</strong>}

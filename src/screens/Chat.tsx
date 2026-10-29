@@ -3,6 +3,7 @@ import type { BondType, GameState, GossipRecord, Relationship, SoloChatRecord } 
 import { bondOf, soloContacts, soloSlotLabel } from '../solo'
 import { SEASONS } from '../data'
 import { currentWeekKey } from '../social'
+import { getNpcClueTarget, npcClueAttemptedThisWeek } from '../npcRelations'
 import { SectionLabel } from '../ui'
 
 export interface ChatLaunch {
@@ -17,6 +18,7 @@ interface ChatScreenProps {
   onFocusConsumed: () => void
   onOpenSoloInvite?: () => void
   onAskGossip: (relationshipId: string) => void
+  onFollowGossipClue?: (partnerId: string, relationId: string) => void
   onBondNicknameChange: (relationshipId: string, nickname: string) => void
   onBondNicknameDisplayChange: (relationshipId: string, enabled: boolean) => void
 }
@@ -84,6 +86,7 @@ export function ChatScreen({
   onFocusConsumed,
   onOpenSoloInvite,
   onAskGossip,
+  onFollowGossipClue,
   onBondNicknameChange,
   onBondNicknameDisplayChange,
 }: ChatScreenProps) {
@@ -408,6 +411,44 @@ export function ChatScreen({
                             <p>{entry.record.reply}</p>
                           </div>
                         )}
+                        {entry.record.clueNote && (
+                          <p className="chat-gossip-clue-note">{entry.record.clueNote}</p>
+                        )}
+                        {(() => {
+                          if (!entry.record.relationId) return null
+                          const clue = getNpcClueTarget(
+                            state,
+                            entry.record.relationId,
+                          )
+                          if (!clue) return null
+                          if (clue.profile.revealed) {
+                            if (entry.record.clueNote) return null
+                            return (
+                              <p className="chat-gossip-clue-known">
+                                你后来打听到了名字：{clue.profile.name}。等一次校园偶遇，你们才会真正认识。
+                              </p>
+                            )
+                          }
+                          const attempted = npcClueAttemptedThisWeek(
+                            state,
+                            clue.relation.id,
+                          )
+                          return (
+                            <button
+                              type="button"
+                              className="chat-gossip-clue-btn"
+                              disabled={attempted || !onFollowGossipClue}
+                              onClick={() =>
+                                onFollowGossipClue?.(
+                                  entry.record.partnerId,
+                                  clue.relation.id,
+                                )
+                              }
+                            >
+                              {attempted ? '本周已追问过' : '继续追问这个「？？」'}
+                            </button>
+                          )
+                        })()}
                       </>
                     )}
                     {entry.kind === 'nickname' && (

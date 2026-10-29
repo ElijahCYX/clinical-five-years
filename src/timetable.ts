@@ -1,6 +1,8 @@
 import { ELECTIVE_COURSE_BY_ID } from './data'
 import { ORG_BY_ID } from './organizations'
 import type { Course, GameState, SoloInvite } from './types'
+import { clubProjectDefForProject, clubProjectForSeason, currentPhaseFor } from './clubProjects'
+import { DEBATE_CUP_ROUNDS, DEBATE_CUP_SLOT, DEBATE_ORG_ID, debateEditionForState } from './debateCup'
 
 export const TIMETABLE_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 export const TIMETABLE_SLOTS = ['早上', '下午', '晚上'] as const
@@ -9,6 +11,14 @@ export interface TimetableActivity {
   orgId: string
   name: string
   category: string
+  kind?: 'default' | 'meeting' | 'event' | 'debatePractice' | 'debateCup'
+  projectTitle?: string
+  phaseTitle?: string
+  phaseDescription?: string
+  eventIndex?: number
+  eventWeek?: number
+  roundIndex?: number
+  editionId?: string
 }
 
 export interface TimetableCell {
@@ -121,12 +131,71 @@ export function buildTimetable(state: GameState): TimetableData {
     const membership = state.clubMemberships[i]
     const org = ORG_BY_ID[membership.orgId]
     const slot = clubSlotPriority[i]
-    if (org && slot !== undefined) {
+    if (!org || slot === undefined) continue
+    const project = clubProjectForSeason(membership, state.season.id)
+    const projectDef = clubProjectDefForProject(project)
+    const phase = project && projectDef
+      ? currentPhaseFor(project, projectDef, state.week)
+      : null
+    if (projectDef && project && phase) {
+      cells[slot].activity = {
+        orgId: org.id,
+        name: org.name,
+        category: org.category,
+        kind: 'meeting',
+        projectTitle: projectDef.title,
+        phaseTitle: phase.stage.title,
+        phaseDescription: phase.stage.description,
+        eventWeek: project.eventWeek,
+      }
+      if (state.week === project.eventWeek) {
+        project.eventSlots.forEach((eventSlot, eventIndex) => {
+          if (eventSlot < 0 || eventSlot > 20) return
+          const eventPhase = projectDef.eventPhases[eventIndex]
+          cells[eventSlot].activity = {
+            orgId: org.id,
+            name: org.name,
+            category: org.category,
+            kind: 'event',
+            projectTitle: projectDef.title,
+            phaseTitle: eventPhase?.title ?? '活动进行中',
+            phaseDescription: eventPhase?.description ?? '',
+            eventIndex,
+            eventWeek: project.eventWeek,
+          }
+        })
+      }
+    } else if (org.id === DEBATE_ORG_ID) {
+      cells[slot].activity = {
+        orgId: org.id,
+        name: org.name,
+        category: org.category,
+        kind: 'debatePractice',
+        phaseTitle: '队内模辩',
+        phaseDescription: '本周队内模辩。参加后悟性成长值 +10%。',
+      }
+    } else {
       cells[slot].activity = {
         orgId: org.id,
         name: org.name,
         category: org.category,
       }
+    }
+  }
+
+  // 永昰杯：大一冬、大二冬第1-3周，周六晚对全校玩家开放；课程避开该格。
+  const cupEdition = debateEditionForState(state)
+  if (cupEdition && state.week >= 1 && state.week <= 3) {
+    const roundIndex = state.week - 1
+    cells[DEBATE_CUP_SLOT].activity = {
+      orgId: DEBATE_ORG_ID,
+      name: '永昰杯',
+      category: 'debate',
+      kind: 'debateCup',
+      phaseTitle: DEBATE_CUP_ROUNDS[roundIndex],
+      phaseDescription: '永昰杯辩论赛',
+      roundIndex,
+      editionId: cupEdition.id,
     }
   }
 

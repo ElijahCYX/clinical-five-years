@@ -90,16 +90,23 @@ export function rollMentorReply(state: GameState): ReplyRoll {
   return 'none'
 }
 
-/** 面谈：悟性4、操作3、建模2、交际1，换算到 30%–100%。 */
+/**
+ * 面谈成功率：
+ *   基础 10%
+ *   + 科研准备度 50%（0%→0，100%→50%）
+ *   + 加权属性 40%（沿用原 4:3:2:1 曲线）
+ */
 export function interviewSuccessChance(state: GameState): number {
   const attrs = state.player?.attrs
-  if (!attrs) return 0.3
+  if (!attrs) return 0.1 + ((state.researchPreparation ?? 0) / 100) * 0.5
   const weighted =
     attrs.comprehension * 4 +
     attrs.dexterity * 3 +
     attrs.appearance * 2 +
     attrs.social
-  return clamp(0.3 + ((weighted - 20) / 130) * 0.7, 0.3, 1)
+  const attrPart = Math.max(0, Math.min(1, (weighted - 20) / 130)) * 0.4
+  const prepPart = (state.researchPreparation ?? 0) / 100 * 0.5
+  return clamp(0.1 + prepPart + attrPart, 0, 1)
 }
 
 function gpaLabel(state: GameState): string {

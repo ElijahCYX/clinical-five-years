@@ -6,7 +6,6 @@ interface ResultScreenProps {
   state: GameState
   nextLabel: string
   onContinue: () => void
-  onSave?: () => void
   onAbandonElective?: (courseId: string) => void
   onTitle?: () => void
 }
@@ -15,7 +14,6 @@ export function ResultScreen({
   state,
   nextLabel,
   onContinue,
-  onSave,
   onAbandonElective,
   onTitle,
 }: ResultScreenProps) {
@@ -242,9 +240,6 @@ export function ResultScreen({
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={onTitle}>
                   回到标题
-                </button>
-                <button type="button" className="btn btn-save" onClick={onSave}>
-                  保存存档
                 </button>
               </div>
             </div>

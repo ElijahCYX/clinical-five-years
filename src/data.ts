@@ -446,7 +446,7 @@ export const ACTIONS: ActionDef[] = [
     energy: 8,
     stress: -20,
     money: 0,
-    effectText: '精力 +8 · 压力 -15 · 生活费按赴约人数结算 · 亲密度按赴约人数分配 +6',
+    effectText: '精力 +8 · 压力 -15 · 生活费按赴约人数结算 · 本周最多 3 次 · 首次赴约 +3/人',
   },
   {
     id: 'selfCare',
