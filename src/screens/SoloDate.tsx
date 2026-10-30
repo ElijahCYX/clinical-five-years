@@ -73,8 +73,8 @@ export function SoloDateOverlay({
             </p>
           </header>
           <div className="solo-date-body">
-            <p className="solo-date-copy">{event.description}</p>
             <blockquote>{partnerState}</blockquote>
+            <p className="solo-date-copy">{event.description}</p>
             <div className="solo-date-effects">
               <span>亲密度 +{SOLO_EFFECTS.intimacy}</span>
               <span>精力 {SOLO_EFFECTS.energy}</span>

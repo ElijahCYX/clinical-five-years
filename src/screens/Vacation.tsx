@@ -64,8 +64,6 @@ export function VacationScreen({
     .map((id) => HABIT_BY_ID[id])
     .filter(Boolean)
   const habitActive = false
-  const latestLog = state.logs[state.logs.length - 1]
-  const vacationLog = latestLog?.title.startsWith(meta.name) ? latestLog : null
   const remainingActions = Math.max(0, 2 - state.selected.length)
   const archetype = player.archiveTitle
 
@@ -346,28 +344,6 @@ export function VacationScreen({
           </section>
 
           <aside className="game-right">
-            <div className="paper-card memo-card">
-              <div className="card-head">
-                <span>VACATION MEMO</span>
-                <span>假期手记</span>
-              </div>
-              <h3>{vacationLog?.title ?? `${meta.name} · 第 ${vacation.week} 周`}</h3>
-              <p className="memo-text">
-                {vacationLog?.text ??
-                  '终于没有早八了。你睡到自然醒，发现窗外的光线和学期里不太一样。假期很长，也很短。'}
-              </p>
-              {vacationLog && (
-                <div className="delta-row memo-deltas">
-                  {vacationLog.deltas.map((delta) => (
-                    <span key={delta}>{delta}</span>
-                  ))}
-                </div>
-              )}
-              <blockquote className="memo-quote">
-                “先把今天过完。明天的事，明天再想。”
-              </blockquote>
-            </div>
-
             <div className="paper-card course-card">
               <div className="card-head">
                 <span>AFTER THE BREAK</span>

@@ -131,18 +131,12 @@ export function healthLocksSport(state: GameState): boolean {
   )
 }
 
-export function advanceHealthForNewWeek(
-  state: GameState,
-  selected: string[],
-): GameState {
-  let next: GameState = {
-    ...state,
-    weather: rollWeather(),
-    weatherWeekKey: `${state.season.id}-${state.week}`,
-  }
+export function tickHealthDay(state: GameState): GameState {
+  const conditions = activeHealth(state)
+  if (conditions.length === 0) return state
   const remaining: HealthCondition[] = []
-  const history = [...(next.healthHistory ?? [])]
-  for (const condition of activeHealth(next)) {
+  const history = [...(state.healthHistory ?? [])]
+  for (const condition of conditions) {
     const daysLeft = condition.daysLeft - 1
     if (daysLeft <= 0) {
       history.push({
@@ -156,8 +150,23 @@ export function advanceHealthForNewWeek(
       remaining.push({ ...condition, daysLeft })
     }
   }
-  next = { ...next, healthConditions: remaining, healthHistory: history }
-  if (next.pendingHealthEvent || remaining.length > 0) return next
+  return {
+    ...state,
+    healthConditions: remaining,
+    healthHistory: history,
+  }
+}
+
+export function advanceHealthForNewWeek(
+  state: GameState,
+  selected: string[],
+): GameState {
+  let next: GameState = {
+    ...state,
+    weather: rollWeather(),
+    weatherWeekKey: `${state.season.id}-${state.week}`,
+  }
+  if (next.pendingHealthEvent || activeHealth(next).length > 0) return next
   if (next.week > 3) return next
 
   const ordinaryAvailable =
@@ -182,7 +191,7 @@ export function advanceHealthForNewWeek(
   if (!condition) return next
   const withCondition = {
     ...next,
-    healthConditions: [...remaining, condition],
+    healthConditions: [...activeHealth(next), condition],
     pendingHealthEvent: { conditionId: condition.id },
   }
   return {

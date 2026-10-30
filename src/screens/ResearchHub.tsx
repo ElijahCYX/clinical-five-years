@@ -17,7 +17,6 @@ export function ResearchHub({ state, onComposeMentor }: ResearchHubProps) {
   const activeProfile = state.mentorProfileId
     ? MENTOR_LIBRARY.find((mentor) => mentor.id === state.mentorProfileId) ?? null
     : null
-  const activeRelation = state.relationships.find((relation) => relation.kind === 'mentor') ?? null
   const selected =
     MENTOR_LIBRARY.find((mentor) => mentor.id === selectedId) ??
     activeProfile ??
@@ -67,13 +66,6 @@ export function ResearchHub({ state, onComposeMentor }: ResearchHubProps) {
                 {activeProfile.department} · {activeProfile.title} · {activeProfile.field}
               </p>
             </div>
-            {activeRelation && (
-              <div className="research-active-intimacy">
-                <span>导师亲密度</span>
-                <strong>{activeRelation.intimacy} / 100</strong>
-                <Bar value={activeRelation.intimacy} max={100} thin />
-              </div>
-            )}
           </div>
           <div className="research-stage-row">
             <span>{stageLabel(stage)}</span>
@@ -86,18 +78,22 @@ export function ResearchHub({ state, onComposeMentor }: ResearchHubProps) {
                 {state.seniorsGenerated ? '课题组已加入 · 前辈已认识' : '等待你阅读欢迎邮件'}
               </strong>
             )}
-            {stage === 4 && activeRelation && activeRelation.intimacy < 40 && (
-              <small>
-                科研准备度 {state.researchPreparation} / 100 · 与导师亲密度达到 40
-                后，准备度满 100 才会收到进入实验室的邮件。
-              </small>
-            )}
-            {stage === 4 && activeRelation && activeRelation.intimacy >= 40 && state.researchPreparation < 100 && (
+            {stage === 4 && state.researchPreparation < 100 && (
               <small>
                 科研准备度 {state.researchPreparation} / 100 · 达到 100 后导师会发进组邮件。
               </small>
             )}
-            {stage === 5 && <strong>实验室学习中 · 科研进度尚未开始</strong>}
+            {stage === 4 && state.researchPreparation >= 100 && (
+              <small>科研准备度已满，导师会发实验室门禁邮件。</small>
+            )}
+            {stage === 5 && (
+              <strong>
+                实验室学习中 · 实验准备度 {state.experimentPreparation} / 100
+              </strong>
+            )}
+            {stage === 5 && state.experimentPreparation < 100 && (
+              <small>参加实验室打杂，把实验准备度积累到 100 后，导师会发课题邀请。</small>
+            )}
             {stage === 6 && <strong>科研进度 {state.researchProgress} / 100</strong>}
           </div>
           {stage === 6 && (
@@ -161,7 +157,7 @@ export function ResearchHub({ state, onComposeMentor }: ResearchHubProps) {
               </div>
             </div>
             <div className="mentor-profile-section">
-              <span>研究方向</span>
+              <span>科室与研究方向</span>
               <strong>{selected.field}</strong>
             </div>
             <div className="mentor-profile-section">

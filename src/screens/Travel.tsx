@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { DinnerInviteResult, Relationship } from '../types'
 import {
   isDinnerFriend,
-  randomRefusalReason,
+  randomTravelRefusalReason,
   relationshipKindLabel,
   travelCost,
   travelJoinChance,
@@ -75,7 +75,7 @@ export function TravelModal({
     }).map((item) =>
       item.accepted
         ? item
-        : { ...item, reason: item.reason ?? randomRefusalReason() },
+        : { ...item, reason: item.reason ?? randomTravelRefusalReason() },
     )
     setResults(next)
     onSaveResults?.(next)

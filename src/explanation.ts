@@ -203,7 +203,6 @@ const CARD_SELECTORS = [
   '.scholarship-card',
   '.exam-table-card',
   '.cet-result-card',
-  '.memo-card',
   '.week-phase-card',
   '.prep-course-card',
   '.identity-card',

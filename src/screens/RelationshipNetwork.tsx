@@ -94,7 +94,7 @@ function buildGraph(state: GameState): { nodes: GraphNode[]; edges: GraphEdge[] 
     },
   ]
   const knownIds = new Set<string>()
-  for (const relation of state.relationships) {
+  for (const relation of state.relationships.filter((item) => item.kind !== 'mentor')) {
     knownIds.add(relation.id)
     nodes.push({
       id: relation.id,
@@ -104,7 +104,9 @@ function buildGraph(state: GameState): { nodes: GraphNode[]; edges: GraphEdge[] 
       relationship: relation,
     })
   }
-  const edges: GraphEdge[] = state.relationships.map((relation) => ({
+  const edges: GraphEdge[] = state.relationships
+    .filter((relation) => relation.kind !== 'mentor')
+    .map((relation) => ({
     id: `player-${relation.id}`,
     from: PLAYER_NODE,
     to: relation.id,

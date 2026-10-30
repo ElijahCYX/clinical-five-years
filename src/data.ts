@@ -129,7 +129,7 @@ export const OPENING_TALENTS: OpeningTalentDef[] = [
     name: '医学世家',
     en: 'MEDICAL FAMILY',
     desc: '家族群里一半是主任，一半是护士长。电话一打，导师先问你爸妈好。',
-    effectText: '开局随机导师主动发邮件；下一天正式接纳进入课题组',
+    effectText: '开局随机导师主动发邮件；进入课题组后，科研准备度达到 100% 才进实验室并获得课题',
     implemented: true,
   },
   {
@@ -255,7 +255,7 @@ export const PLANS: PlanDef[] = [
     desc: '精力消耗最大，准备度下限最高。适合高记忆要求的硬课，也适合想把基础打牢的人。',
     effects: [
       '每门课每周被动准备度 +3 × K',
-      '每天精力 -4、压力 +2（一周共 -28 / +14）',
+      '每天精力 -6、压力 +3（一周共 -42 / +21）',
       '考前周复习倍率 ×1.0',
     ],
   },
@@ -268,7 +268,7 @@ export const PLANS: PlanDef[] = [
     desc: '消耗与收益都居中。两门课难度不同、或者你还想做点别的事时，这是最稳的选择。',
     effects: [
       '每门课每周被动准备度 +1 × K',
-      '周六、周日过完后各精力 -8、压力 +3（一周共 -16 / +6）',
+      '周六、周日过完后各精力 -10、压力 +4（一周共 -20 / +8）',
       '考前周复习倍率 ×1.1',
     ],
   },
@@ -310,8 +310,7 @@ export const HABITS: HabitDef[] = [
     name: '看文献',
     en: 'READ',
     desc: '工作日睡前读一篇，慢慢习惯研究生的语言。',
-    effect: '进组前导师认可度 +2 / 工作日 · 进组后科研进度 +0.4% / 工作日',
-    mentorRecognition: 2,
+    effect: '进实验室前科研准备度 +2 / 工作日 · 进实验室后科研进度 +0.2% / 工作日',
   },
   {
     id: 'earlyRise',
@@ -404,11 +403,11 @@ export const ACTIONS: ActionDef[] = [
     category: '科研',
     flavor: '实验室的日常，也从小事开始。',
     energy: -20,
-    stress: 3,
+    stress: 5,
     money: 0,
-    effectText: '科研进度随机 +2~6（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3',
+    effectText: '课题开始后科研进度随机 +1~3（悟性越高越容易抽到高值）· 精力 -20 · 压力 +5',
     requires: 'mentor',
-    lockedNote: '需要先联系导师',
+    lockedNote: '需要进入实验室',
   },
   {
     id: 'club',
@@ -1114,7 +1113,7 @@ export const VACATION_ACTIONS: ActionDef[] = [
     money: -50,
     requires: 'lab',
     lockedNote: '需要先进入实验室',
-    effectText: '科研进度 +5 · 精力 -10 · 压力 +10 · 生活费 -50',
+    effectText: '课题开始后科研进度 +5 · 精力 -10 · 压力 +10 · 生活费 -50',
   },
 ]
 

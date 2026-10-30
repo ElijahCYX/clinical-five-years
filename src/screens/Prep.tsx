@@ -203,20 +203,6 @@ export function PrepScreen({
           onTitle={onTitle}
           right={<span className="topbar-note">第 4 周 · 考前复习</span>}
         />
-        <InterfaceNav
-          active="main"
-          bondAlert={hasAvailableBond(state)}
-          onMain={() => undefined}
-          onWho={onWho ?? (() => undefined)}
-          onTA={onTA ?? (() => undefined)}
-          badges={{
-            ta:
-              unseenRelationCount(state) > 0
-                ? '新'
-                : patRemainingThisWeek(state) || undefined,
-          }}
-        />
-
         <header className="prep-head">
           <div>
             <Eyebrow>WEEK 04 / PRE-EXAM REVIEW</Eyebrow>
@@ -559,6 +545,20 @@ export function PrepScreen({
             </Pill>
           </aside>
         </div>
+        <InterfaceNav
+          active="main"
+          variant="bottom"
+          bondAlert={hasAvailableBond(state)}
+          onMain={() => undefined}
+          onWho={onWho ?? (() => undefined)}
+          onTA={onTA ?? (() => undefined)}
+          badges={{
+            ta:
+              unseenRelationCount(state) > 0
+                ? '新'
+                : patRemainingThisWeek(state) || undefined,
+          }}
+        />
       </div>
     </div>
   )

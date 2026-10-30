@@ -271,6 +271,7 @@ export function createProjectOfferEmail(
   state: GameState,
   mentor: MentorProfile,
   hypothesis: { id: string; title: string },
+  nextProject = false,
 ): GameEmail {
   return {
     id: nextMailId('mail-project'),
@@ -279,8 +280,8 @@ export function createProjectOfferEmail(
     mentorId: mentor.id,
     senderName: mentor.alias,
     recipientName: state.player?.name ?? '我',
-    subject: `课题邀请：${hypothesis.title}`,
-    body: `你好：\n\n这段时间你在实验室的表现我看在眼里。现在有一个可以开始做的题目，我想交给你试试：\n\n「${hypothesis.title}」\n\n题目不算小，前期需要读一批文献，后面还要补实验。你如果愿意接，回复我就行；如果还没准备好，也可以直接告诉我。\n\n${mentor.alias}`,
+    subject: `${nextProject ? '新课题邀请' : '课题邀请'}：${hypothesis.title}`,
+    body: `你好：\n\n${nextProject ? '上一篇论文已经见刊。这段时间你在实验室的表现我看在眼里，第二篇我想让你接着做：' : '这段时间你在实验室的表现我看在眼里。现在有一个可以开始做的题目，我想交给你试试：'}\n\n「${hypothesis.title}」\n\n题目不算小，前期需要读一批文献，后面还要补实验。你如果愿意接，回复我就行；如果还没准备好，也可以直接告诉我。\n\n${mentor.alias}`,
     sentAtAbs: absoluteSlot(state),
     timeLabel: currentMailTimeLabel(state),
     read: false,

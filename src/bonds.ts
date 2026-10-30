@@ -36,7 +36,8 @@ export function bondTypeAvailable(
   relation: Relationship,
   type: BondType,
 ): boolean {
-  if (relation.intimacy < 60) return false
+  if (relation.kind === 'mentor') return false
+  if (relation.intimacy < 59) return false
   if (relation.partner || relation.bondType) return false
   if (type === 'lover') {
     return !relation.confessRejected && playerAllowsLover(player, relation)

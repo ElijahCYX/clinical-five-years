@@ -33,7 +33,7 @@ export function HealthEventModal({ state, onTreat }: HealthEventProps) {
     {
       treatment: 'dorm',
       title: '宿舍休息',
-      text: '把这一周的行动慢下来，在床上多躺一天。',
+      text: '在宿舍多躺一天，恢复较快，压力下降。',
       cost: '压力 -5 · 恢复较快',
     },
     {
@@ -61,7 +61,7 @@ export function HealthEventModal({ state, onTreat }: HealthEventProps) {
         <p className="random-event-text">
           身体先替你把话说完了。{condition.label}预计还需要
           <strong> {condition.daysLeft} 天</strong>恢复；这几天行动会更累，
-          准备度收益也会下降。现在要处理一下吗？
+          可用精力上限会暂时下降，运动类行动也可能受限。现在要处理一下吗？
         </p>
         <div className="health-treatment-list">
           {options.map((option) => (

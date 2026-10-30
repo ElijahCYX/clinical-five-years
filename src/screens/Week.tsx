@@ -6,6 +6,7 @@ import {
   effectiveEnergyCost,
   energyEffectText,
   labChoreEnergyCost,
+  literatureEnergyCost,
   libraryCosts,
   estimateRange,
   courseDifficulty,
@@ -72,7 +73,7 @@ const VISIBLE_ACTIONS = [
   'library',
   'electiveHomework',
   'research',
-  'club',
+  // 组织活动已经固定在课表格里；不要在这里再给一次自由行动入口。
   'soloInvite',
   'social',
   'partTime',
@@ -170,6 +171,8 @@ interface WeekScreenProps {
   onRecordClubProjectPhase?: (orgId: string, choiceId: string | null) => void
   onRecordClubProjectEvent?: (orgId: string, eventIndex: number, attend: boolean) => void
   onAttendDebatePractice?: (orgId: string) => void
+  onLiteratureReport?: () => GameEmail | null
+  onSendLiteratureReport?: (draft: GameEmail) => { ok: boolean; error?: string }
   onResolveDebateCupRound?: (roundIndex: number, mode: 'play' | 'watch' | 'skip') => void
   onSaveClubInvites?: (results: DinnerInviteResult[], orgId: string) => void
   onQuitClub?: (orgId: string) => void
@@ -185,6 +188,7 @@ interface WeekScreenProps {
   onSendMentorMail: (draft: GameEmail) => { ok: boolean; error?: string }
   onReadMentorEmail: (emailId: string) => void
   onAcceptMentorProject: (emailId: string) => void
+  onDeclineMentorProject?: (emailId: string) => void
   chatFocus: ChatLaunch | null
   onChatFocusConsumed: () => void
   onBondNicknameChange: (relationshipId: string, nickname: string) => void
@@ -233,6 +237,8 @@ export function WeekScreen({
   onRecordClubProjectPhase,
   onRecordClubProjectEvent,
   onAttendDebatePractice,
+  onLiteratureReport,
+  onSendLiteratureReport,
   onResolveDebateCupRound,
   onSaveClubInvites,
   onQuitClub,
@@ -245,6 +251,7 @@ export function WeekScreen({
   onSendMentorMail,
   onReadMentorEmail,
   onAcceptMentorProject,
+  onDeclineMentorProject,
   chatFocus,
   onChatFocusConsumed,
   onBondNicknameChange,
@@ -309,8 +316,18 @@ export function WeekScreen({
   const player = state.player
   if (!player) return null
 
-  const latestLog = state.logs[state.logs.length - 1]
   const remainingActions = Math.max(0, 2 - state.selected.length)
+  const literatureSessions =
+    state.literatureStudyCount +
+    state.selected.filter((id) => id === 'research').length
+  const literatureReportedThisWeek =
+    state.literatureReportWeekKey === currentWeekKey(state)
+  const canReportLiterature =
+    !state.labEntered &&
+    state.mentorContactUnlocked &&
+    literatureSessions >= 2 &&
+    !literatureReportedThisWeek &&
+    !state.pendingLiteratureReport
   const courses = state.season.courses
   const focusableCourses = courses.filter((course) => !course.electiveType)
   const focusCourse = courses.find((course) => course.id === state.weekFocus)
@@ -506,7 +523,7 @@ export function WeekScreen({
   const researchActionName = state.researchPublished
     ? '论文已发表'
     : !state.labEntered
-      ? '科研相关'
+      ? '文献学习'
       : !state.researchStarted
         ? '实验室打杂'
         : researchStage(state.researchProgress).name
@@ -518,6 +535,13 @@ export function WeekScreen({
     if (action.id === 'research') return researchActionName
     if (action.id === 'club') return clubActionName
     return action.name
+  }
+
+  const actionFlavorText = (action: ActionDef) => {
+    if (action.id === 'research' && !state.labEntered) {
+      return '读文献，慢慢习惯研究生的语言，也为进实验室做准备。'
+    }
+    return action.flavor
   }
 
   const actionEffectText = (action: ActionDef) => {
@@ -547,11 +571,13 @@ export function WeekScreen({
       return '目前无法加入新的组织'
     }
     if (action.id === 'research') {
-      if (!state.labEntered) return '等待导师允许进入实验室'
-      if (!state.researchStarted) {
-        return `导师亲密度 +5 · 精力 ${labChoreEnergyCost(state.player?.attrs.comprehension ?? 5)} · 压力 +3`
+      if (!state.labEntered) {
+        return `科研准备度 +5% · 精力 -${literatureEnergyCost(state.player?.attrs.comprehension ?? 5)}`
       }
-      return '科研 +2~6 · 科研进度 +2~6（悟性越高越容易抽到高值）· 精力 -20 · 压力 +3'
+      if (!state.researchStarted) {
+        return '实验准备度 +10% · 精力 -10 · 压力 +3'
+      }
+      return '科研 +1~3 · 科研进度 +1~3（悟性越高越容易抽到高值）· 精力 -20 · 压力 +5'
     }
     return energyEffectText(action.effectText, action.energy, state.energy)
   }
@@ -619,6 +645,7 @@ export function WeekScreen({
     if (chatFocus) setTab('chat')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatFocus?.token])
+
   const mentorInterviewDay =
     mentorInterviewSlot >= 0
       ? TIMETABLE_DAYS[Math.floor(mentorInterviewSlot / 3)]
@@ -876,8 +903,7 @@ export function WeekScreen({
     }
     if (action.id === 'research') {
       if (!state.mentorContactUnlocked) return '还没有导师'
-      if (!state.labEntered) return '导师还没有允许你进实验室'
-      if (state.researchPublished) return '论文已经发表'
+      if (state.labEntered && state.researchPublished) return '论文已经发表'
     }
     if (action.requires === 'mentor' && action.id !== 'research') {
       return action.lockedNote ?? '尚未解锁'
@@ -1754,6 +1780,13 @@ export function WeekScreen({
                           >
                             本周不参与
                           </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            onClick={onLeaveClubActivity}
+                          >
+                            因故请假
+                          </button>
                         </div>
                       )}
                     </section>
@@ -1818,6 +1851,13 @@ export function WeekScreen({
                           onClick={() => onAttendDebatePractice?.('org-debate')}
                         >
                           参加队内模辩 <small>精力 -5</small>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={onLeaveClubActivity}
+                        >
+                          因故请假
                         </button>
                       </div>
                     </section>
@@ -2244,8 +2284,33 @@ export function WeekScreen({
                             ? '小组作业'
                             : displayActionName(action)}
                         </h3>
-                        <p className="action-flavor">{action.flavor}</p>
+                        <p className="action-flavor">{actionFlavorText(action)}</p>
                         <p className="action-effect">{actionEffectText(action)}</p>
+                        {action.id === 'research' &&
+                          !state.labEntered &&
+                          state.mentorContactUnlocked && (
+                            <button
+                              type="button"
+                              className="action-mini-btn literature-report-btn"
+                              disabled={!canReportLiterature}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (!canReportLiterature) return
+                                const report = onLiteratureReport?.()
+                                if (report) {
+                                  setMailDraft(report)
+                                  setTab('mail')
+                                }
+                              }}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              {literatureReportedThisWeek
+                                ? '本周已汇报'
+                                : literatureSessions < 2
+                                  ? `汇报 ${Math.min(literatureSessions, 2)}/2`
+                                  : '汇报'}
+                            </button>
+                          )}
                         {action.id === 'social' && dinnerCount > 0 && (
                           <button
                             type="button"
@@ -2348,9 +2413,17 @@ export function WeekScreen({
               <Mailbox
                 state={state}
                 draft={mailDraft}
-                onSendDraft={onSendMentorMail}
+                onSendDraft={(draft) =>
+                  draft.kind === 'literatureReport'
+                    ? onSendLiteratureReport?.(draft) ?? {
+                        ok: false,
+                        error: '现在还不能发送汇报。',
+                      }
+                    : onSendMentorMail(draft)
+                }
                 onReadEmail={onReadMentorEmail}
                 onAcceptProject={onAcceptMentorProject}
+                onDeclineProject={(id) => onDeclineMentorProject?.(id)}
                 onDraftDone={() => setMailDraft(null)}
                 onCancelDraft={() => setMailDraft(null)}
               />
@@ -2420,28 +2493,6 @@ export function WeekScreen({
           </section>
 
           <aside className="game-right">
-            <div className="paper-card memo-card">
-              <div className="card-head">
-                <span>WEEKLY MEMO</span>
-                <span>手记</span>
-              </div>
-              <h3>{latestLog?.title ?? '开学第一周'}</h3>
-              <p className="memo-text">
-                {latestLog?.text ??
-                  '九月的风把银杏叶吹进阶梯教室。你坐在最后一排，翻开崭新的课本，闻到纸和油墨的味道。五年很长，先从这一周开始。'}
-              </p>
-              {latestLog && (
-                <div className="delta-row memo-deltas">
-                  {latestLog.deltas.map((delta) => (
-                    <span key={delta}>{delta}</span>
-                  ))}
-                </div>
-              )}
-              <blockquote className="memo-quote">
-                “先把今天过完。明天的事，明天再想。”
-              </blockquote>
-            </div>
-
             <div className="exam-banner">
               <div className="exam-top">
                 <div>

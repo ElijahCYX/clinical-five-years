@@ -32,8 +32,10 @@ export function PlanScreen({
   onWho,
   onTA,
 }: PlanScreenProps) {
-  const [plan, setPlan] = useState<PlanId | null>(initialPlan)
-  const [habits, setHabits] = useState<HabitId[]>(initialHabits)
+  const [plan, setPlan] = useState<PlanId | null>(initialPlan ?? 'A')
+  const [habits, setHabits] = useState<HabitId[]>(
+    initialHabits.length === 2 ? initialHabits : ['earlyRise', 'earlySleep'],
+  )
 
   if (state && !state.electiveSelectionDone && onConfirmElectives) {
     return (

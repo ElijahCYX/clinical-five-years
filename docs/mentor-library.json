@@ -4,14 +4,14 @@
     "alias": "柴秀筠",
     "department": "医学院",
     "title": "主任医师",
-    "field": "肝胆胰外科、微创外科",
+    "field": "肝胆胰外科 · 肝胆胰肿瘤、微创外科",
     "level": 5,
     "journals": [
-      "Nature Communications",
-      "Advanced Science",
-      "Cell Death & Disease",
-      "Hepatobiliary Surgery and Nutrition",
-      "Frontiers in Oncology"
+      "The Lancet",
+      "Nature",
+      "Gut",
+      "Annals of Surgery",
+      "Journal of Hepatology"
     ],
     "confidence": "高"
   },
@@ -20,14 +20,14 @@
     "alias": "良庭伯",
     "department": "医学院",
     "title": "主任医师",
-    "field": "肝胆胰外科、胰腺肿瘤",
+    "field": "肝胆胰外科 · 胰腺肿瘤、胆道肿瘤",
     "level": 5,
     "journals": [
+      "Cancer Cell",
+      "Nature",
+      "Gut",
       "Annals of Surgery",
-      "Cancer Letters",
-      "Advanced Science",
-      "Cell Reports",
-      "International Journal of Surgery"
+      "Journal of Hepatology"
     ],
     "confidence": "高"
   },
@@ -36,14 +36,14 @@
     "alias": "黎岚鹃",
     "department": "医学院",
     "title": "主任医师",
-    "field": "感染病学、肝衰竭与微生态",
+    "field": "感染病科 · 肝衰竭、微生态",
     "level": 5,
     "journals": [
-      "Nature Communications",
-      "Journal of Hepatology",
+      "The Lancet",
+      "New England Journal of Medicine",
+      "Nature",
       "Gut",
-      "Clinical Infectious Diseases",
-      "Frontiers in Immunology"
+      "Journal of Hepatology"
     ],
     "confidence": "中"
   },
@@ -52,14 +52,14 @@
     "alias": "望荻",
     "department": "基础医学院",
     "title": "教授",
-    "field": "免疫代谢、巨噬细胞",
+    "field": "基础医学院免疫学系 · 免疫代谢、巨噬细胞",
     "level": 5,
     "journals": [
+      "Cell Metabolism",
       "Immunity",
-      "Nature Communications",
-      "Cellular & Molecular Immunology",
-      "Cell Reports",
-      "Cell Metabolism"
+      "Nature",
+      "Cell",
+      "Molecular Cell"
     ],
     "confidence": "高"
   },
@@ -68,14 +68,14 @@
     "alias": "鸥阳鸿玮",
     "department": "基础医学院",
     "title": "教授",
-    "field": "再生医学、肌腱与骨修复",
+    "field": "基础医学院再生医学系 · 肌腱修复、骨修复",
     "level": 5,
     "journals": [
+      "Nature Medicine",
+      "Science Translational Medicine",
       "Biomaterials",
-      "Acta Biomaterialia",
-      "Nature Communications",
-      "Bioactive Materials",
-      "Bone Research"
+      "Advanced Science",
+      "Nature Communications"
     ],
     "confidence": "高"
   },
@@ -84,14 +84,14 @@
     "alias": "望健安",
     "department": "医学院",
     "title": "主任医师",
-    "field": "心血管介入、心脏瓣膜病",
+    "field": "心血管内科 · 心血管介入、心脏瓣膜病",
     "level": 5,
     "journals": [
+      "New England Journal of Medicine",
+      "The Lancet",
+      "JAMA",
       "Journal of the American College of Cardiology",
-      "Circulation",
-      "JACC: Cardiovascular Interventions",
-      "European Heart Journal",
-      "Circulation Research"
+      "Circulation"
     ],
     "confidence": "高"
   },
@@ -100,7 +100,7 @@
     "alias": "扈海澜",
     "department": "基础医学院",
     "title": "教授",
-    "field": "神经科学、情绪与抑郁症",
+    "field": "基础医学院神经科学系 · 情绪、抑郁症",
     "level": 5,
     "journals": [
       "Nature",
@@ -116,14 +116,14 @@
     "alias": "望清晴",
     "department": "基础医学院",
     "title": "教授",
-    "field": "肿瘤免疫、免疫调节",
+    "field": "基础医学院免疫学系 · 肿瘤免疫、免疫调节",
     "level": 4,
     "journals": [
-      "Cellular & Molecular Immunology",
+      "Immunity",
+      "Nature Immunology",
+      "Cancer Cell",
       "Nature Communications",
-      "Frontiers in Immunology",
-      "Journal of Cellular and Molecular Medicine",
-      "Cancer Immunology Research"
+      "Cell Reports"
     ],
     "confidence": "中"
   },
@@ -132,14 +132,14 @@
     "alias": "皇禾",
     "department": "医学院",
     "title": "主任医师",
-    "field": "血液肿瘤、造血干细胞移植与 CAR-T",
+    "field": "血液科 · 造血干细胞移植、CAR-T",
     "level": 5,
     "journals": [
-      "Journal of Hematology & Oncology",
       "Blood",
-      "Bone Marrow Transplantation",
-      "Frontiers in Immunology",
-      "Annals of Hematology"
+      "Nature Medicine",
+      "Journal of Hematology & Oncology",
+      "Lancet Haematology",
+      "Bone Marrow Transplantation"
     ],
     "confidence": "中"
   },
@@ -148,14 +148,14 @@
     "alias": "扈绍华",
     "department": "医学院",
     "title": "主任医师",
-    "field": "精神病学、抑郁障碍",
+    "field": "精神卫生科 · 抑郁障碍、情感障碍",
     "level": 3,
     "journals": [
+      "JAMA Psychiatry",
+      "Lancet Psychiatry",
       "Molecular Psychiatry",
-      "Journal of Affective Disorders",
-      "Frontiers in Psychiatry",
-      "BMC Psychiatry",
-      "Neuropsychiatric Disease and Treatment"
+      "American Journal of Psychiatry",
+      "Biological Psychiatry"
     ],
     "confidence": "高"
   },
@@ -164,14 +164,14 @@
     "alias": "章炎",
     "department": "基础医学院",
     "title": "教授",
-    "field": "心血管受体结构与信号转导",
+    "field": "基础医学院生理学系 · 心血管受体结构、信号转导",
     "level": 5,
     "journals": [
       "Nature",
       "Cell Research",
+      "Circulation",
       "Nature Communications",
-      "Science Advances",
-      "Cell Reports"
+      "Science Advances"
     ],
     "confidence": "中"
   },
@@ -180,14 +180,14 @@
     "alias": "厉晓鸣",
     "department": "基础医学院",
     "title": "教授",
-    "field": "神经科学、精神疾病机制",
+    "field": "基础医学院神经科学系 · 精神疾病机制、神经环路",
     "level": 4,
     "journals": [
       "Nature Neuroscience",
       "Neuron",
-      "Nature Communications",
-      "Advanced Science",
-      "Neuroscience Bulletin"
+      "Molecular Psychiatry",
+      "Cell Reports",
+      "Nature Communications"
     ],
     "confidence": "高"
   },
@@ -196,13 +196,13 @@
     "alias": "端澍民",
     "department": "基础医学院",
     "title": "教授",
-    "field": "神经科学、胶质细胞与突触",
+    "field": "基础医学院神经科学系 · 胶质细胞、突触",
     "level": 5,
     "journals": [
+      "Nature",
+      "Science",
+      "Cell",
       "Neuron",
-      "Nature Communications",
-      "eLife",
-      "Cell Reports",
       "Nature Neuroscience"
     ],
     "confidence": "高"
@@ -212,13 +212,13 @@
     "alias": "甄澍森",
     "department": "医学院",
     "title": "主任医师",
-    "field": "肝移植、肝胆外科",
+    "field": "肝胆胰外科 · 肝移植、肝胆肿瘤",
     "level": 5,
     "journals": [
+      "Nature Medicine",
+      "The Lancet",
       "Journal of Hepatology",
       "Annals of Surgery",
-      "Nature Communications",
-      "Cancer Letters",
       "American Journal of Transplantation"
     ],
     "confidence": "中"
@@ -228,14 +228,14 @@
     "alias": "霞鸿光",
     "department": "基础医学院",
     "title": "研究员",
-    "field": "药理学、神经药理与肿瘤药理",
+    "field": "基础医学院药理学系 · 神经药理、肿瘤药理",
     "level": 4,
     "journals": [
       "Nature Communications",
       "Autophagy",
-      "Protein & Cell",
+      "Cell Reports",
       "Advanced Science",
-      "Acta Pharmacologica Sinica"
+      "British Journal of Pharmacology"
     ],
     "confidence": "高"
   },
@@ -244,14 +244,14 @@
     "alias": "定可丰",
     "department": "医学院",
     "title": "主任医师",
-    "field": "结直肠外科、肿瘤",
+    "field": "结直肠外科 · 结直肠肿瘤、肿瘤外科",
     "level": 4,
     "journals": [
-      "International Journal of Cancer",
-      "Annals of Surgery",
-      "Frontiers in Oncology",
-      "BMC Cancer",
-      "Cancer Letters"
+      "Nature Medicine",
+      "Journal of Clinical Oncology",
+      "Annals of Oncology",
+      "Gut",
+      "Cancer Cell"
     ],
     "confidence": "中"
   },
@@ -260,14 +260,14 @@
     "alias": "房向铭",
     "department": "医学院",
     "title": "主任医师",
-    "field": "麻醉学、脓毒症与围术期医学",
+    "field": "麻醉科 · 脓毒症、围术期医学",
     "level": 4,
     "journals": [
       "Anesthesiology",
-      "Shock",
       "Critical Care",
-      "Chinese Medical Journal",
-      "BMC Anesthesiology"
+      "Intensive Care Medicine",
+      "British Journal of Anaesthesia",
+      "Nature Communications"
     ],
     "confidence": "高"
   },
@@ -276,14 +276,14 @@
     "alias": "百雪丽",
     "department": "医学院",
     "title": "主任医师",
-    "field": "肝胆胰肿瘤外科",
+    "field": "肝胆胰外科 · 肝胆胰肿瘤、微创外科",
     "level": 4,
     "journals": [
+      "Journal of Hepatology",
+      "Gut",
       "Annals of Surgery",
-      "Cancer Letters",
-      "International Journal of Surgery",
-      "HPB",
-      "Journal of Hepatology"
+      "Cancer Cell",
+      "Nature Communications"
     ],
     "confidence": "高"
   },
@@ -292,14 +292,14 @@
     "alias": "黎秀鸯",
     "department": "医学院",
     "title": "副教授",
-    "field": "流行病与卫生统计",
+    "field": "公共卫生学院流行病学系 · 流行病学、卫生统计",
     "level": 3,
     "journals": [
-      "Frontiers in Public Health",
-      "BMC Public Health",
-      "Frontiers in Nutrition",
-      "PLoS One",
-      "Chinese Journal of Epidemiology"
+      "The Lancet",
+      "BMJ",
+      "JAMA",
+      "Nature Medicine",
+      "International Journal of Epidemiology"
     ],
     "confidence": "中"
   },
@@ -308,14 +308,14 @@
     "alias": "章建闵",
     "department": "医学院",
     "title": "主任医师",
-    "field": "神经外科、脑血管病",
+    "field": "神经外科 · 脑血管病、脑肿瘤",
     "level": 4,
     "journals": [
-      "Advanced Science",
-      "Journal of Neuroinflammation",
-      "CNS Neuroscience & Therapeutics",
-      "Frontiers in Oncology",
-      "World Neurosurgery"
+      "Stroke",
+      "Neurosurgery",
+      "Nature Communications",
+      "Journal of Neurosurgery",
+      "Brain"
     ],
     "confidence": "高"
   },
@@ -324,14 +324,14 @@
     "alias": "俞韵贤",
     "department": "医学院",
     "title": "副教授",
-    "field": "流行病学、生殖健康",
+    "field": "公共卫生学院流行病学系 · 生殖健康、流行病学",
     "level": 3,
     "journals": [
-      "Clinical Nutrition",
-      "Nutrients",
-      "Frontiers in Endocrinology",
-      "BMC Pregnancy and Childbirth",
-      "PLoS One"
+      "The Lancet",
+      "BMJ",
+      "JAMA Pediatrics",
+      "Human Reproduction",
+      "Fertility and Sterility"
     ],
     "confidence": "中"
   },
@@ -340,14 +340,14 @@
     "alias": "望炜林",
     "department": "医学院",
     "title": "主任医师",
-    "field": "肝胆胰外科、肝移植",
+    "field": "肝胆胰外科 · 肝移植、胆道疾病",
     "level": 5,
     "journals": [
-      "Annals of Surgery",
-      "Advanced Science",
-      "Hepatobiliary Surgery and Nutrition",
+      "Nature Medicine",
       "Journal of Hepatology",
-      "Frontiers in Oncology"
+      "Gut",
+      "Annals of Surgery",
+      "Cancer Cell"
     ],
     "confidence": "中"
   },
@@ -356,14 +356,14 @@
     "alias": "扈新阳",
     "department": "医学院",
     "title": "主任医师",
-    "field": "心血管病、干细胞治疗",
+    "field": "心血管内科 · 心血管病、干细胞治疗",
     "level": 5,
     "journals": [
       "Circulation",
-      "Circulation Research",
-      "JACC: Cardiovascular Interventions",
-      "Advanced Science",
-      "Nature Communications"
+      "Journal of the American College of Cardiology",
+      "European Heart Journal",
+      "Nature Communications",
+      "Circulation Research"
     ],
     "confidence": "高"
   },
@@ -372,14 +372,14 @@
     "alias": "克跃海",
     "department": "基础医学院",
     "title": "教授",
-    "field": "病理学、肿瘤信号",
+    "field": "基础医学院病理学系 · 肿瘤信号、肿瘤病理",
     "level": 4,
     "journals": [
+      "Nature",
+      "Cancer Cell",
       "Journal of Experimental Medicine",
-      "Journal of Immunology",
       "Nature Communications",
-      "Advanced Science",
-      "Journal of Biological Chemistry"
+      "Cell Reports"
     ],
     "confidence": "高"
   },
@@ -388,13 +388,13 @@
     "alias": "玛环",
     "department": "基础医学院",
     "title": "教授",
-    "field": "神经科学、突触可塑性",
+    "field": "基础医学院神经科学系 · 突触可塑性、神经科学",
     "level": 4,
     "journals": [
       "Nature",
       "Neuron",
+      "Nature Neuroscience",
       "Cell Reports",
-      "Nature Communications",
       "Science Advances"
     ],
     "confidence": "高"
@@ -404,14 +404,14 @@
     "alias": "武溪凤",
     "department": "医学院",
     "title": "教授",
-    "field": "公共卫生、肿瘤流行病学",
+    "field": "公共卫生学院流行病学系 · 肿瘤流行病学、慢病流行病学",
     "level": 4,
     "journals": [
-      "European Journal of Epidemiology",
-      "Cancer Epidemiology, Biomarkers & Prevention",
-      "Cancers",
-      "Frontiers in Oncology",
-      "Frontiers in Immunology"
+      "The Lancet Oncology",
+      "JAMA Oncology",
+      "Nature Medicine",
+      "Journal of Clinical Oncology",
+      "Cancer Cell"
     ],
     "confidence": "中"
   },
@@ -420,14 +420,14 @@
     "alias": "封友君",
     "department": "基础医学院",
     "title": "教授",
-    "field": "微生物学、细菌感染",
+    "field": "基础医学院微生物学系 · 细菌感染、耐药机制",
     "level": 4,
     "journals": [
-      "Science Advances",
+      "Nature Microbiology",
+      "Cell Host & Microbe",
+      "PNAS",
       "PLoS Pathogens",
-      "Science Bulletin",
-      "Virulence",
-      "Scientific Reports"
+      "Nature Communications"
     ],
     "confidence": "高"
   },
@@ -436,14 +436,14 @@
     "alias": "柏歌",
     "department": "基础医学院",
     "title": "教授",
-    "field": "神经生物学、运动神经元",
+    "field": "基础医学院神经生物学系 · 运动神经元、神经退行性疾病",
     "level": 4,
     "journals": [
       "Nature",
-      "Brain",
-      "Nature Communications",
+      "Cell",
       "Neuron",
-      "Advanced Science"
+      "Nature Neuroscience",
+      "Cell Reports"
     ],
     "confidence": "高"
   },
@@ -452,14 +452,14 @@
     "alias": "莱懋德",
     "department": "基础医学院",
     "title": "教授",
-    "field": "病理学、肿瘤",
+    "field": "基础医学院病理学系 · 肿瘤病理、分子病理",
     "level": 4,
     "journals": [
+      "Nature",
       "Gut",
+      "Cancer Cell",
       "Journal of Pathology",
-      "Nature Communications",
-      "Clinical Cancer Research",
-      "Cancer Letters"
+      "Nature Communications"
     ],
     "confidence": "中"
   },
@@ -468,14 +468,14 @@
     "alias": "律志敏",
     "department": "基础医学院",
     "title": "教授",
-    "field": "肿瘤代谢、细胞信号",
+    "field": "基础医学院肿瘤代谢实验室 · 肿瘤代谢、细胞信号",
     "level": 5,
     "journals": [
+      "Cell",
+      "Nature",
+      "Cancer Cell",
       "Cell Metabolism",
-      "Molecular Cell",
-      "Nature Cell Biology",
-      "Nature Communications",
-      "Cancer Communications"
+      "Molecular Cell"
     ],
     "confidence": "高"
   },
@@ -484,14 +484,14 @@
     "alias": "柳先保",
     "department": "医学院",
     "title": "主任医师",
-    "field": "心血管介入、心脏瓣膜病",
+    "field": "心血管内科 · 心脏瓣膜病、心血管介入",
     "level": 4,
     "journals": [
+      "New England Journal of Medicine",
+      "The Lancet",
       "Journal of the American College of Cardiology",
-      "JACC: Cardiovascular Interventions",
       "Circulation",
-      "Catheterization and Cardiovascular Interventions",
-      "Frontiers in Cardiovascular Medicine"
+      "European Heart Journal"
     ],
     "confidence": "高"
   },
@@ -500,14 +500,14 @@
     "alias": "章凝",
     "department": "基础医学院",
     "title": "教授",
-    "field": "肿瘤生物学、纳米医学",
+    "field": "基础医学院肿瘤生物学系 · 肿瘤生物学、纳米医学",
     "level": 4,
     "journals": [
+      "Nature Nanotechnology",
       "ACS Nano",
-      "Journal of Nanobiotechnology",
-      "Stem Cell Research & Therapy",
-      "Bioactive Materials",
-      "Advanced Science"
+      "Advanced Materials",
+      "Nature Communications",
+      "Biomaterials"
     ],
     "confidence": "中"
   },
@@ -516,14 +516,14 @@
     "alias": "舟丹",
     "department": "基础医学院",
     "title": "研究员",
-    "field": "肿瘤精准医学、生物信息学",
+    "field": "公共卫生学院生物信息学系 · 肿瘤精准医学、生物信息学",
     "level": 3,
     "journals": [
-      "Molecular Psychiatry",
-      "European Heart Journal",
-      "Kidney International Reports",
-      "npj Precision Oncology",
-      "Bioinformatics"
+      "Nature Medicine",
+      "Cancer Cell",
+      "Nature Communications",
+      "Genome Medicine",
+      "Cell Reports"
     ],
     "confidence": "待校准"
   },
@@ -532,14 +532,14 @@
     "alias": "烨鹃",
     "department": "医学院",
     "title": "主任医师",
-    "field": "眼科、眼表与眼整形",
+    "field": "眼科 · 眼表、眼整形",
     "level": 4,
     "journals": [
-      "Bioactive Materials",
+      "Ophthalmology",
+      "Nature Communications",
       "Investigative Ophthalmology & Visual Science",
-      "Acta Ophthalmologica",
-      "Graefe's Archive for Clinical and Experimental Ophthalmology",
-      "Frontiers in Medicine"
+      "ACS Nano",
+      "Advanced Science"
     ],
     "confidence": "高"
   },
@@ -548,15 +548,367 @@
     "alias": "寒沛东",
     "department": "基础医学院",
     "title": "研究员",
-    "field": "心血管发育与再生",
+    "field": "基础医学院心血管发育实验室 · 心血管发育、再生医学",
     "level": 3,
     "journals": [
+      "Nature",
       "Circulation",
       "Circulation Research",
       "eLife",
-      "Cell Regeneration",
-      "International Journal of Molecular Sciences"
+      "Nature Communications"
     ],
     "confidence": "中"
+  },
+  {
+    "id": "mentor-36",
+    "alias": "柴臻",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "血液科 · 多发性骨髓瘤、血液肿瘤",
+    "level": 5,
+    "journals": [
+      "Blood",
+      "Nature Medicine",
+      "Journal of Clinical Oncology",
+      "Leukemia",
+      "Lancet Haematology"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-37",
+    "alias": "黎东霖",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "血管外科 · 主动脉疾病、外周血管病",
+    "level": 4,
+    "journals": [
+      "Circulation",
+      "European Heart Journal",
+      "Journal of Vascular Surgery",
+      "European Journal of Vascular and Endovascular Surgery",
+      "JACC: Cardiovascular Interventions"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-38",
+    "alias": "松鹏鸿",
+    "department": "医学院",
+    "title": "研究员",
+    "field": "肝胆胰外科实验室 · 肝胆胰肿瘤、肝移植基础研究",
+    "level": 4,
+    "journals": [
+      "Nature",
+      "Cancer Cell",
+      "Gut",
+      "Journal of Hepatology",
+      "Nature Communications"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-39",
+    "alias": "扈简",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "胸外科 · 肺癌、食管癌",
+    "level": 5,
+    "journals": [
+      "Journal of Thoracic Oncology",
+      "Nature Communications",
+      "Annals of Surgery",
+      "Cancer Cell",
+      "Journal of Clinical Oncology"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-40",
+    "alias": "扈逸和",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "骨科 · 关节置换、骨溶解",
+    "level": 4,
+    "journals": [
+      "Nature Communications",
+      "Biomaterials",
+      "Journal of Bone and Joint Surgery",
+      "Osteoarthritis and Cartilage",
+      "Advanced Science"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-41",
+    "alias": "荆节",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "血液科 · 白血病、淋巴瘤",
+    "level": 5,
+    "journals": [
+      "Blood",
+      "Lancet Haematology",
+      "Leukemia",
+      "Journal of Clinical Oncology",
+      "Nature Communications"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-42",
+    "alias": "吴逸钧",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "甲状腺外科 · 甲状腺肿瘤、甲状旁腺疾病",
+    "level": 4,
+    "journals": [
+      "Thyroid",
+      "JAMA Surgery",
+      "Annals of Surgery",
+      "Nature Communications",
+      "Journal of Clinical Endocrinology & Metabolism"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-43",
+    "alias": "伍国声",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "肝胆胰外科 · 肝移植、胆道疾病",
+    "level": 4,
+    "journals": [
+      "American Journal of Transplantation",
+      "Journal of Hepatology",
+      "Annals of Surgery",
+      "Gut",
+      "Nature Communications"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-44",
+    "alias": "秦继朝",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "胃肠外科 · 胃癌、结直肠癌",
+    "level": 4,
+    "journals": [
+      "Gut",
+      "Nature Communications",
+      "Annals of Surgery",
+      "Cancer Cell",
+      "Journal of Clinical Oncology"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-45",
+    "alias": "解立萍",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "泌尿外科 · 前列腺癌、泌尿系肿瘤",
+    "level": 5,
+    "journals": [
+      "European Urology",
+      "Nature Reviews Urology",
+      "Journal of Urology",
+      "Nature Communications",
+      "Cancer Cell"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-46",
+    "alias": "邹水鸿",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "耳鼻咽喉科 · 头颈肿瘤、鼻颅底疾病",
+    "level": 4,
+    "journals": [
+      "JAMA Otolaryngology–Head & Neck Surgery",
+      "Nature Communications",
+      "Oral Oncology",
+      "Laryngoscope",
+      "Cancer Letters"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-47",
+    "alias": "桥建钧",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "皮肤科 · 皮肤肿瘤、皮肤免疫",
+    "level": 4,
+    "journals": [
+      "Journal of Investigative Dermatology",
+      "JAMA Dermatology",
+      "British Journal of Dermatology",
+      "Nature Communications",
+      "Allergy"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-48",
+    "alias": "童红雁",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "血液科 · 造血干细胞移植、血液肿瘤",
+    "level": 4,
+    "journals": [
+      "Blood",
+      "Bone Marrow Transplantation",
+      "Leukemia",
+      "Lancet Haematology",
+      "Journal of Hematology & Oncology"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-49",
+    "alias": "沈继芳",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "感染病科 · 肝衰竭、病毒性肝炎",
+    "level": 5,
+    "journals": [
+      "The Lancet Infectious Diseases",
+      "Journal of Hepatology",
+      "Gut",
+      "Clinical Infectious Diseases",
+      "Nature Communications"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-50",
+    "alias": "夜昭明",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "骨科 · 骨肿瘤、骨缺损修复",
+    "level": 5,
+    "journals": [
+      "Nature Communications",
+      "Journal of Bone and Joint Surgery",
+      "Clinical Cancer Research",
+      "Cancer Letters",
+      "Advanced Science"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-51",
+    "alias": "伍鸣",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "心脏大血管外科 · 瓣膜病、冠心病",
+    "level": 4,
+    "journals": [
+      "Circulation",
+      "Journal of the American College of Cardiology",
+      "European Heart Journal",
+      "Nature Communications",
+      "Annals of Thoracic Surgery"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-52",
+    "alias": "尧可",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "眼科 · 白内障、屈光",
+    "level": 5,
+    "journals": [
+      "Ophthalmology",
+      "JAMA Ophthalmology",
+      "Nature Communications",
+      "Investigative Ophthalmology & Visual Science",
+      "ACS Nano"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-53",
+    "alias": "申华皓",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "呼吸内科 · 哮喘、慢阻肺",
+    "level": 5,
+    "journals": [
+      "New England Journal of Medicine",
+      "The Lancet",
+      "Nature",
+      "American Journal of Respiratory and Critical Care Medicine",
+      "European Respiratory Journal"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-54",
+    "alias": "余存滔",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "心脏大血管外科 · 主动脉疾病、心脏瓣膜病",
+    "level": 4,
+    "journals": [
+      "Circulation",
+      "Journal of the American College of Cardiology",
+      "European Heart Journal",
+      "Journal of Thoracic and Cardiovascular Surgery",
+      "Nature Communications"
+    ],
+    "confidence": "高"
+  },
+  {
+    "id": "mentor-55",
+    "alias": "程简",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "胃肠外科 · 胃癌、结直肠癌",
+    "level": 4,
+    "journals": [
+      "Gut",
+      "Nature Communications",
+      "Annals of Surgery",
+      "Cancer Cell",
+      "Journal of Clinical Oncology"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-56",
+    "alias": "隋巍",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "重症医学科 · 脓毒症、多器官功能障碍",
+    "level": 4,
+    "journals": [
+      "Intensive Care Medicine",
+      "Critical Care",
+      "American Journal of Respiratory and Critical Care Medicine",
+      "Critical Care Medicine",
+      "Nature Communications"
+    ],
+    "confidence": "中"
+  },
+  {
+    "id": "mentor-57",
+    "alias": "章懋",
+    "department": "医学院",
+    "title": "主任医师",
+    "field": "急诊医学科 · 心肺复苏、急危重症",
+    "level": 5,
+    "journals": [
+      "The Lancet",
+      "Circulation",
+      "Resuscitation",
+      "Critical Care",
+      "Nature Communications"
+    ],
+    "confidence": "高"
   }
 ]

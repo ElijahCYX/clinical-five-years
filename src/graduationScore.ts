@@ -164,15 +164,12 @@ function computeBreakdown(state: GameState): ScoreBreakdown {
       0.15 * failPenalty,
   )
 
-  const mentorRelation = mentor(state)
   const hasMentor = state.relationships.some((relation) => relation.kind === 'mentor')
-  const mentorIntimacy = hasMentor ? mentorRelation?.intimacy ?? 0 : 0
   const papers = state.publishedPapers ?? 0
   const research = clamp01(
-    0.3 * norm(state.researchStage, 6) +
-      0.25 * norm(state.researchProgress, 100) +
-      0.3 * norm(papers, 3) +
-      0.15 * norm(mentorIntimacy, 100),
+    0.35 * norm(state.researchStage, 6) +
+      0.3 * norm(state.researchProgress, 100) +
+      0.35 * norm(papers, 3),
   )
 
   const organization = organizationScore(state)

@@ -142,8 +142,8 @@ export function planDailyCost(
   plan: PlanId,
   dayIndex: number,
 ): { energy: number; stress: number } {
-  if (plan === 'A') return { energy: -4, stress: 2 }
-  if (plan === 'B' && dayIndex >= 5) return { energy: -8, stress: 3 }
+  if (plan === 'A') return { energy: -6, stress: 3 }
+  if (plan === 'B' && dayIndex >= 5) return { energy: -10, stress: 4 }
   return { energy: 0, stress: 0 }
 }
 
@@ -516,6 +516,10 @@ export function newGameState(player: Player): GameState {
     failedMentorIds: [],
     emails: [],
     mailSentWeekKey: null,
+    literatureStudyWeekKey: '',
+    literatureStudyCount: 0,
+    literatureReportWeekKey: null,
+    pendingLiteratureReport: null,
     medicalFamilyMentorId: null,
     medicalFamilyAcceptanceAtAbs: null,
     welcomeMailSent: false,
@@ -526,6 +530,7 @@ export function newGameState(player: Player): GameState {
     projectOfferPendingAtAbs: null,
     researchProgress: 0,
     researchPreparation: 0,
+    experimentPreparation: 0,
     researchPublished: false,
     researchJournal: null,
     publishedPapers: 0,
@@ -807,7 +812,8 @@ export interface WeekSimulation {
   research: number
   researchProgressGain: number
   researchPreparationGain: number
-  mentorIntimacyGain: number
+  experimentPreparationGain: number
+  literatureStudyCountGain: number
   familyAffectionGain: number
   mentorRecognitionGain: number
   prep: Record<string, number>
@@ -828,22 +834,27 @@ export function labChoreEnergyCost(comprehension: number): number {
   return -Math.round(13 - ((comp - 2) / 8) * 6)
 }
 
-/** 科研进度收益：2-6 点，悟性越高越容易抽到高值。 */
+export function literatureEnergyCost(comprehension: number): number {
+  const comp = Math.max(2, Math.min(10, comprehension))
+  return Math.max(12, 20 - Math.round((comp - 2) * 1))
+}
+
+/** 科研进度收益：1-3 点，悟性越高越容易抽到高值。 */
 export function researchGainForComprehension(comprehension: number): number {
   const comp = Math.max(2, Math.min(10, comprehension))
   let weights: number[]
-  if (comp <= 2) weights = [40, 30, 20, 8, 2]
-  else if (comp <= 4) weights = [30, 28, 24, 13, 5]
-  else if (comp <= 6) weights = [20, 26, 28, 18, 8]
-  else if (comp <= 8) weights = [10, 20, 30, 25, 15]
-  else weights = [5, 12, 25, 33, 25]
+  if (comp <= 2) weights = [50, 35, 15]
+  else if (comp <= 4) weights = [45, 35, 20]
+  else if (comp <= 6) weights = [35, 37, 28]
+  else if (comp <= 8) weights = [25, 35, 40]
+  else weights = [15, 30, 55]
   const roll = Math.random() * weights.reduce((a, b) => a + b, 0)
   let acc = 0
   for (let i = 0; i < weights.length; i += 1) {
     acc += weights[i]
-    if (roll < acc) return i + 2
+    if (roll < acc) return i + 1
   }
-  return 4
+  return 3
 }
 
 export function simulateWeek(state: GameState, slotActions: string[] = []): WeekSimulation {
@@ -870,7 +881,8 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
   let research = state.research
   let researchProgressGain = 0
   let researchPreparationGain = 0
-  let mentorIntimacyGain = 0
+  let experimentPreparationGain = 0
+  let literatureStudyCountGain = 0
   let familyAffectionGain = 0
   let mentorRecognitionGain = 0
   let kaoyanPrep = state.kaoyanPrep
@@ -897,13 +909,18 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     } else if (action.id === 'social' && state.dinnerPlan?.committed) {
       // 吃饭收益在确认「就这顿」时已立即结算，周结算不重复计算。
       stress += 0
+    } else if (action.id === 'research' && !state.labEntered) {
+      energy += literatureEnergyCost(attrs.comprehension)
+      researchPreparationGain += 5
+      literatureStudyCountGain += 1
     } else if (
       action.id === 'research' &&
       state.labEntered &&
       !state.researchStarted
     ) {
-      energy += labChoreEnergyCost(attrs.comprehension)
-      stress += action.stress
+      energy -= 10
+      stress += 3
+      experimentPreparationGain += 10
     } else {
       energy += effectiveEnergyCost(action.energy, state.energy)
       stress += sportGainsHalved ? action.stress * 0.5 : action.stress
@@ -927,7 +944,6 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
         // 科研页进度与左侧「科研」数值保持同步增长。
         research += researchGain
       } else {
-        mentorIntimacyGain += 5
       }
     }
     if (action.id === 'electiveHomework') {
@@ -1006,7 +1022,7 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
         if (!state.labEntered) {
           researchPreparationGain += 2 * workdayFactor
         } else {
-          const progress = 0.4 * workdayFactor
+          const progress = 0.2 * workdayFactor
           research += progress
           researchProgressGain += progress
         }
@@ -1065,7 +1081,8 @@ export function simulateWeek(state: GameState, slotActions: string[] = []): Week
     research,
     researchProgressGain,
     researchPreparationGain,
-    mentorIntimacyGain,
+    experimentPreparationGain,
+    literatureStudyCountGain,
     familyAffectionGain,
     mentorRecognitionGain,
     prep,

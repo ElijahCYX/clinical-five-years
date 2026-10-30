@@ -45,6 +45,21 @@ const ROOMMATE_ACTIONS = [
   '去食堂兼职，学会了用一勺抖出三勺的绝技。',
 ]
 
+const TRAVEL_REFUSAL_REASONS = [
+  '假期的票太贵了，我还没抢到回来的车票。',
+  '这段时间想回家陪陪家人，下次一定。',
+  '刚答应了另一拨朋友去海边，时间正好撞上。',
+  '预算有点紧，这趟先不去了。',
+  '我晕车，想到要坐那么久的车就有点怵。',
+  '假期要补实验和论文，实在抽不开身。',
+  '家里临时有事，走不开。',
+  '天气预报说那边一直下雨，我怕去了也扫兴。',
+  '我妈已经给我排好了假期行程，推不掉。',
+  '刚结束一趟旅行，想在家躺几天。',
+  '我路痴，怕把你带丢。',
+  '还没想好要不要出门，先不占名额了。',
+]
+
 const REFUSAL_REASONS = [
   '今晚要值班，白大褂已经穿好了。',
   '最近在减肥，看见食堂的油就害怕。',
@@ -429,13 +444,62 @@ export function closeFriendGrowthMultiplier(state: GameState): number {
 }
 
 /**
- * 亲密度变化统一入口：社交面板倍率 → 交心朋友数量倍率 → 5 人封顶。
- * 只有同辈且当前亲密度低于 60 的正向增长会受新规则影响。
+ * 亲密度变化统一入口：社交面板倍率、阶段递减、每周上限和 59 门槛。
+ * 90 以上普通互动不再增长；100 只能由四年纪念里程碑触发。
+ */
+export interface IntimacyDeltaOptions {
+  /** 生日、告白、长途旅行、危机互助、和好等重要事件。 */
+  major?: boolean
+  /** 四年纪念等唯一里程碑。 */
+  milestone?: boolean
+  /** UI 预览时传 false，避免消耗本周增长额度。 */
+  record?: boolean
+}
+
+function routineIntimacyMultiplier(relation: Relationship): number {
+  const staff = isStaffRelation(relation)
+  const value = relation.intimacy
+  if (staff) {
+    if (value < 60) return 1
+    if (value < 75) return 0.65
+    if (value < 90) return 0.35
+    return 0.1
+  }
+  if (value < 40) return 1
+  if (value < 60) return 0.7
+  if (value < 75) return 0.35
+  if (value < 85) return 0.15
+  if (value < 90) return 0.05
+  return 0
+}
+
+function routineWeeklyCap(relation: Relationship): number {
+  const value = relation.intimacy
+  const staff = isStaffRelation(relation)
+  if (staff) {
+    if (value < 60) return 99
+    if (value < 75) return 3
+    if (value < 90) return 2
+    return 1
+  }
+  if (value < 60) return 99
+  if (value < 75) return 2
+  if (value < 85) return 1
+  if (value < 90) return 1
+  return 0
+}
+
+/**
+ * 亲密度统一入口。
+ * 普通互动：阶段递减 + 每周上限 + 59 门槛。
+ * 重大事件：可突破周上限，90 后每次最多 +1。
+ * 里程碑：只允许达到 100。
  */
 export function adjustIntimacyDelta(
   state: GameState,
   relation: Relationship,
   delta: number,
+  options: IntimacyDeltaOptions = {},
 ): number {
   if (!delta) return 0
   if (relation.intimacyFrozenSeason === state.season.id) return 0
@@ -445,19 +509,64 @@ export function adjustIntimacyDelta(
   ) {
     return 0
   }
-  let adjusted = Math.round(delta * intimacyMultiplier(state, relation))
-  if (
-    adjusted > 0 &&
-    isPeerFriend(relation) &&
-    relation.intimacy < CLOSE_FRIEND_THRESHOLD
-  ) {
-    adjusted = Math.round(adjusted * closeFriendGrowthMultiplier(state))
-    if (closeFriendCount(state) >= CLOSE_FRIEND_LIMIT) {
-      adjusted = Math.min(adjusted, CLOSE_FRIEND_THRESHOLD - 1 - relation.intimacy)
-    }
-    adjusted = Math.max(0, adjusted)
+  const socialMultiplier = intimacyMultiplier(state, relation)
+  if (delta < 0) {
+    return Math.round(delta * socialMultiplier)
   }
-  return adjusted
+  if (relation.intimacy >= 100) return 0
+  if (options.milestone) {
+    return Math.max(0, 100 - relation.intimacy)
+  }
+
+  let adjusted = Math.round(
+    delta *
+      socialMultiplier *
+      (options.major ? 1 : routineIntimacyMultiplier(relation)),
+  )
+  if (
+    adjusted <= 0 &&
+    (options.major || (relation.intimacy >= 60 && relation.intimacy < 90))
+  ) {
+    adjusted = 1
+  }
+  if (adjusted <= 0) return 0
+
+  if (options.major) {
+    if (relation.intimacy >= 90) adjusted = Math.min(adjusted, 1)
+    // 普通互动和重大事件都不能直接到达 100；100 只属于五年里程碑。
+    return Math.min(adjusted, Math.max(0, 99 - relation.intimacy))
+  }
+
+  // 普通互动不能把 59 推过 60；导师/辅导员例外。
+  if (!isStaffRelation(relation) && relation.intimacy < 60) {
+    adjusted = Math.min(adjusted, 59 - relation.intimacy)
+    if (adjusted <= 0) return 0
+    if (
+      isPeerFriend(relation) &&
+      closeFriendCount(state) >= CLOSE_FRIEND_LIMIT
+    ) {
+      adjusted = Math.min(
+        adjusted,
+        Math.round(
+          adjusted * closeFriendGrowthMultiplier(state),
+        ),
+      )
+    }
+  }
+
+  const weekKey = currentWeekKey(state)
+  const used =
+    relation.intimacyGainWeekKey === weekKey
+      ? relation.intimacyGainThisWeek ?? 0
+      : 0
+  const cap = routineWeeklyCap(relation)
+  adjusted = Math.min(adjusted, Math.max(0, cap - used))
+  if (adjusted <= 0) return 0
+  if (options.record !== false) {
+    relation.intimacyGainWeekKey = weekKey
+    relation.intimacyGainThisWeek = used + adjusted
+  }
+  return Math.min(adjusted, Math.max(0, 99 - relation.intimacy))
 }
 
 export function patUsedThisWeek(state: GameState): number {
@@ -470,6 +579,7 @@ export function patRemainingThisWeek(state: GameState): number {
 }
 
 export function canPat(state: GameState, relation: Relationship): boolean {
+  if (relation.kind === 'mentor') return false
   return (
     !isPatBlocked(state, relation) &&
     relation.lastPatKey !== patPeriodKey(state)
@@ -691,7 +801,8 @@ export function isStaffRelation(relation: Relationship): boolean {
 
 export function canConfess(player: Player, relation: Relationship): boolean {
   return (
-    relation.intimacy >= 60 &&
+    relation.kind !== 'mentor' &&
+    relation.intimacy >= 59 &&
     !relation.partner &&
     playerAllowsGender(player, relation.gender)
   )
@@ -716,6 +827,10 @@ export function nextRoommateAction(): string {
 
 export function randomRefusalReason(): string {
   return REFUSAL_REASONS[randInt(0, REFUSAL_REASONS.length - 1)]
+}
+
+export function randomTravelRefusalReason(): string {
+  return TRAVEL_REFUSAL_REASONS[randInt(0, TRAVEL_REFUSAL_REASONS.length - 1)]
 }
 
 export function dinnerCost(acceptedCount: number): number {

@@ -155,7 +155,8 @@ export function WhoIsTAScreen({
             <h1 className="page-title">TA 是谁</h1>
             <p className="page-lede">
               你认识的人都在这里。建模与交际永久可见；亲密度越高，越可能看到 TA 不愿示人的一面。
-              双方交际之和 ≥16 时亲密度变化 +30%，≥13 时 +15%。
+              双方交际之和 ≥16 时亲密度变化 +30%，≥13 时 +15%。亲密度越高，普通互动增长越慢；
+              90 以上只靠重要经历继续推进，100 只属于四年纪念级的关系。
             </p>
           </div>
           <div className="whois-summary">
@@ -277,7 +278,7 @@ export function WhoIsTAScreen({
                 const bondButtonLabel =
                   relation.partner || relation.bondType
                     ? '已建立羁绊'
-                    : relation.intimacy < 60
+                    : relation.intimacy < 59
                       ? '亲密度不足'
                       : bondOptions.length === 0
                         ? '暂无可建立羁绊'
@@ -327,7 +328,7 @@ export function WhoIsTAScreen({
                               {orientationLabel(relation.orientation)}
                             </span>
                           )}
-                          {relation.intimacy >= 40 && (
+                          {relation.kind !== 'mentor' && relation.intimacy >= 40 && (
                             <button
                               type="button"
                               className={`whois-birthday ${
@@ -375,10 +376,12 @@ export function WhoIsTAScreen({
                           <span className="whois-ex">前任</span>
                         )}
                       </div>
-                      <div className="whois-intimacy">
-                        <Bar value={relation.intimacy} thin />
-                        <span>{relation.intimacy} / 100</span>
-                      </div>
+                      {relation.kind !== 'mentor' && (
+                        <div className="whois-intimacy">
+                          <Bar value={relation.intimacy} thin />
+                          <span>{relation.intimacy} / 100</span>
+                        </div>
+                      )}
                       <div className="whois-stats">
                         {relation.statsKnown && relation.knownStats && (
                           <span className="whois-stat-extra">
@@ -399,7 +402,7 @@ export function WhoIsTAScreen({
                             {stat.label} {stat.value}
                           </span>
                         ))}
-                        {!relation.statsKnown && (
+                        {relation.kind !== 'mentor' && !relation.statsKnown && (
                           <span className="whois-hidden">
                             其余面板未解锁 · 亲密度 100 或随机事件后可见
                           </span>
@@ -419,6 +422,10 @@ export function WhoIsTAScreen({
                       </div>
                     </div>
                     <div className="whois-actions">
+                      {relation.kind === 'mentor' ? (
+                        <span className="whois-kind">导师关系 · 在科研页查看</span>
+                      ) : (
+                        <>
                       <button
                         type="button"
                         className="whois-action"
@@ -449,7 +456,7 @@ export function WhoIsTAScreen({
                         className="whois-action whois-confess"
                         disabled={
                           Boolean(relation.partner || relation.bondType) ||
-                          relation.intimacy < 60 ||
+                          relation.intimacy < 59 ||
                           bondOptions.length === 0
                         }
                         onClick={(event) => {
@@ -462,6 +469,8 @@ export function WhoIsTAScreen({
                       >
                         {bondButtonLabel}
                       </button>
+                        </>
+                      )}
                     </div>
                   </article>
                 )
@@ -523,7 +532,7 @@ export function WhoIsTAScreen({
                 <span className="birthday-choice-title">送生日礼物</span>
                 <span className="birthday-choice-desc">
                   生活费 -150 · 亲密度 +
-                  {adjustIntimacyDelta(state, birthdayTarget, 15)}
+                  {adjustIntimacyDelta(state, birthdayTarget, 15, { record: false })}
                 </span>
               </button>
               <button
@@ -538,7 +547,7 @@ export function WhoIsTAScreen({
                 <span className="birthday-choice-title">只送祝福</span>
                 <span className="birthday-choice-desc">
                   不花生活费 · 亲密度 +
-                  {adjustIntimacyDelta(state, birthdayTarget, 5)}
+                  {adjustIntimacyDelta(state, birthdayTarget, 5, { record: false })}
                 </span>
               </button>
             </div>
@@ -622,8 +631,8 @@ export function WhoIsTAScreen({
                 const reason =
                   bondPickerTarget.partner || bondPickerTarget.bondType
                     ? '已经建立了羁绊'
-                    : bondPickerTarget.intimacy < 60
-                      ? '亲密度不足 60'
+                    : bondPickerTarget.intimacy < 59
+                      ? '亲密度不足 59'
                       : def.type === 'lover' && bondPickerTarget.confessRejected
                         ? '已经被拒绝'
                         : !available

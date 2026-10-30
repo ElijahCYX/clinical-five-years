@@ -45,6 +45,7 @@ import {
   effectiveEnergyCost,
   libraryCosts,
   labChoreEnergyCost,
+  literatureEnergyCost,
   researchGainForComprehension,
   estimateRange,
   generateElectiveOffers,
@@ -105,6 +106,7 @@ import { CetEventScreen } from './screens/CetEvent'
 import { CetResultScreen } from './screens/CetResult'
 import { CreateScreen } from './screens/Create'
 import { EndingScreen } from './screens/Ending'
+import { YearEndScreen } from './screens/YearEnd'
 import { FailureReport } from './screens/FailureReport'
 import type { MentorInterviewSceneData } from './screens/MentorInterview'
 import type { ChatLaunch } from './screens/Chat'
@@ -236,7 +238,14 @@ import {
   roleBenefitMultiplier,
   roleLabel,
 } from './organizations'
-import { pickHypothesis } from './hypotheses'
+import { HYPOTHESIS_BY_ID, pickHypothesis } from './hypotheses'
+import { pickPublicationAcceptanceText } from './publicationTexts'
+import {
+  createLiteratureReplyEmail,
+  createLiteratureReportEmail,
+  pickLiteratureReportText,
+  pickLiteratureReplyText,
+} from './literature'
 import {
   advanceHealthForNewWeek,
   applyHealthTreatment,
@@ -244,6 +253,7 @@ import {
   healthEnergyPenalty,
   healthPrepMultiplier,
   healthStressPenalty,
+  tickHealthDay,
 } from './health'
 import {
   DEBATE_ORG_ID,
@@ -444,6 +454,9 @@ function readSave(): GameState | null {
       return {
         ...membership,
         inactivityWarningIssued: membership.inactivityWarningIssued ?? false,
+        inactivityWarningSeasonIndex:
+          membership.inactivityWarningSeasonIndex ??
+          (membership.inactivityWarningIssued ? game.seasonIndex : undefined),
         semesterLeaves: membership.semesterLeaves ?? 0,
         project:
           membership.project?.seasonId === game.season.id &&
@@ -506,8 +519,23 @@ function readSave(): GameState | null {
         : null,
       mentorInterviewHistory: game.mentorInterviewHistory ?? [],
       failedMentorIds: game.failedMentorIds ?? [],
-      emails: game.emails ?? [],
+      emails: (game.emails ?? []).map((email) => {
+        if (!email.project) return email
+        const hypothesis = HYPOTHESIS_BY_ID[email.project.hypothesisId]
+        if (!hypothesis) return email
+        const oldTitle = email.project.title
+        return {
+          ...email,
+          subject: `课题邀请：${hypothesis.title}`,
+          body: oldTitle ? email.body.split(oldTitle).join(hypothesis.title) : email.body,
+          project: { ...email.project, title: hypothesis.title },
+        }
+      }),
       mailSentWeekKey: game.mailSentWeekKey ?? null,
+      literatureStudyWeekKey: game.literatureStudyWeekKey ?? '',
+      literatureStudyCount: game.literatureStudyCount ?? 0,
+      literatureReportWeekKey: game.literatureReportWeekKey ?? null,
+      pendingLiteratureReport: game.pendingLiteratureReport ?? null,
       medicalFamilyMentorId: game.medicalFamilyMentorId ?? null,
       medicalFamilyAcceptanceAtAbs: game.medicalFamilyAcceptanceAtAbs ?? null,
       welcomeMailSent: game.welcomeMailSent ?? false,
@@ -518,13 +546,16 @@ function readSave(): GameState | null {
       projectOfferPendingAtAbs: game.projectOfferPendingAtAbs ?? null,
       researchProgress: game.researchProgress ?? 0,
       researchPreparation: game.researchPreparation ?? 0,
+      experimentPreparation: game.experimentPreparation ?? 0,
       researchPublished: game.researchPublished ?? false,
       researchJournal: game.researchJournal ?? null,
       publishedPapers: game.publishedPapers ?? 0,
       awaitingNextProject: game.awaitingNextProject ?? false,
       researchStarted: game.researchStarted ?? false,
       activeHypothesisId: game.activeHypothesisId ?? null,
-      activeHypothesisTitle: game.activeHypothesisTitle ?? null,
+      activeHypothesisTitle: game.activeHypothesisId
+        ? HYPOTHESIS_BY_ID[game.activeHypothesisId]?.title ?? game.activeHypothesisTitle ?? null
+        : game.activeHypothesisTitle ?? null,
       lastResearchWeek: game.lastResearchWeek ?? 0,
       lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
@@ -645,6 +676,7 @@ function buildWeekLog(
   if (next.studyCount > 0) deltas.push(`学习 ${next.studyCount} 次`)
 
   return {
+    seasonIndex: game.seasonIndex,
     week: game.week,
     title: titles[game.week - 1] ?? `${game.season.seasonLabel} · 第 ${game.week} 周`,
     text: texts[game.week - 1] ?? texts[0],
@@ -673,6 +705,7 @@ function buildVacationLog(
   if (next.habitApplied) deltas.push('习惯生效')
 
   return {
+    seasonIndex: game.seasonIndex,
     week,
     title: `${meta?.name ?? '假期'} · 第 ${week} 周`,
     text: `没有早八的一周。你把这周的时间分给了${selectedNames || '一些小事'}。`,
@@ -732,6 +765,8 @@ function finalizeYear(base: GameState): GameState {
     award: null,
     awards: [],
     score: null,
+    careerStats: base.careerStats,
+    attrs: base.player ? { ...base.player.attrs } : undefined,
   }
   return {
     ...base,
@@ -983,8 +1018,6 @@ function RealApp() {
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
   const [clubRecruitmentMode, setClubRecruitmentMode] = useState<'initial' | 'application'>('initial')
-  const nextProjectPromptRef = useRef('')
-  const publicationNoticeOpenRef = useRef(false)
   const walkAttemptDayRef = useRef('')
   const [noticeTick, setNoticeTick] = useState(0)
   const [dismissedFailureKey, setDismissedFailureKey] = useState<string | null>(null)
@@ -1007,18 +1040,40 @@ function RealApp() {
     window.history.replaceState({}, '', window.location.pathname)
   }, [])
 
+  // 上一篇论文接收后，不再弹窗追问；下一篇课题通过邮件发到邮箱。
+  useEffect(() => {
+    setGame((previous) => {
+      if (!previous?.awaitingNextProject) return previous
+      const mentor = mentorProfileOf(previous.mentorProfileId)
+      const hypothesis = mentor ? pickHypothesis(mentor.id) : null
+      if (!mentor || !hypothesis) {
+        const cleared = { ...previous, awaitingNextProject: false }
+        persist(cleared)
+        return cleared
+      }
+      const next: GameState = {
+        ...previous,
+        awaitingNextProject: false,
+        emails: [
+          ...previous.emails,
+          createProjectOfferEmail(previous, mentor, hypothesis, true),
+        ],
+      }
+      persist(next)
+      return next
+    })
+  }, [game?.awaitingNextProject])
+
   const openPublicationNotice = (
     journal: string,
     text: string,
   ) => {
-    publicationNoticeOpenRef.current = true
     showResearchNotice({
       kind: 'published',
       title: '论文发表',
       text,
       journal,
       onAcknowledge: () => {
-        publicationNoticeOpenRef.current = false
         setNoticeTick((value) => value + 1)
       },
     })
@@ -1155,78 +1210,88 @@ function RealApp() {
     persist(next)
   }, [game])
 
+  // 考试周前检查本学期请假次数：两次及以上第一次警告，再次发生则退出。
+  useEffect(() => {
+    if (!game || view !== 'week' || game.week !== 3) return
+    const target = (game.clubMemberships ?? []).find(
+      (membership) =>
+        membership.activitySeasonIndex === game.seasonIndex &&
+        (membership.semesterLeaves ?? 0) >= 2,
+    )
+    if (!target) return
+    if (
+      target.inactivityWarningIssued &&
+      target.inactivityWarningSeasonIndex !== game.seasonIndex
+    ) {
+      const next: GameState = {
+        ...game,
+        clubMemberships: game.clubMemberships.filter(
+          (membership) => membership.orgId !== target.orgId,
+        ),
+        clubHistory: [
+          ...game.clubHistory,
+          {
+            orgId: target.orgId,
+            orgName: ORG_BY_ID[target.orgId]?.name ?? target.orgId,
+            highestRole: target.highestRole,
+            joinedSeasonIndex: target.joinedSeasonIndex,
+            leftSeasonIndex: game.seasonIndex,
+            reason: 'expelled',
+          },
+        ],
+      }
+      setGame(next)
+      persist(next)
+      showResearchNotice({
+        kind: 'club',
+        title: '移出组织通知',
+        text: CLUB_LEAVE_EXPEL_TEXT,
+      })
+      return
+    }
+    if (target.inactivityWarningIssued) return
+    const next: GameState = {
+      ...game,
+      clubMemberships: game.clubMemberships.map((membership) =>
+        membership.orgId === target.orgId
+          ? {
+              ...membership,
+              inactivityWarningIssued: true,
+              inactivityWarningSeasonIndex: game.seasonIndex,
+            }
+          : membership,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    showResearchNotice({
+      kind: 'club',
+      title: '组织考勤警告',
+      text: CLUB_LEAVE_WARNING_TEXT,
+    })
+  }, [game, view])
+
   useEffect(() => {
     if (!game || view !== 'week') return
 
     const memberships = game.clubMemberships ?? []
 
     if (game.week === 1 && memberships.length > 0) {
-      const pendingIndex = memberships.findIndex(
+      const pending = memberships.some(
         (membership) => membership.activitySeasonIndex !== game.seasonIndex,
       )
-      if (pendingIndex >= 0) {
-        const membership = memberships[pendingIndex]
-        const leaves = membership.semesterLeaves ?? 0
-        if (leaves >= 2) {
-          if (!(membership.inactivityWarningIssued ?? false)) {
-            const next: GameState = {
-              ...game,
-              clubMemberships: memberships.map((item, index) =>
-                index === pendingIndex
-                  ? {
-                      ...item,
-                      semesterActivities: 0,
-                      semesterLeaves: 0,
-                      activitySeasonIndex: game.seasonIndex,
-                      inactivityWarningIssued: true,
-                    }
-                  : item,
-              ),
-            }
-            setGame(next)
-            persist(next)
-            showResearchNotice({
-              kind: 'club',
-              title: '组织考勤警告',
-              text: CLUB_LEAVE_WARNING_TEXT,
-            })
-            return
-          }
-          const next: GameState = {
-            ...game,
-            clubMemberships: memberships.filter((_, index) => index !== pendingIndex),
-            clubHistory: [
-              ...game.clubHistory,
-              {
-                orgId: membership.orgId,
-                orgName: ORG_BY_ID[membership.orgId]?.name ?? membership.orgId,
-                highestRole: membership.highestRole,
-                joinedSeasonIndex: membership.joinedSeasonIndex,
-                leftSeasonIndex: game.seasonIndex,
-                reason: 'expelled',
-              },
-            ],
-          }
-          setGame(next)
-          persist(next)
-          showResearchNotice({
-            kind: 'club',
-            title: '移出组织通知',
-            text: CLUB_LEAVE_EXPEL_TEXT,
-          })
-          return
-        }
+      if (pending) {
         const next: GameState = {
           ...game,
-          clubMemberships: memberships.map((item, index) =>
-            index === pendingIndex
+          clubMemberships: memberships.map((membership) =>
+            membership.activitySeasonIndex !== game.seasonIndex
               ? {
-                  ...item,
+                  ...membership,
                   semesterActivities: 0,
                   semesterLeaves: 0,
                   activitySeasonIndex: game.seasonIndex,
                 }
-              : item,
+              : membership,
           ),
         }
         setGame(next)
@@ -1383,65 +1448,6 @@ function RealApp() {
       return
     }
 
-    if (game.awaitingNextProject) {
-      if (publicationNoticeOpenRef.current) return
-      const promptKey = `${game.season.id}-w${game.week}`
-      if (nextProjectPromptRef.current !== promptKey) {
-        nextProjectPromptRef.current = promptKey
-        const hypothesis = game.mentorProfileId
-          ? pickHypothesis(game.mentorProfileId)
-          : null
-        if (hypothesis) {
-          const currentAbsoluteWeek = absoluteWeek(game)
-          showResearchNotice({
-            kind: 'idea',
-            title: '导师的新课题',
-            text: `${game.relationships.find((relation) => relation.kind === 'mentor')?.name ?? '导师'}把一篇新的开题提纲发给你：“上一篇已经见刊了，这个方向我想让你接着做。第二篇，敢不敢接？”`,
-            choices: [
-              {
-                label: '接取新课题',
-                primary: true,
-                onClick: () => {
-                  setGame((previous) => {
-                    if (!previous) return previous
-                    const updated: GameState = {
-                      ...previous,
-                      awaitingNextProject: false,
-                      researchStarted: true,
-                      researchPublished: false,
-                      researchProgress: 0,
-                      researchJournal: null,
-                      activeHypothesisId: hypothesis.id,
-                      activeHypothesisTitle: hypothesis.title,
-                      lastResearchWeek: currentAbsoluteWeek,
-                      lastResearchWarningWeek: currentAbsoluteWeek,
-                    }
-                    persist(updated)
-                    return updated
-                  })
-                },
-              },
-              {
-                label: '暂时不接',
-                onClick: () => {
-                  setGame((previous) => {
-                    if (!previous) return previous
-                    const updated: GameState = {
-                      ...previous,
-                      awaitingNextProject: false,
-                    }
-                    persist(updated)
-                    return updated
-                  })
-                },
-              },
-            ],
-          })
-        }
-      }
-      return
-    }
-
     if (
       game.pendingEvent ||
       game.pendingConfession ||
@@ -1495,17 +1501,6 @@ function RealApp() {
         eventWeek: game.week,
         lastResearchWarningWeek: currentAbsoluteWeek,
         stress: Math.min(100, game.stress + 5),
-        relationships: game.relationships.map((relation) =>
-          relation.kind === 'mentor'
-            ? {
-                ...relation,
-                intimacy: Math.max(
-                  0,
-                  relation.intimacy + adjustIntimacyDelta(game, relation, -5),
-                ),
-              }
-            : relation,
-        ),
         pendingEvent: null,
         pendingConfession: null,
         screen: 'week',
@@ -1840,8 +1835,9 @@ function RealApp() {
   }
 
   const goTitle = () => {
-    if (game) {
-      persist(game)
+    const latest = gameRef.current ?? game
+    if (latest) {
+      persist(latest)
       setHasSave(true)
     }
     setCrisisKind(null)
@@ -2316,7 +2312,13 @@ function RealApp() {
       return
     }
     const withInitialHealth = advanceHealthForNewWeek(withInitialSleep, [])
-    commit(withInitialHealth, 'week')
+    const withLiteratureWeek = {
+      ...withInitialHealth,
+      literatureStudyWeekKey: currentWeekKey(withInitialHealth),
+      literatureStudyCount: 0,
+      literatureReportWeekKey: null,
+    }
+    commit(withLiteratureWeek, 'week')
     announceSleep(initialSleep, withInitialSleep.stress)
   }
 
@@ -2427,7 +2429,7 @@ function RealApp() {
       return fail('今年的生日礼物已经送过了。')
     }
     if (game.money < 150) return fail('生活费不足，买不起生日礼物。')
-    const gain = adjustIntimacyDelta(game, relation, 15)
+    const gain = adjustIntimacyDelta(game, relation, 15, { major: true })
     const updated: GameState = {
       ...game,
       money: game.money - 150,
@@ -2475,7 +2477,7 @@ function RealApp() {
     if (relation.birthdayGiftYear === currentDate.year) {
       return fail('今年的生日已经联系过了。')
     }
-    const gain = adjustIntimacyDelta(game, relation, 5)
+    const gain = adjustIntimacyDelta(game, relation, 5, { major: true })
     const updated: GameState = {
       ...game,
       relationships: game.relationships.map((item) =>
@@ -3326,7 +3328,7 @@ function RealApp() {
     if (publication) {
       openPublicationNotice(
         publication.journal,
-        '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+        pickPublicationAcceptanceText(),
       )
     }
     return {
@@ -3348,7 +3350,7 @@ function RealApp() {
     if (outcome.publication) {
       openPublicationNotice(
         outcome.publication.journal,
-        '拍一拍导师，居然拍出了一篇论文。导师在群里发了一个很克制的“恭喜”，然后把组会 PPT 的最后一页换成了你的文章截图。',
+        pickPublicationAcceptanceText(),
       )
     }
     return { message: outcome.message, events: outcome.events }
@@ -3388,14 +3390,15 @@ function RealApp() {
     const text = pickConfessionText(success)
     const gain = Math.min(
       5,
-      Math.max(0, adjustIntimacyDelta(game, relation, 5)),
+      Math.max(0, adjustIntimacyDelta(game, relation, 5, { major: true })),
     )
     const updated = success
       ? {
           ...relation,
           partner: true,
           bondType: 'lover' as const,
-          intimacy: Math.min(100, relation.intimacy + gain),
+          intimacy: Math.max(60, Math.min(100, relation.intimacy + gain)),
+          bondFiveYearDone: false,
           partnerSinceSeasonIndex: game.seasonIndex,
           partnerSinceWeek: game.week,
           partnerSinceLabel: game.season.seasonLabel,
@@ -3667,7 +3670,7 @@ function RealApp() {
     if (!relation) {
       return { success: false, name: '', text: '你找不到这个人。' }
     }
-    if (relation.intimacy < 60) {
+    if (relation.intimacy < 59) {
       return {
         success: false,
         name: relation.name,
@@ -3700,6 +3703,8 @@ function RealApp() {
               ...item,
               bondType: type,
               partner: false,
+              intimacy: Math.max(60, relation.intimacy),
+              bondFiveYearDone: false,
               partnerSinceSeasonIndex: game.seasonIndex,
               partnerSinceWeek: game.week,
               partnerSinceLabel: game.season.seasonLabel,
@@ -3726,75 +3731,76 @@ function RealApp() {
   }
 
   const changeBondNickname = (relationshipId: string, nickname: string) => {
-    if (!game) return
+    const latest = gameRef.current ?? game
+    if (!latest) return
     const clean = nickname.trim().slice(0, 12)
     if (!clean) return
     const next: GameState = {
-      ...game,
-      relationships: game.relationships.map((relation) =>
+      ...latest,
+      relationships: latest.relationships.map((relation) =>
         relation.id === relationshipId
           ? {
               ...applyBondNickname(relation, clean),
               bondNicknameAnnouncement: `我要叫你 ${clean}！`,
               bondNicknameAnnouncementAt: {
-                seasonIndex: game.seasonIndex,
-                week: game.week,
-                weekSlot: game.weekSlot,
+                seasonIndex: latest.seasonIndex,
+                week: latest.week,
+                weekSlot: latest.weekSlot,
                 atMs: Date.now(),
               },
             }
           : relation,
       ),
-      soloInvites: game.soloInvites.map((invite) =>
+      soloInvites: latest.soloInvites.map((invite) =>
         invite.relationshipId === relationshipId
           ? { ...invite, partnerName: clean }
           : invite,
       ),
-      soloChatRecords: game.soloChatRecords.map((record) =>
+      soloChatRecords: latest.soloChatRecords.map((record) =>
         record.relationshipId === relationshipId
           ? { ...record, partnerName: clean }
           : record,
       ),
     }
-    setGame(next)
-    persist(next)
+    // 昵称属于羁绊操作，不能覆盖当前周次/时间段。
+    commitTaState(next, latest)
   }
 
   const changeBondNicknameDisplay = (
     relationshipId: string,
     enabled: boolean,
   ) => {
-    if (!game) return
-    const renamed = game.relationships.find(
+    const latest = gameRef.current ?? game
+    if (!latest) return
+    const renamed = latest.relationships.find(
       (relation) => relation.id === relationshipId,
     )
     const visibleName = renamed
       ? setBondNicknameDisplay(renamed, enabled).name
       : null
     const next: GameState = {
-      ...game,
-      relationships: game.relationships.map((relation) =>
+      ...latest,
+      relationships: latest.relationships.map((relation) =>
         relation.id === relationshipId
           ? setBondNicknameDisplay(relation, enabled)
           : relation,
       ),
       soloInvites: visibleName
-        ? game.soloInvites.map((invite) =>
+        ? latest.soloInvites.map((invite) =>
             invite.relationshipId === relationshipId
               ? { ...invite, partnerName: visibleName }
               : invite,
           )
-        : game.soloInvites,
+        : latest.soloInvites,
       soloChatRecords: visibleName
-        ? game.soloChatRecords.map((record) =>
+        ? latest.soloChatRecords.map((record) =>
             record.relationshipId === relationshipId
               ? { ...record, partnerName: visibleName }
               : record,
           )
-        : game.soloChatRecords,
+        : latest.soloChatRecords,
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, latest)
   }
 
   const askBondGossip = (relationshipId: string) => {
@@ -3808,8 +3814,7 @@ function RealApp() {
     if (!game) return
     const result = attemptNpcClueByChat(game, partnerId, relationId)
     if (!result) return
-    setGame(result.state)
-    persist(result.state)
+    commitTaState(result.state, gameRef.current ?? game)
   }
 
   const investigateNpcClue = (relationId: string) => {
@@ -3997,16 +4002,6 @@ function RealApp() {
               ),
             })
           }
-          if (relation.kind === 'mentor' && sim.mentorIntimacyGain > 0) {
-            updated = {
-              ...updated,
-              intimacy: Math.min(
-                100,
-                updated.intimacy +
-                  adjustIntimacyDelta(base, relation, sim.mentorIntimacyGain),
-              ),
-            }
-          }
           return updated
         }),
       },
@@ -4047,6 +4042,10 @@ function RealApp() {
       researchPreparation: base.labEntered
         ? 100
         : Math.min(100, base.researchPreparation + sim.researchPreparationGain),
+      experimentPreparation: Math.min(
+        100,
+        base.experimentPreparation + sim.experimentPreparationGain,
+      ),
       researchPublished: base.researchPublished || publishedNow,
       researchJournal: publishedJournal,
       publishedPapers:
@@ -4075,6 +4074,8 @@ function RealApp() {
     const cappedFinalNext = {
       ...finalNext,
       energy: Math.min(finalNext.energy, healthEnergyCap(finalNext)),
+      literatureStudyWeekKey: currentWeekKey(finalNext),
+      literatureStudyCount: 0,
     }
     commit(
       cappedFinalNext,
@@ -4092,7 +4093,7 @@ function RealApp() {
     if (publishedNow) {
       openPublicationNotice(
         publishedJournal ?? '待定期刊',
-        '你的论文被正式接收了。导师在群里发了一个很克制的“恭喜”，随后把组会 PPT 的最后一页换成了你的文章截图。你盯着屏幕看了很久，决定今晚奖励自己一顿食堂小炒。',
+        pickPublicationAcceptanceText(),
       )
     }
   }
@@ -4115,8 +4116,27 @@ function RealApp() {
     let socialGrowth = base.socialGrowth
     let prep = { ...base.prep }
     let researchProgress = base.researchProgress
+    let experimentPreparation = base.experimentPreparation
     const sportGainsHalved =
       action.id === 'sport' && (base.habits ?? []).includes('fitness')
+
+    if (action.id === 'research' && !base.labEntered) {
+      const weekKey = currentWeekKey(base)
+      return {
+        ...base,
+        energy: clamp(
+          base.energy - literatureEnergyCost(player.attrs.comprehension),
+          0,
+          100,
+        ),
+        researchPreparation: Math.min(100, base.researchPreparation + 5),
+        literatureStudyWeekKey: weekKey,
+        literatureStudyCount:
+          base.literatureStudyWeekKey === weekKey
+            ? base.literatureStudyCount + 1
+            : 1,
+      }
+    }
 
     if (action.id === 'library') {
       const costs = libraryCosts(base)
@@ -4149,8 +4169,9 @@ function RealApp() {
       }
     } else if (action.id === 'research') {
       if (base.labEntered && !base.researchStarted) {
-        energy += labChoreEnergyCost(player.attrs.comprehension)
-        stress += action.stress
+        energy -= 10
+        stress += 3
+        experimentPreparation = Math.min(100, base.experimentPreparation + 10)
       } else if (base.labEntered && !base.researchPublished) {
         energy += effectiveEnergyCost(action.energy, base.energy)
         stress += action.stress
@@ -4211,6 +4232,7 @@ function RealApp() {
       kaoyanPrep,
       prep,
       researchProgress,
+      experimentPreparation,
       constitutionGrowth: grown.constitutionGrowth,
       appearanceGrowth: grown.appearanceGrowth,
       socialGrowth: grown.socialGrowth,
@@ -4266,11 +4288,16 @@ function RealApp() {
       base.weekSlot % 3 === 1
         ? applyBreakfastConsumptionEffect(advanced, finishedDay)
         : advanced
+    const withDailyEffects =
+      base.weekSlot % 3 === 2
+        ? applyDailyConsumptionEffects(afterAfternoon, finishedDay)
+        : afterAfternoon
     return {
+      // 病症按游戏日倒计时，不按周倒计时。
       state:
         base.weekSlot % 3 === 2
-          ? applyDailyConsumptionEffects(afterAfternoon, finishedDay)
-          : afterAfternoon,
+          ? tickHealthDay(withDailyEffects)
+          : withDailyEffects,
       sleep,
     }
   }
@@ -5662,7 +5689,7 @@ function RealApp() {
     if (vacationPublished) {
       openPublicationNotice(
         vacationJournal ?? '待定期刊',
-        '假期里的实验室没有组会，但论文还是悄悄见刊了。导师在群里发了一个很克制的“恭喜”，你看着屏幕，觉得这个假期突然有了重量。',
+        pickPublicationAcceptanceText(),
       )
     }
     const base: GameState = {
@@ -5749,6 +5776,7 @@ function RealApp() {
                               previous,
                               relation,
                               effects.intimacy ?? 0,
+                              { major: true },
                             ),
                         ),
                       ),
@@ -6002,32 +6030,34 @@ function RealApp() {
   }
 
   const acceptMentorProject = (emailId: string) => {
-    if (!game) return
-    const email = game.emails.find(
+    const current = gameRef.current ?? game
+    if (!current) return
+    const email = current.emails.find(
       (item) =>
         item.id === emailId &&
         item.direction === 'inbox' &&
         item.kind === 'projectOffer',
     )
-    if (!email || !email.project || game.researchStage < 5) return
+    if (!email || !email.project || current.researchStage < 5) return
     const next: GameState = {
-      ...game,
+      ...current,
       researchStage: 6,
       researchStarted: true,
       researchProgress: 0,
       activeHypothesisId: email.project.hypothesisId,
       activeHypothesisTitle: email.project.title,
-      lastResearchWeek: absoluteWeek(game),
-      lastResearchWarningWeek: absoluteWeek(game),
+      lastResearchWeek: absoluteWeek(current),
+      lastResearchWarningWeek: absoluteWeek(current),
       researchPublished: false,
       researchJournal: null,
       awaitingNextProject: false,
-      emails: game.emails.map((item) =>
-        item.id === emailId ? { ...item, read: true } : item,
+      emails: current.emails.map((item) =>
+        item.id === emailId
+          ? { ...item, read: true, projectDecision: 'accepted' }
+          : item,
       ),
     }
-    setGame(next)
-    persist(next)
+    commitTaState(next, current)
     showResearchNotice({
       kind: 'mentor',
       title: '课题开始',
@@ -6035,6 +6065,87 @@ function RealApp() {
       ruleText: '阶段6 · 科学研究',
       ruleLabel: '课题已接受',
     })
+  }
+
+  const declineMentorProject = (emailId: string) => {
+    const current = gameRef.current ?? game
+    if (!current) return
+    const email = current.emails.find(
+      (item) =>
+        item.id === emailId &&
+        item.direction === 'inbox' &&
+        item.kind === 'projectOffer',
+    )
+    if (!email || email.projectDecision) return
+    const next: GameState = {
+      ...current,
+      projectOfferMailSent: false,
+      projectOfferPendingAtAbs: absoluteSlot(current) + 21,
+      emails: current.emails.map((item) =>
+        item.id === emailId
+          ? { ...item, read: true, projectDecision: 'declined' as const }
+          : item,
+      ),
+    }
+    commitTaState(next, current)
+    showResearchNotice({
+      kind: 'mentor',
+      title: '暂时没有接课题',
+      text: '你告诉导师自己还没有准备好。导师没有多说什么，只让你继续在实验室里做基础工作。下周会重新考虑新的题目。',
+      ruleText: '实验准备度保留 · 一周后可能收到新课题',
+      ruleLabel: '课题邀请',
+    })
+  }
+
+  const submitLiteratureReport = (): GameEmail | null => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return null
+    if (current.labEntered || !current.mentorContactUnlocked) return null
+    const mentor = mentorProfileOf(current.mentorProfileId)
+    if (!mentor) return null
+    if (current.pendingLiteratureReport) return null
+    const sessions =
+      current.literatureStudyCount +
+      current.selected.filter((id) => id === 'research').length
+    if (sessions < 2) return null
+    if (current.literatureReportWeekKey === currentWeekKey(current)) return null
+    return {
+      ...createLiteratureReportEmail(current, mentor, pickLiteratureReportText()),
+      sentAtAbs: absoluteSlot(current),
+      timeLabel: currentMailTimeLabel(current),
+    }
+  }
+
+  const sendLiteratureReportDraft = (
+    draft: GameEmail,
+  ): { ok: boolean; error?: string } => {
+    const current = gameRef.current ?? game
+    if (!current || !current.player) return { ok: false, error: '现在还不能发送汇报。' }
+    if (draft.kind !== 'literatureReport') return { ok: false, error: '这不是文献汇报。' }
+    if (current.labEntered) return { ok: false, error: '你已经在实验室学习了。' }
+    const mentor = mentorProfileOf(current.mentorProfileId)
+    if (!mentor) return { ok: false, error: '还没有可以汇报的导师。' }
+    if (current.pendingLiteratureReport) return { ok: false, error: '上一封汇报还在等待回复。' }
+    const sessions =
+      current.literatureStudyCount +
+      current.selected.filter((id) => id === 'research').length
+    if (sessions < 2) return { ok: false, error: '本周文献学习还不够两个时段。' }
+    if (current.literatureReportWeekKey === currentWeekKey(current)) {
+      return { ok: false, error: '本周已经汇报过了。' }
+    }
+    const nowAbs = absoluteSlot(current)
+    const replyAtAbs = nowAbs + (1 + Math.floor(Math.random() * 3)) * 3
+    const next: GameState = {
+      ...current,
+      emails: [
+        ...current.emails,
+        { ...draft, sentAtAbs: nowAbs, timeLabel: currentMailTimeLabel(current), read: true },
+      ],
+      literatureReportWeekKey: currentWeekKey(current),
+      pendingLiteratureReport: { mentorId: mentor.id, replyAtAbs },
+    }
+    commitTaState(next, current)
+    return { ok: true }
   }
 
   const readMentorEmail = (emailId: string) => {
@@ -6150,6 +6261,16 @@ function RealApp() {
         text: '导师把课题发到了你的邮箱。读完邮件后，你可以在邮件里直接接受课题。',
         ruleText: '阶段5 · 等待接受课题',
       }
+    } else if (email.kind === 'literatureReply' && mentor) {
+      next = {
+        ...next,
+        researchPreparation: Math.min(100, next.researchPreparation + 5),
+      }
+      notice = {
+        title: '导师回复了文献汇报',
+        text: `${mentor.alias}老师读完了你的本周汇报，并在邮件里回答了你的问题。科研准备度 +5%。`,
+        ruleText: '科研准备度 +5% · 继续积累，准备进入实验室',
+      }
     }
 
     setGame(next)
@@ -6164,6 +6285,66 @@ function RealApp() {
       })
     }
   }
+
+  // 认识满四年的羁绊关系，触发唯一“四年纪念”里程碑。
+  useEffect(() => {
+    if (!game) return
+    const relation = game.relationships.find(
+      (item) =>
+        (item.partner || item.bondType) &&
+        !item.bondFiveYearDone &&
+        item.intimacy >= 90 &&
+        progressWeek(game) - (item.metAbsWeek ?? 0) >= 64,
+    )
+    if (!relation) return
+    const next: GameState = {
+      ...game,
+      relationships: game.relationships.map((item) =>
+        item.id === relation.id
+          ? { ...item, intimacy: 100, bondFiveYearDone: true }
+          : item,
+      ),
+    }
+    setGame(next)
+    persist(next)
+    showResearchNotice({
+      kind: 'family',
+      title: '四年纪念',
+      text: `你和${relation.name}已经认识四年了。你们没有把这一天过得很隆重，只是很自然地待在一起。亲密度达到了 100。`,
+      ruleText: '唯一关系里程碑 · 亲密度 100',
+      ruleLabel: '四年纪念',
+    })
+  }, [game, view])
+
+  // 文献汇报发出后 1–3 个自然日收到导师回复。
+  useEffect(() => {
+    if (!game?.pendingLiteratureReport) return
+    const pending = game.pendingLiteratureReport
+    if (absoluteSlot(game) < pending.replyAtAbs) return
+    const mentor = mentorProfileOf(pending.mentorId)
+    if (!mentor) {
+      const next = { ...game, pendingLiteratureReport: null }
+      setGame(next)
+      persist(next)
+      return
+    }
+    const reply = {
+      ...createLiteratureReplyEmail(
+        game,
+        mentor,
+        pickLiteratureReplyText(),
+      ),
+      sentAtAbs: absoluteSlot(game),
+      timeLabel: currentMailTimeLabel(game),
+    }
+    const next: GameState = {
+      ...game,
+      pendingLiteratureReport: null,
+      emails: [...game.emails, reply],
+    }
+    setGame(next)
+    persist(next)
+  }, [game, view])
 
   // 邮件投递、拒信提醒、阶段5/6的自动推进。
   useEffect(() => {
@@ -6238,10 +6419,8 @@ function RealApp() {
       mentorProfile &&
       mentorRelation &&
       next.researchStage === 4 &&
-      next.seniorsGenerated &&
       !next.labAccessMailSent &&
-      next.researchPreparation >= 100 &&
-      mentorRelation.intimacy >= 40
+      next.researchPreparation >= 100
     ) {
       next = {
         ...next,
@@ -6261,6 +6440,7 @@ function RealApp() {
         ...next,
         researchStage: 5,
         labEntered: true,
+        experimentPreparation: 0,
         labAccessPendingAtAbs: null,
       }
       stage5Started = true
@@ -6272,8 +6452,10 @@ function RealApp() {
       mentorRelation &&
       next.researchStage >= 5 &&
       !next.projectOfferMailSent &&
-      next.projectOfferPendingAtAbs !== null &&
-      nowAbs >= next.projectOfferPendingAtAbs
+      !next.awaitingNextProject &&
+      !next.researchPublished &&
+      next.experimentPreparation >= 100 &&
+      (next.projectOfferPendingAtAbs === null || nowAbs >= next.projectOfferPendingAtAbs)
     ) {
       const hypothesis = pickHypothesis(mentorProfile.id)
       if (hypothesis) {
@@ -6613,6 +6795,8 @@ function RealApp() {
           onRecordClubProjectPhase={recordClubProjectPhase}
           onRecordClubProjectEvent={recordClubProjectEvent}
           onAttendDebatePractice={attendDebatePractice}
+          onLiteratureReport={submitLiteratureReport}
+          onSendLiteratureReport={sendLiteratureReportDraft}
           onResolveDebateCupRound={resolveDebateCupRound}
           onSaveClubInvites={saveClubInvites}
           onQuitClub={quitClub}
@@ -6625,6 +6809,7 @@ function RealApp() {
           onSendMentorMail={sendMentorMail}
           onReadMentorEmail={readMentorEmail}
           onAcceptMentorProject={acceptMentorProject}
+          onDeclineMentorProject={declineMentorProject}
           chatFocus={chatFocus}
           onChatFocusConsumed={() => setChatFocus(null)}
           onBondNicknameChange={changeBondNickname}
@@ -6733,28 +6918,10 @@ function RealApp() {
   if (view === 'yearend') {
     const completedYear = yearNumber(game.seasonIndex)
     const nextSeason = SEASONS[game.seasonIndex + 1]
-    const displayYear = yearName(game.seasonIndex)
-    const descriptions: Record<number, string> = {
-      1: '大一结束。你从解剖楼、图书馆和无数个早八里走过来，开始知道白大褂的重量。大二见。',
-      2: '大二结束。基础课的骨架搭起来了，病理、药理和诊断开始把你往临床推。大三见。',
-      3: '大三结束。临床前的门槛已经跨过，接下来是大四、大五的临床年。',
-      4: '大四结束。见习的病房、第一次独立问诊、第一次被叫“医生”，都在这一年发生。大五见。',
-    }
-    const notes: Record<number, string> = {
-      1: '下一站：大二。桥梁课程与四六级机会已经接入。',
-      2: '下一站：大三。诊断学、临床基础课与临床前学期等你。',
-      3: '大二、大三的课程与考试已经完成。大四、大五临床年、事件卡、人物关系、科研与奖学金会在后续版本接入。',
-      4: '下一站：大五。临床实习、推免/考研与毕业条件将在这一年收束。',
-    }
     return (
-      <EndingScreen
+      <YearEndScreen
         state={game}
-        titleMain={`${displayYear}学年`}
-        titleAccent="完"
-        eyebrow={`END OF YEAR ${['ONE', 'TWO', 'THREE'][completedYear - 1]} / PROTOTYPE 00${completedYear}`}
-        description={descriptions[completedYear] ?? game.finalNote ?? `${displayYear}结束。`}
-        note={notes[completedYear]}
-        continueLabel={nextSeason ? `继续：${nextSeason.seasonLabel}` : undefined}
+        year={completedYear}
         onContinue={nextSeason ? handleYearEndContinue : undefined}
         onRestart={handleRestart}
         onTitle={goTitle}

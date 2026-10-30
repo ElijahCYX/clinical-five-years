@@ -8,6 +8,7 @@ interface MailboxProps {
   onSendDraft: (draft: GameEmail) => { ok: boolean; error?: string }
   onReadEmail: (emailId: string) => void
   onAcceptProject: (emailId: string) => void
+  onDeclineProject: (emailId: string) => void
   onDraftDone: () => void
   onCancelDraft: () => void
 }
@@ -21,6 +22,7 @@ export function Mailbox({
   onSendDraft,
   onReadEmail,
   onAcceptProject,
+  onDeclineProject,
   onDraftDone,
   onCancelDraft,
 }: MailboxProps) {
@@ -232,17 +234,34 @@ export function Mailbox({
               <pre className="mail-reader-body">{selected.body}</pre>
               {selected.kind === 'projectOffer' &&
                 selected.project &&
-                state.researchStage === 5 && (
+                state.researchStage >= 5 && (
                   <div className="mail-project-action">
-                    <p>导师在等你的答复。</p>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => onAcceptProject(selected.id)}
-                    >
-                      接受课题，开始科研
-                      <span className="btn-arrow">→</span>
-                    </button>
+                    {selected.projectDecision ? (
+                      <p>
+                        {selected.projectDecision === 'accepted'
+                          ? '你已经接受了这个课题。'
+                          : '你已经拒绝了这个课题，导师会在之后重新考虑新的题目。'}
+                      </p>
+                    ) : (
+                      <>
+                        <p>导师在等你的答复。</p>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => onAcceptProject(selected.id)}
+                        >
+                          接受课题，开始科研
+                          <span className="btn-arrow">→</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => onDeclineProject(selected.id)}
+                        >
+                          暂不接受
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               <footer>

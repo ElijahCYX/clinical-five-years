@@ -122,7 +122,6 @@ export interface HabitDef {
   money?: number
   english?: number
   research?: number
-  mentorRecognition?: number
   studyBonus?: number
 }
 
@@ -205,6 +204,10 @@ export interface YearRecord {
   award: AwardLevel
   awards: Award[]
   score: ScholarshipScore | null
+  /** Cumulative activity counters at the end of this academic year. */
+  careerStats?: CareerStats
+  /** Attribute snapshot at the end of this academic year. */
+  attrs?: Record<string, number>
 }
 
 export interface Season {
@@ -307,6 +310,7 @@ export interface HealthHistoryEntry {
 }
 
 export interface WeekLog {
+  seasonIndex?: number
   week: number
   title: string
   text: string
@@ -364,7 +368,6 @@ export interface EventEffect {
   breakupRelationId?: string
   reconcileRelationId?: string
   mentorUnlock?: boolean
-  mentorIntimacy?: number
   revealNpcRelationId?: string
 }
 
@@ -502,6 +505,11 @@ export interface Relationship {
   bondCalmUntilWeek?: number
   bondReconcileAttempted?: boolean
   intimacyFrozenUntilWeek?: number
+  /** 本周从普通互动获得的亲密度，用于高亲密度阶段的周上限。 */
+  intimacyGainWeekKey?: string
+  intimacyGainThisWeek?: number
+  /** 四年纪念里程碑是否已经触发。 */
+  bondFiveYearDone?: boolean
   confessionRisk: number
   breakupRisk: number
   ex: boolean
@@ -586,6 +594,8 @@ export type GameEmailKind =
   | 'projectOffer'
   | 'medicalGreeting'
   | 'medicalAcceptance'
+  | 'literatureReport'
+  | 'literatureReply'
 
 export interface MentorInterview {
   mentorId: string
@@ -605,6 +615,11 @@ export interface MentorInterviewRecord {
   weekSlot: number
   label: string
   success: boolean
+}
+
+export interface PendingLiteratureReport {
+  mentorId: string
+  replyAtAbs: number
 }
 
 export interface MentorApplication {
@@ -634,6 +649,7 @@ export interface GameEmail {
     hypothesisId: string
     title: string
   }
+  projectDecision?: 'accepted' | 'declined'
 }
 
 export interface EncounterChatOption {
@@ -792,6 +808,8 @@ export interface ClubMembership {
   highestRole: OrganizationRole
   activitySeasonIndex: number
   inactivityWarningIssued: boolean
+  /** 上一次考勤警告所在的学期；用于区分首次警告和再次违规。 */
+  inactivityWarningSeasonIndex?: number
   project?: ClubProjectState | null
   contribution?: number
 }
@@ -993,6 +1011,10 @@ export interface GameState {
   failedMentorIds: string[]
   emails: GameEmail[]
   mailSentWeekKey: string | null
+  literatureStudyWeekKey: string
+  literatureStudyCount: number
+  literatureReportWeekKey: string | null
+  pendingLiteratureReport: PendingLiteratureReport | null
   medicalFamilyMentorId: string | null
   medicalFamilyAcceptanceAtAbs: number | null
   welcomeMailSent: boolean
@@ -1003,6 +1025,7 @@ export interface GameState {
   projectOfferPendingAtAbs: number | null
   researchProgress: number
   researchPreparation: number
+  experimentPreparation: number
   researchPublished: boolean
   researchJournal: string | null
   publishedPapers: number
