@@ -3,6 +3,7 @@ import { BACKGROUND_BY_ID, HABIT_BY_ID, PLAN_BY_ID, TALENT_BY_ID } from '../data
 import { cetHint, type WeekSimulation } from '../game'
 import type { GameState } from '../types'
 import { Dot, StatBar, StressHearts } from '../ui'
+import { activeHealth, healthEnergyCap, weatherLabel } from '../health'
 import {
   dailyLivingCostFor,
   energyTone,
@@ -77,12 +78,28 @@ export function PlayerRail({
           <span>{title}</span>
           <span>{titleRight}</span>
         </div>
+        <div className="rail-health-row">
+          <span>天气</span>
+          <strong>{weatherLabel(state.weather)}</strong>
+          {activeHealth(state).map((condition) => (
+            <em key={condition.id}>
+              {condition.label} · {condition.daysLeft}天
+            </em>
+          ))}
+        </div>
         <StatBar
           label="精力"
           value={state.energy}
+          max={healthEnergyCap(state)}
           tone={energyTone(state.energy)}
           previewValue={preview?.energy}
-          sub={isExam ? '喝咖啡 / 刷夜会即时改变这里' : '自然恢复 +15 / 周 · 行动与计划消耗'}
+          sub={
+            healthEnergyCap(state) < 100
+              ? `生病期间精力上限暂时降为 ${healthEnergyCap(state)}`
+              : isExam
+                ? '喝咖啡 / 刷夜会即时改变这里'
+                : '自然恢复 +15 / 周 · 行动与计划消耗'
+          }
         />
         <StatBar
           label="压力"

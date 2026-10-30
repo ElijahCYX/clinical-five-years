@@ -279,6 +279,33 @@ export interface DebateHonorRecord {
   label: string
 }
 
+export type WeatherKind = 'sunny' | 'rain' | 'cold' | 'heat'
+export type IllnessKind = 'cold' | 'flu' | 'overwork' | 'injury' | 'accident'
+export type IllnessSeverity = 'mild' | 'moderate' | 'severe'
+export type HealthTreatment = 'none' | 'medicine' | 'dorm' | 'clinic'
+
+export interface HealthCondition {
+  id: string
+  kind: IllnessKind
+  label: string
+  severity: IllnessSeverity
+  source: string
+  daysLeft: number
+  treatment: HealthTreatment
+}
+
+export interface PendingHealthEvent {
+  conditionId: string
+}
+
+export interface HealthHistoryEntry {
+  id: string
+  label: string
+  kind: IllnessKind
+  weekLabel: string
+  note: string
+}
+
 export interface WeekLog {
   week: number
   title: string
@@ -987,6 +1014,12 @@ export interface GameState {
   lastResearchWarningWeek: number
   lastHypothesisOfferSeason: string | null
   familyAffection: number
+  weather: WeatherKind
+  weatherWeekKey: string
+  healthConditions: HealthCondition[]
+  pendingHealthEvent: PendingHealthEvent | null
+  healthHistory: HealthHistoryEntry[]
+  healthIllnessSeason: string | null
   debateCups: DebateCupRecord[]
   debateHonors: DebateHonorRecord[]
   familyCrisisRescued: boolean

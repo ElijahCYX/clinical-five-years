@@ -261,6 +261,27 @@ export function WhoAmIScreen({ state, onMain, onTA, onTitle }: WhoAmIScreenProps
                   <strong>{paperCount} 篇</strong>
                 </div>
                 <div>
+                  <span>当前健康</span>
+                  <strong>
+                    {state.healthConditions.length > 0
+                      ? state.healthConditions
+                          .map((item) => `${item.label}（${item.daysLeft}天）`)
+                          .join(' / ')
+                      : '无急性疾病'}
+                  </strong>
+                </div>
+                {state.healthHistory.length > 0 && (
+                  <div>
+                    <span>健康记录</span>
+                    <strong>
+                      {state.healthHistory
+                        .slice(-4)
+                        .map((item) => `${item.weekLabel} ${item.label}`)
+                        .join(' / ')}
+                    </strong>
+                  </div>
+                )}
+                <div>
                   <span>选修学分</span>
                   <strong>
                     {state.electiveCredits} / 10（已选 {state.electiveHistory.length} 门）

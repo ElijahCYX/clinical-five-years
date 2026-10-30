@@ -1,4 +1,5 @@
 import type { ClubProjectDef } from './clubProjects'
+import { INTEREST_COPY } from './interestCopy'
 
 const INTEREST_ACTIVITIES: Array<[string, string, number, string]> = [
   [
@@ -742,22 +743,36 @@ function buildProject(
     help: '做一点轻量的现场工作',
     closing: '活动结束后，你在门口站了一会儿。',
   }
-  const stageThemes = [flavor.prep, flavor.middle, flavor.show]
+  const copy = INTEREST_COPY[`${orgId}|${title}`] ?? {
+    scene: `${flavor.place}里，${title}的第一次筹备开始了。`,
+    finale: `${title}最后顺利结束。${flavor.closing}`,
+  }
+  const stageTitles =
+    duration === 2
+      ? [`筹备「${title}」`, `呈现「${title}」`]
+      : [`筹备「${title}」`, `推进「${title}」`, `呈现「${title}」`]
+  const stageIntros = [
+    `第 1 周例会，${flavor.place}。${copy.scene} 这周先把「${title}」的准备工作定下来。`,
+    ...(duration === 3
+      ? [`第 2 周例会。${core}。这一周要把「${title}」真正往前推一步。`]
+      : []),
+    `最后阶段。${copy.finale}`,
+  ]
   const stages = Array.from({ length: duration }, (_, i) => ({
-    title: stageThemes[i] ?? flavor.middle,
-    description: `第 ${i + 1} 周例会，${flavor.place}。这一周要推进「${title}」的${stageThemes[i] ?? flavor.middle}。${core}。`,
+    title: stageTitles[i] ?? stageTitles[stageTitles.length - 1],
+    description: stageIntros[i] ?? stageIntros[stageIntros.length - 1],
     choices: [
       {
         id: 'lead',
         label: flavor.lead,
-        description: `这周由你多担一点：${stageThemes[i] ?? flavor.middle}。`,
+        description: `这周由你多担一点：${stageTitles[i] ?? stageTitles[stageTitles.length - 1]}。`,
         contribution: 3,
         effects: { stress: 3, composite: 2, socialGrowth: 3 },
       },
       {
         id: 'support',
         label: flavor.support,
-        description: `和别人一起把${stageThemes[i] ?? flavor.middle}做完，不抢主位但也不缺席。`,
+        description: `和别人一起完成「${title}」的本周准备，不抢主位但也不缺席。`,
         contribution: 2,
         effects: { energy: -3, stress: -1, socialGrowth: 2 },
       },
@@ -770,10 +785,16 @@ function buildProject(
       },
     ],
   }))
-  const eventLabels = [flavor.prep, flavor.middle, flavor.show]
+  const eventTitles =
+    duration === 2
+      ? [`${title} · 开场`, `${title} · 收尾`]
+      : [`${title} · 准备`, `${title} · 进行中`, `${title} · 收尾`]
   const eventPhases = Array.from({ length: duration }, (_, i) => ({
-    title: eventLabels[i] ?? flavor.show,
-    description: `「${title}」的${eventLabels[i] ?? flavor.show}。${flavor.closing}`,
+    title: eventTitles[i] ?? title,
+    description:
+      i === duration - 1
+        ? copy.finale
+        : `「${title}」的第 ${i + 1} 个活动阶段。${copy.scene}`,
   }))
   const n = index + 1
   return {
@@ -787,31 +808,31 @@ function buildProject(
     stages,
     eventPhases,
     worldTitle: `${title}如期举办`,
-    worldText: `不管社员们各自来了几次，「${title}」还是如期举办。${core}。${flavor.closing}`,
+    worldText: `${copy.finale} ${core}。`,
     personalFeedback: {
       core: {
-        title: '活动的核心成员',
-        text: `从「${title}」的准备到现场，你几乎都在。${flavor.closing} 这次你站在了比较靠前的位置。`,
+        title: '活动核心成员',
+        text: `从「${title}」的准备到现场，你几乎都在。${copy.finale}`,
         effects: { composite: 3, socialGrowth: 5, stress: -3 },
       },
       helper: {
         title: '活动的帮手',
-        text: `你不是「${title}」最显眼的人，但有几件关键的小事确实是你做的。${flavor.closing}`,
+        text: `你不是「${title}」最显眼的人，但有几件关键的小事确实是你做的。${copy.finale}`,
         effects: { composite: 2, socialGrowth: 3, stress: -2 },
       },
       audience: {
         title: '活动的观众',
-        text: `你这次没有参与筹备，但还是去看了「${title}」。${flavor.closing} 你开始明白一场活动背后有多少双手。`,
+        text: `你这次没有参与筹备，但还是去看了「${title}」。${copy.finale}`,
         effects: { socialGrowth: 1 },
       },
       prepared: {
         title: '参与了筹备，但没到现场',
-        text: `你参与了「${title}」的前期准备，但活动当天没有出现。后来你在群里看到了照片：${flavor.closing}`,
+        text: `你参与了「${title}」的前期准备，但活动当天没有出现。后来你看到了现场照片：${copy.finale}`,
         effects: { socialGrowth: 1 },
       },
       absent: {
         title: '在群里看到活动',
-        text: `你这次没有去。「${title}」还是如期发生了。${flavor.closing} 只是你不在画面里。`,
+        text: `你这次没有去。「${title}」还是如期发生了。${copy.finale}`,
         effects: {},
       },
     },

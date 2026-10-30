@@ -45,6 +45,7 @@ import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
 import { MENTOR_BY_ID, researchStage } from '../mentors'
 import { ORG_BY_ID, roleLabel } from '../organizations'
 import { clubProjectDefForProject, clubProjectForSeason, currentPhaseFor, personalOutcomeFor } from '../clubProjects'
+import { healthLocksSport } from '../health'
 import {
   buildTimetable,
   timetableCourseAt,
@@ -858,6 +859,9 @@ export function WeekScreen({
   }
 
   const lockReason = (action: ActionDef): string | null => {
+    if (action.id === 'sport' && healthLocksSport(state)) {
+      return '受伤恢复中，暂时不能运动'
+    }
     if (
       action.id === 'electiveHomework' &&
       !state.season.courses.some((course) => course.electiveType)
@@ -927,16 +931,18 @@ export function WeekScreen({
         <button
           type="button"
           className={`daily-action-card ${runUsedToday ? 'is-used' : ''}`}
-          disabled={!hasPeCourse || runUsedToday || state.energy < 20 || state.peRunCount >= 24}
+          disabled={!hasPeCourse || runUsedToday || healthLocksSport(state) || state.energy < 20 || state.peRunCount >= 24}
           onClick={onCampusRun}
         >
           <span className="daily-action-icon"><DailyActionIcon kind="run" /></span>
           <span className="daily-action-copy">
             <strong>校园跑</strong>
             <small>
-              {hasPeCourse
-                ? `精力 -20 · 体质成长 +1 · ${state.peRunCount} / 24`
-                : '当前没有体育课'}
+              {healthLocksSport(state)
+                ? '受伤恢复中，暂时不能跑步'
+                : hasPeCourse
+                  ? `精力 -20 · 体质成长 +1 · ${state.peRunCount} / 24`
+                  : '当前没有体育课'}
             </small>
           </span>
           <em>

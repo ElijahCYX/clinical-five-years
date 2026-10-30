@@ -21437,3 +21437,91 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   padding-top: 8px;
   border-top: 1px dashed var(--line-soft);
 }
+
+/* --- health & illness --- */
+.rail-health-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 0 2px;
+  padding: 7px 0;
+  border-top: 1px dashed var(--line-soft);
+  border-bottom: 1px dashed var(--line-soft);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.rail-health-row span {
+  letter-spacing: 0.08em;
+}
+
+.rail-health-row strong {
+  color: var(--ink-2);
+  margin-right: 3px;
+}
+
+.rail-health-row em {
+  padding: 2px 5px;
+  border: 1px solid rgba(158, 75, 63, 0.28);
+  color: var(--red);
+  font-style: normal;
+  font-size: 9px;
+}
+
+.health-event-modal .random-event-title {
+  color: var(--red);
+}
+
+.health-treatment-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.health-treatment-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 253, 247, 0.7);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.health-treatment-option:hover {
+  border-color: var(--gold);
+  background: var(--paper-2);
+}
+
+.health-treatment-option strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.health-treatment-option small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.health-treatment-option em {
+  color: var(--gold);
+  font-size: 9px;
+  font-style: normal;
+}
+
+@media (max-width: 640px) {
+  .health-treatment-list {
+    grid-template-columns: 1fr;
+  }
+}

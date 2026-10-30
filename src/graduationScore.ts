@@ -415,6 +415,14 @@ export function buildRecap(state: GameState): RecapSection[] {
         ...(state.debateHonors.length > 0
           ? [`辩论荣誉：${state.debateHonors.map((item) => item.label).join(' / ')}`]
           : []),
+        ...(state.healthHistory?.length > 0
+          ? [
+              `健康记录：${state.healthHistory
+                .slice(-6)
+                .map((item) => `${item.weekLabel} ${item.label}`)
+                .join(' / ')}`,
+            ]
+          : []),
       ],
     },
     {

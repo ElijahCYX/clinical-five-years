@@ -116,6 +116,7 @@ import {
   RouteScreen,
 } from './screens/Postgrad'
 import { GraduationScoreScreen } from './screens/GraduationScore'
+import { HealthEventModal } from './screens/HealthEvent'
 import { createPreGraduationState } from './devPreGraduation'
 import { PrepScreen } from './screens/Prep'
 import { ScholarshipScreen } from './screens/Scholarship'
@@ -236,6 +237,14 @@ import {
   roleLabel,
 } from './organizations'
 import { pickHypothesis } from './hypotheses'
+import {
+  advanceHealthForNewWeek,
+  applyHealthTreatment,
+  healthEnergyCap,
+  healthEnergyPenalty,
+  healthPrepMultiplier,
+  healthStressPenalty,
+} from './health'
 import {
   DEBATE_ORG_ID,
   bestDebaterChance,
@@ -520,6 +529,12 @@ function readSave(): GameState | null {
       lastResearchWarningWeek: game.lastResearchWarningWeek ?? 0,
       lastHypothesisOfferSeason: game.lastHypothesisOfferSeason ?? null,
       familyAffection: game.familyAffection ?? 0,
+      weather: game.weather ?? 'sunny',
+      weatherWeekKey: game.weatherWeekKey ?? '',
+      healthConditions: game.healthConditions ?? [],
+      pendingHealthEvent: game.pendingHealthEvent ?? null,
+      healthHistory: game.healthHistory ?? [],
+      healthIllnessSeason: game.healthIllnessSeason ?? null,
       comprehensionGrowth: game.comprehensionGrowth ?? 0,
       debateCups: game.debateCups ?? [],
       debateHonors: game.debateHonors ?? [],
@@ -1053,6 +1068,17 @@ function RealApp() {
   useEffect(() => {
     setHasSave(Boolean(readSave()))
   }, [])
+
+  // 生病/受伤期间精力上限临时下降；任何来源的恢复都不能超过这个上限。
+  useEffect(() => {
+    if (!game) return
+    const cap = healthEnergyCap(game)
+    if (game.energy <= cap) return
+    const next = { ...game, energy: cap }
+    gameRef.current = next
+    setGame(next)
+    persist(next)
+  }, [game])
 
 
   useEffect(() => {
@@ -2289,7 +2315,8 @@ function RealApp() {
       setView('clubRecruitment')
       return
     }
-    commit(withInitialSleep, 'week')
+    const withInitialHealth = advanceHealthForNewWeek(withInitialSleep, [])
+    commit(withInitialHealth, 'week')
     announceSleep(initialSleep, withInitialSleep.stress)
   }
 
@@ -3065,6 +3092,15 @@ function RealApp() {
       ],
     }
     finishDebateRound(next, edition.label, lines[0] ?? '赛事', noticeTitle, noticeText, lines)
+  }
+
+  const treatHealth = (treatment: import('./types').HealthTreatment) => {
+    const current = gameRef.current ?? game
+    if (!current) return
+    const next = applyHealthTreatment(current, treatment)
+    gameRef.current = next
+    setGame(next)
+    persist(next)
   }
 
   const arrangeDinner = (
@@ -3884,6 +3920,17 @@ function RealApp() {
       sim.english,
       sim.englishGrowth,
     )
+    const healthMult = healthPrepMultiplier(base)
+    if (healthMult < 1) {
+      sim.prep = Object.fromEntries(
+        Object.entries(sim.prep).map(([id, value]) => [
+          id,
+          (base.prep[id] ?? 0) + (value - (base.prep[id] ?? 0)) * healthMult,
+        ]),
+      )
+    }
+    sim.energy = Math.max(0, sim.energy - healthEnergyPenalty(base))
+    sim.stress = Math.min(100, sim.stress + healthStressPenalty(base))
     const prepTotal = Object.values(sim.prep).reduce((sum, value) => sum + value, 0)
     const log = buildWeekLog(base, {
       energy: sim.energy,
@@ -4021,11 +4068,16 @@ function RealApp() {
     }
 
     const clubBenefit = applyClubSemesterBenefit(next, base)
-    const finalNext = applyConsumptionWeekStart(
-      applyWeeklyOpeningTalent(clubBenefit.next),
+    const finalNext = advanceHealthForNewWeek(
+      applyConsumptionWeekStart(applyWeeklyOpeningTalent(clubBenefit.next)),
+      base.selected,
     )
+    const cappedFinalNext = {
+      ...finalNext,
+      energy: Math.min(finalNext.energy, healthEnergyCap(finalNext)),
+    }
     commit(
-      finalNext,
+      cappedFinalNext,
       isCetEvent ? 'cetEvent' : shouldPrepare ? 'prep' : 'week',
     )
     if (clubBenefit.notice) {
@@ -4610,6 +4662,7 @@ function RealApp() {
       game.season.courses.map((course) => [
         course.id,
         (effect.gains[course.id] ?? 0) *
+          healthPrepMultiplier(game) *
           prepGainMultiplier(game) *
           examReviewTalentMultiplier(game) *
           coursePrepTalentMultiplier(game, course) *
@@ -6589,6 +6642,9 @@ function RealApp() {
             event={game.pendingEvent}
             onContinue={handleRandomEventContinue}
           />
+        )}
+        {game.pendingHealthEvent && (
+          <HealthEventModal state={game} onTreat={treatHealth} />
         )}
       </>
     )

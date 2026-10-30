@@ -291,7 +291,7 @@ hp.paragraph_format.space_after = Pt(0)
 r = hp.add_run('临床五年  /  新玩家规则说明')
 set_run_font(r, HEAD_FONT, 8, False, MUTED)
 hp.add_run('\t\t')
-r2 = hp.add_run('v0.61.0')
+r2 = hp.add_run('v0.61.1')
 set_run_font(r2, BODY_FONT, 8, False, MUTED)
 add_rule(hp, LINE, 4, 2)
 
@@ -349,7 +349,7 @@ meta.alignment = WD_TABLE_ALIGNMENT.LEFT
 meta.autofit = False
 meta.columns[0].width = Cm(3.4); meta.columns[1].width = Cm(11.8)
 for i, (k, v) in enumerate([
-    ('适用版本', 'v0.61.0'),
+    ('适用版本', 'v0.61.1'),
     ('适用对象', '第一次游玩本作的新玩家'),
     ('游戏类型', '医学本科生五年生活文字模拟'),
     ('在线地址', 'https://elijahcyx.github.io/clinical-five-years/'),
@@ -925,11 +925,11 @@ para('如果五年后你回头看，发现自己没有成为最优秀的那个�
 
 # page number field in footer already. Save.
 doc.core_properties.title = '临床五年 · 新玩家规则说明'
-doc.core_properties.subject = '《临床五年》v0.61.0 新玩家规则说明'
+doc.core_properties.subject = '《临床五年》v0.61.1 新玩家规则说明'
 doc.core_properties.author = '临床五年项目组'
 doc.core_properties.comments = '面向第一次游玩《临床五年》的规则说明文档。'
 doc.core_properties.category = '游戏规则说明'
 doc.core_properties.keywords = '临床五年, 新玩家, 规则说明, 医学模拟'
-out = '临床五年_新玩家规则说明_v0.61.0.docx'
+out = '临床五年_新玩家规则说明_v0.61.1.docx'
 doc.save(out)
 print(out)
