@@ -1,14 +1,24 @@
 import { GAME_SUBTITLE, SCHOOL_NAME } from '../data'
 import { Eyebrow, Footer, HeartLineArt, Stamp, TopBar } from '../ui'
 
+interface SaveSlotSummary {
+  id: string
+  savedAt: number
+  playerName: string
+  seasonLabel: string
+  screenLabel: string
+}
+
 interface TitleScreenProps {
   hasSave: boolean
+  saveSlots?: SaveSlotSummary[]
   onStart: () => void
   onContinue: () => void
+  onLoadSlot?: (id: string) => void
   onTestClinical?: () => void
 }
 
-export function TitleScreen({ hasSave, onStart, onContinue, onTestClinical }: TitleScreenProps) {
+export function TitleScreen({ hasSave, saveSlots = [], onStart, onContinue, onLoadSlot, onTestClinical }: TitleScreenProps) {
   return (
     <div className="screen title-screen">
       <div className="shell">
@@ -61,6 +71,29 @@ export function TitleScreen({ hasSave, onStart, onContinue, onTestClinical }: Ti
                 >
                   测试版：直接体验临床
                 </button>
+              )}
+            </div>
+
+            <div className="title-save-list">
+              <div className="title-save-list-head">
+                <span>本机存档</span>
+                <small>{saveSlots.length > 0 ? `${saveSlots.length} 个` : '暂无'}</small>
+              </div>
+              {saveSlots.length === 0 ? (
+                <p className="title-save-empty">开始五年后会自动出现在这里。</p>
+              ) : (
+                saveSlots.map((slot) => (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    className="title-save-row"
+                    onClick={() => onLoadSlot?.(slot.id)}
+                  >
+                    <strong>{slot.playerName}</strong>
+                    <span>{slot.seasonLabel} · {slot.screenLabel}</span>
+                    <small>{slot.savedAt ? new Date(slot.savedAt).toLocaleString('zh-CN', { hour12: false }) : ''}</small>
+                  </button>
+                ))
               )}
             </div>
 

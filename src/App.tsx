@@ -312,31 +312,145 @@ import {
 
 const SAVE_KEY = 'clinical-five-years-save-v46'
 const GAME_SAVE_PREFIX = 'clinical-five-years-save-'
+const SAVE_SLOT_PREFIX = 'clinical-five-years-slot-'
+const ACTIVE_SAVE_SLOT_KEY = 'clinical-five-years-active-slot'
 
-/** 新科研/邮箱系统上线后，旧版本存档全部作废，避免半迁移状态。 */
-function clearOldGameSaves() {
+export interface SaveSlotSummary {
+  id: string
+  savedAt: number
+  playerName: string
+  seasonLabel: string
+  screenLabel: string
+}
+
+interface SaveSlotPayload {
+  game?: GameState
+  savedAt?: number
+}
+
+let activeSaveSlotId: string | null = null
+try {
+  activeSaveSlotId = localStorage.getItem(ACTIVE_SAVE_SLOT_KEY)
+} catch {
+  /* localStorage may be unavailable */
+}
+
+function saveSlotKey(id: string): string {
+  return `${SAVE_SLOT_PREFIX}${id}`
+}
+
+function createSaveSlotId(): string {
+  return `slot-${Date.now()}-${Math.floor(Math.random() * 100000)}`
+}
+
+function setActiveSaveSlot(id: string) {
+  activeSaveSlotId = id
   try {
-    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-      const key = localStorage.key(index)
-      if (key && key.startsWith(GAME_SAVE_PREFIX) && key !== SAVE_KEY) {
-        localStorage.removeItem(key)
-      }
-    }
+    localStorage.setItem(ACTIVE_SAVE_SLOT_KEY, id)
   } catch {
     /* localStorage may be unavailable */
   }
 }
 
-clearOldGameSaves()
+function readSlotPayload(id: string): SaveSlotPayload | null {
+  try {
+    const raw = localStorage.getItem(saveSlotKey(id))
+    if (!raw) return null
+    return JSON.parse(raw) as SaveSlotPayload
+  } catch {
+    return null
+  }
+}
+
+export function listSaveSlots(): SaveSlotSummary[] {
+  const slots: SaveSlotSummary[] = []
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index)
+      if (!key || !key.startsWith(SAVE_SLOT_PREFIX)) continue
+      const id = key.slice(SAVE_SLOT_PREFIX.length)
+      const payload = readSlotPayload(id)
+      const savedGame = payload?.game
+      if (!savedGame?.player) continue
+      slots.push({
+        id,
+        savedAt: payload?.savedAt ?? 0,
+        playerName: savedGame.player.name,
+        seasonLabel: savedGame.season?.seasonLabel ?? `第 ${savedGame.seasonIndex + 1} 季`,
+        screenLabel: savedGame.screen === 'clinical' ? '临床轮转' : savedGame.screen === 'result' ? '考试结算' : savedGame.screen === 'vacation' ? '假期' : '校园生活',
+      })
+    }
+  } catch {
+    /* localStorage may be unavailable */
+  }
+  return slots.sort((a, b) => b.savedAt - a.savedAt)
+}
+
+function migrateLegacySave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY)
+    if (!raw) return
+    const id = createSaveSlotId()
+    localStorage.setItem(saveSlotKey(id), raw)
+    if (!localStorage.getItem(ACTIVE_SAVE_SLOT_KEY)) setActiveSaveSlot(id)
+    localStorage.removeItem(SAVE_KEY)
+  } catch {
+    /* localStorage may be unavailable */
+  }
+}
+
+function readActiveSaveRaw(): string | null {
+  try {
+    if (!activeSaveSlotId) {
+      const slots = listSaveSlots()
+      if (slots[0]) setActiveSaveSlot(slots[0].id)
+    }
+    if (activeSaveSlotId) {
+      const active = localStorage.getItem(saveSlotKey(activeSaveSlotId))
+      if (active) return active
+    }
+    const slots = listSaveSlots()
+    if (slots[0]) {
+      setActiveSaveSlot(slots[0].id)
+      return localStorage.getItem(saveSlotKey(slots[0].id))
+    }
+  } catch {
+    /* localStorage may be unavailable */
+  }
+  return null
+}
+
+function writeActiveSave(game: GameState) {
+  try {
+    if (!activeSaveSlotId) setActiveSaveSlot(createSaveSlotId())
+    if (!activeSaveSlotId) return
+    localStorage.setItem(
+      saveSlotKey(activeSaveSlotId),
+      JSON.stringify({ game, savedAt: Date.now() }),
+    )
+    localStorage.setItem(ACTIVE_SAVE_SLOT_KEY, activeSaveSlotId)
+  } catch {
+    /* localStorage may be unavailable */
+  }
+}
+
+export function beginNewSaveSlot(): string {
+  const id = createSaveSlotId()
+  setActiveSaveSlot(id)
+  return id
+}
+
+export function activateSaveSlot(id: string) {
+  setActiveSaveSlot(id)
+}
+
+migrateLegacySave()
+
 
 type View = ScreenName | 'crisis' | 'whoami' | 'whois'
 
 function persist(game: GameState) {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ game, savedAt: Date.now() }))
-  } catch {
-    /* localStorage may be unavailable */
-  }
+  writeActiveSave(game)
 }
 
 /** 开发模式专用：把当前存档里的舍友临时转成闺蜜，方便测试聊天/代称。 */
@@ -442,7 +556,7 @@ function deriveOutstandingFails(
 
 function readSave(): GameState | null {
   try {
-    const currentRaw = localStorage.getItem(SAVE_KEY)
+    const currentRaw = readActiveSaveRaw()
     if (!currentRaw) return null
     const parsed = JSON.parse(currentRaw) as { game?: GameState }
     if (!parsed.game) return null
@@ -1020,6 +1134,7 @@ function RealApp() {
   gameRef.current = game
   const interfaceOriginView = useRef<View>('week')
   const [hasSave, setHasSave] = useState(false)
+  const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>([])
   const [crisisKind, setCrisisKind] = useState<CrisisKind | null>(null)
   const [crisisReturn, setCrisisReturn] = useState<View>('week')
   const [clubRecruitmentMode, setClubRecruitmentMode] = useState<'initial' | 'application'>('initial')
@@ -1126,8 +1241,36 @@ function RealApp() {
   }
 
   useEffect(() => {
-    setHasSave(Boolean(readSave()))
+    const slots = listSaveSlots()
+    setSaveSlots(slots)
+    setHasSave(slots.length > 0)
   }, [])
+
+  // 手动保存入口：固定在游戏页面右下角。
+  const showSaveFab = Boolean(game) && view !== 'title' && view !== 'create'
+  useEffect(() => {
+    if (!showSaveFab) return
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'save-fab'
+    button.textContent = '保存进度'
+    let feedbackTimer = 0
+    const handleSave = () => {
+      const latest = gameRef.current
+      if (!latest) return
+      persist(latest)
+      button.textContent = '✓ 已保存'
+      if (feedbackTimer) window.clearTimeout(feedbackTimer)
+      feedbackTimer = window.setTimeout(() => { button.textContent = '保存进度' }, 1600)
+    }
+    button.addEventListener('click', handleSave)
+    document.body.appendChild(button)
+    return () => {
+      if (feedbackTimer) window.clearTimeout(feedbackTimer)
+      button.removeEventListener('click', handleSave)
+      button.remove()
+    }
+  }, [showSaveFab])
 
   // 生病/受伤期间精力上限临时下降；任何来源的恢复都不能超过这个上限。
   useEffect(() => {
@@ -1846,10 +1989,12 @@ function RealApp() {
       setHasSave(true)
     }
     setCrisisKind(null)
+    setSaveSlots(listSaveSlots())
     setView('title')
   }
 
   const startCreate = () => {
+    beginNewSaveSlot()
     setCrisisKind(null)
     setGame(null)
     setView('create')
@@ -5935,10 +6080,12 @@ function RealApp() {
   }
 
   const startClinicalTest = () => {
+    beginNewSaveSlot()
     const testState = createClinicalTestState()
     setGame(testState)
     persist(testState)
     setHasSave(true)
+    setSaveSlots(listSaveSlots())
     setCrisisKind(null)
     setView('clinical')
   }
@@ -5989,7 +6136,13 @@ function RealApp() {
   }
 
 
+  const handleLoadSlot = (slotId: string) => {
+    activateSaveSlot(slotId)
+    handleContinueSave()
+  }
+
   const handleRestart = () => {
+    beginNewSaveSlot()
     setCrisisKind(null)
     setGame(null)
     setView('create')
@@ -6701,8 +6854,10 @@ function RealApp() {
     return (
       <TitleScreen
         hasSave={hasSave}
+        saveSlots={saveSlots}
         onStart={startCreate}
         onContinue={handleContinueSave}
+        onLoadSlot={handleLoadSlot}
         onTestClinical={startClinicalTest}
       />
     )
@@ -6716,8 +6871,10 @@ function RealApp() {
     return (
       <TitleScreen
         hasSave={hasSave}
+        saveSlots={saveSlots}
         onStart={startCreate}
         onContinue={handleContinueSave}
+        onLoadSlot={handleLoadSlot}
         onTestClinical={startClinicalTest}
       />
     )
