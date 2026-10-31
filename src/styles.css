@@ -24718,3 +24718,27 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   background: #fbf4ea;
 }
 .clinical-morning-todo.is-too-late:hover { background: #f7eadc; }
+
+/* One-click pending todo completion */
+.clinical-todo-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.clinical-todo-head .clinical-auto-todo-btn {
+  border: 1px solid rgba(47,91,76,.3);
+  background: #eef2e8;
+  color: #365b49;
+  padding: 5px 9px;
+  font-family: var(--sans);
+  font-size: 10px;
+  cursor: pointer;
+}
+.clinical-todo-head .clinical-auto-todo-btn:hover:not(:disabled) {
+  border-color: var(--green);
+  background: #e3ecdf;
+}
+.clinical-todo-head .clinical-auto-todo-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}

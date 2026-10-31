@@ -1,7 +1,7 @@
 {
   "name": "clinical-five-years",
   "private": true,
-  "version": "0.69.13",
+  "version": "0.69.14",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",

@@ -1689,6 +1689,94 @@ export function ClinicalScreen({
     })
   }
 
+  const autoCompleteTodos = () => {
+    if (!day || !course || overtime || overtimeOpen || finishing) return
+    if (currentBlock?.kind !== 'free') return
+    const pending = (clinical.todos ?? []).filter((todo) => todo.status === 'pending')
+    if (pending.length === 0) return
+    let nextClinical = clinical
+    let clock = day.clock
+    let completed = 0
+    let energyTotal = 0
+    let stressTotal = 0
+    let admitted = day.tasks.admitted
+    let completedTasks = day.tasks.completedTasks
+    const log: string[] = []
+    for (const todo of pending) {
+      if (clock >= 600) break
+      const block = blockAt(course, clock)
+      if (block?.kind !== 'free') break
+      const taskDef = CLINICAL_TASK_BY_ID[todo.taskId]
+      if (!taskDef) continue
+      const task = formatClinicalTaskForDay(taskDef, day.dayIndex)
+      const choices = choicesForSkill(task, nextClinical.skills[task.skillId])
+      const choice =
+        choices.find((item) => item.recommended && !item.disabled) ??
+        choices.find((item) => !item.disabled)
+      if (!choice) continue
+      const mode = choice.mode ?? 'observe'
+      const rule = CLINICAL_EVENT_RULES[task.id]?.[mode]
+      const duration = Math.max(5, rule?.duration ?? task.duration + choice.timeBonus)
+      const energyCost = rule?.energy ?? 0
+      const stressGain = rule?.stress ?? 0
+      const trained = trainClinicalSkill(nextClinical.skills, task.skillId, mode)
+      nextClinical = {
+        ...nextClinical,
+        skills: trained.skills,
+        recognition: Math.max(0, Math.min(100, nextClinical.recognition + 4)),
+        todos: (nextClinical.todos ?? []).map((item) =>
+          item.id === todo.id ? { ...item, status: 'done' as const } : item,
+        ),
+        taskRecords: [
+          ...nextClinical.taskRecords,
+          {
+            taskId: task.id,
+            title: task.title,
+            skillId: task.skillId,
+            success: true,
+            duration,
+            courseId: course.courseId,
+          },
+        ],
+      }
+      skillGainRef.current[task.skillId] =
+        (skillGainRef.current[task.skillId] ?? 0) + (trained.leveledUp ? 1 : 0)
+      energyTotal += energyCost
+      stressTotal += stressGain
+      admitted += task.id === 'admission' ? 1 : 0
+      completedTasks += 1
+      completed += 1
+      clock = Math.min(600, clock + duration)
+      log.push(`${task.title} · ${choice.label} · 完成 · ${duration} 分钟。`)
+      if (clock >= 600) break
+      if (blockAt(course, clock)?.kind !== 'free') break
+    }
+    if (completed === 0) {
+      setTimeJump('当前没有可一键完成的待办，或已经到固定安排时间。')
+      window.setTimeout(() => setTimeJump(null), 2200)
+      return
+    }
+    onGameEffect({ energy: energyTotal, stress: stressTotal })
+    updateDay({
+      clock,
+      tasks: {
+        ...day.tasks,
+        admitted,
+        completedTasks,
+      },
+      recognition: nextClinical.recognition,
+      dayLog: [...day.dayLog, ...log],
+    })
+    persistClinical(nextClinical)
+    const remaining = nextClinical.todos.filter((todo) => todo.status === 'pending').length
+    setTimeJump(
+      remaining > 0
+        ? `一键完成 ${completed} 项待办，时间 ${formatClock(clock)} · 剩余 ${remaining} 项`
+        : `一键完成 ${completed} 项待办，时间 ${formatClock(clock)}`,
+    )
+    window.setTimeout(() => setTimeJump(null), 2600)
+  }
+
   const chooseTaskChoice = (choice: ClinicalTaskChoice) => {
     if (!day || !course || !task) return
     const mode = choice.mode ?? 'observe'
@@ -2895,8 +2983,20 @@ export function ClinicalScreen({
         {clinical.mode === 'day' && day && !morning && (
           <section className="paper-card clinical-todo-card">
             <div className="clinical-todo-head">
-              <strong>待办事项</strong>
-              <span>{pendingTodos.length} 项待处理</span>
+              <div>
+                <strong>待办事项</strong>
+                <span>{pendingTodos.length} 项待处理</span>
+              </div>
+              {pendingTodos.length > 0 && (
+                <button
+                  type="button"
+                  className="clinical-auto-todo-btn"
+                  onClick={autoCompleteTodos}
+                  disabled={overtime || overtimeOpen || currentBlock?.kind !== 'free' || Boolean(task || taskResult)}
+                >
+                  一键完成当前待办
+                </button>
+              )}
             </div>
             <div className="clinical-todo-columns">
               {([
