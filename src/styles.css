@@ -24742,3 +24742,21 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   opacity: .45;
   cursor: not-allowed;
 }
+
+/* Per-mode clinical event text from the design spreadsheet */
+.clinical-task-story {
+  max-width: 560px;
+  color: var(--ink-2);
+  line-height: 1.75;
+}
+.clinical-choice-story {
+  display: block;
+  margin: 4px 0 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+.clinical-choice-list .clinical-choice {
+  max-height: 180px;
+  overflow: auto;
+}

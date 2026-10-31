@@ -5,6 +5,7 @@ import { PlayerRail } from './PlayerRail'
 import { CampusNoticeBoard } from './CampusNotice'
 import { pickLateScoldingText } from '../lateScoldingTexts'
 import { CLINICAL_EVENT_RULES } from '../clinicalEventRules'
+import { CLINICAL_MODE_DESCRIPTIONS } from '../clinicalModeDescriptions'
 import { pickOvertimeText } from '../overtimeTexts'
 import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
 import { ACTION_BY_ID, ACTIONS } from '../data'
@@ -496,6 +497,16 @@ export function ClinicalScreen({
     day && currentBlock?.kind === 'free' && day.clock >= earliestTodoMinute,
   )
   const pendingTodos = (clinical.todos ?? []).filter((todo) => todo.status === 'pending')
+  const taskChoices = task ? choicesForSkill(task, clinical.skills[task.skillId]) : []
+  const primaryTaskChoice =
+    taskChoices.find((choice) => choice.recommended && !choice.disabled) ??
+    taskChoices.find((choice) => !choice.disabled) ??
+    taskChoices[0]
+  const primaryTaskMode = primaryTaskChoice?.mode ?? 'observe'
+  const primaryTaskRule = task ? CLINICAL_EVENT_RULES[task.id]?.[primaryTaskMode] : undefined
+  const primaryTaskDescription = task
+    ? (CLINICAL_MODE_DESCRIPTIONS[task.id]?.[primaryTaskMode] ?? task.description)
+    : ''
   const pendingTodoTaskIds = pendingTodos.map((todo) =>
     todo.kind === 'admission' ? 'admission' : todo.kind === 'ecg' ? 'ecg' : 'accompany',
   )
@@ -2803,11 +2814,11 @@ export function ClinicalScreen({
             {task && !taskResult && (
               <div className="clinical-modal-backdrop">
                 <div className="clinical-modal">
-                  <span className="clinical-small-label">临床任务 · 预计 {task.duration} 分钟</span>
+                  <span className="clinical-small-label">临床任务 · 预计 {primaryTaskRule?.duration ?? task.duration} 分钟</span>
                   <h2>{task.title}</h2>
-                  <p>{task.description}</p>
+                  <p className="clinical-task-story">{primaryTaskDescription}</p>
                   <div className="clinical-choice-list">
-                    {choicesForSkill(task, clinical.skills[task.skillId]).map((choice) => (
+                    {taskChoices.map((choice) => (
                       <button
                         key={choice.id}
                         type="button"
@@ -2819,6 +2830,11 @@ export function ClinicalScreen({
                           {choice.label}
                           {choice.recommended && <em className="clinical-choice-recommend">推荐</em>}
                         </strong>
+                        {CLINICAL_MODE_DESCRIPTIONS[task.id]?.[choice.mode ?? 'observe'] && (
+                          <small className="clinical-choice-story">
+                            {CLINICAL_MODE_DESCRIPTIONS[task.id]?.[choice.mode ?? 'observe']}
+                          </small>
+                        )}
                         {(() => {
                           const rule = CLINICAL_EVENT_RULES[task.id]?.[choice.mode ?? 'observe']
                           return <span>预计 {rule?.duration ?? Math.max(5, task.duration + choice.timeBonus)} 分钟 · 精力 {rule?.energy ?? 0} · 压力 {(rule?.stress ?? 0) >= 0 ? '+' : ''}{rule?.stress ?? 0}</span>
