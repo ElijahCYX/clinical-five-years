@@ -24459,3 +24459,43 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 @keyframes lunch-orb-float { from { transform: translateY(2px) scale(.98); } to { transform: translateY(-8px) scale(1.02); } }
 @keyframes lunch-particle { 0%,100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-12px); opacity: .8; } }
 @keyframes lunch-copy-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Evening reuses the standard weekly action-board look. */
+.clinical-evening-board {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.clinical-evening-title {
+  margin: 0 0 14px;
+  align-items: flex-end;
+}
+.clinical-evening-title h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+}
+.clinical-evening-title p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.clinical-evening-slot-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+.clinical-evening-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.clinical-evening-grid .action-card {
+  min-height: 190px;
+}
+.clinical-evening-grid .action-flavor { font-size: 10px; line-height: 1.55; }
+.clinical-evening-grid .action-effect { font-size: 10px; line-height: 1.55; }
+@media (max-width: 900px) {
+  .clinical-evening-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .clinical-evening-grid { grid-template-columns: 1fr; }
+  .clinical-evening-grid .action-card { min-height: 0; }
+}

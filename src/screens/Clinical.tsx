@@ -2484,12 +2484,14 @@ export function ClinicalScreen({
         )}
 
         {clinical.mode === 'evening' && (
-          <section className="paper-card clinical-evening-card">
-            <span className="clinical-small-label">下班后 · 晚上时间段 1 / 1</span>
-            <h2>下班后的晚上</h2>
-            <p className="clinical-evening-lede">
-              今天的工作结束了。只有一个晚上的时间段，安排一件想做的事，然后回去睡觉。
-            </p>
+          <section className="clinical-evening-board">
+            <div className="week-title-row clinical-evening-title">
+              <div>
+                <h2>今晚的安排</h2>
+                <p>下班后只有一个时间段。选一件想做的事，或者直接躺平。</p>
+              </div>
+              <span className="clinical-evening-slot-label">晚间 · 1 / 1</span>
+            </div>
             {eveningAction ? (
               <div className="clinical-evening-result">
                 <strong>{ACTION_BY_ID[eveningAction]?.name ?? '今晚的行动'}</strong>
@@ -2503,27 +2505,44 @@ export function ClinicalScreen({
                 }}>睡觉，迎接第二天</button>
               </div>
             ) : (
-              <div className="clinical-evening-actions">
+              <div className="actions-grid clinical-evening-grid">
                 {['rest', 'library', 'english', 'kaoyan', 'sport', 'entertainment', 'partTime', 'research'].map((actionId) => {
                   const action = ACTION_BY_ID[actionId]
                   if (!action) return null
                   const disabled = actionId === 'research' && !state.mentorContactUnlocked
                   return (
-                    <button
+                    <div
                       key={actionId}
-                      type="button"
-                      className="clinical-evening-action"
-                      disabled={disabled}
+                      role="button"
+                      tabIndex={disabled ? -1 : 0}
+                      aria-disabled={disabled}
+                      className={`action-card ${disabled ? 'is-locked' : ''}`}
                       onClick={() => {
                         if (disabled) return
                         setEveningAction(actionId)
                         onClinicalEveningAction?.(actionId)
                       }}
+                      onKeyDown={(event) => {
+                        if (disabled) return
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          setEveningAction(actionId)
+                          onClinicalEveningAction?.(actionId)
+                        }
+                      }}
                     >
-                      <strong>{action.name}</strong>
-                      <span>{action.effectText}</span>
-                      <small>{disabled ? '尚未进入实验室' : '选择一个行动'}</small>
-                    </button>
+                      <div className="action-meta">
+                        <span>{action.category}</span>
+                        <span className="action-no">{action.no}</span>
+                      </div>
+                      <h3>{action.name}</h3>
+                      <p className="action-flavor">{action.flavor}</p>
+                      <p className="action-effect">{action.effectText}</p>
+                      <div className="action-bottom">
+                        <span className="action-en">{action.en}</span>
+                        <span className="action-repeat">{disabled ? '尚未进入实验室' : '消耗晚间时间段'}</span>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
