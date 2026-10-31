@@ -143,6 +143,8 @@ const MOBILE_WEEK_MODE_KEY = 'clinical-five-years-mobile-week-mode'
 
 interface WeekScreenProps {
   state: GameState
+  eveningMode?: boolean
+  onEveningEnd?: () => void
   onToggleAction: (id: string) => void
   onEndWeek: () => void
   onAttendCourse?: () => void
@@ -208,6 +210,8 @@ interface WeekScreenProps {
 
 export function WeekScreen({
   state,
+  eveningMode = false,
+  onEveningEnd,
   onToggleAction,
   onEndWeek,
   onAttendCourse,
@@ -654,7 +658,7 @@ export function WeekScreen({
       : ''
   const activeSoloInvite = soloInviteAt(state, weekSlot)
   const bondContactUnused = hasUnusedLoverContact(state)
-  const currentSlotActivity = timetableActivityAt(state, weekSlot)
+  const currentSlotActivity = eveningMode ? null : timetableActivityAt(state, weekSlot)
   const currentSlotClubMembership = currentSlotActivity
     ? clubMemberships.find((item) => item.orgId === currentSlotActivity.orgId)
     : null
@@ -667,6 +671,7 @@ export function WeekScreen({
       : ''
   const cupIgnored = Boolean(cupSlotKey && ignoredCupSlot === cupSlotKey)
   const currentSlotCourse =
+    !eveningMode &&
     !currentSlotActivity &&
     !state.weekSlotSkipped &&
     timetableCourseAt(state, weekSlot)
@@ -1464,7 +1469,7 @@ export function WeekScreen({
           <section
             className={`game-center time-${weekPhaseClass} tab-${tab} ${
               minimalWeekMode ? 'week-minimal-mode' : ''
-            }`}
+            } ${eveningMode ? 'clinical-evening-mode' : ''}`}
           >
             <div
               className={`time-phase-veil phase-${weekPhaseClass}`}
@@ -1559,14 +1564,24 @@ export function WeekScreen({
                   ref={weekScrollRef}
                   onScroll={handleWeekScroll}
                 >
+                {eveningMode && (
+                  <div className="clinical-evening-week-bar">
+                    <span>晚间时间段 · 1 / 1</span>
+                    <button type="button" className="btn btn-ghost" onClick={onEveningEnd}>结束今晚，去睡觉</button>
+                  </div>
+                )}
                 <div
                   className={`week-hero ${weekHeroCollapsed ? 'is-collapsed' : ''}`}
                   style={{ opacity: weekHeroFade }}
                 >
                 <div className="week-title-row">
                   <div>
-                    <h2>这周，你想怎么过？</h2>
-                    <p>21 个时间段，每次选择都会推进时间。当前：{currentSlotDay} · {currentSlotPhase}。</p>
+                    <h2>{eveningMode ? '今晚，你想怎么过？' : '这周，你想怎么过？'}</h2>
+                    <p>
+                      {eveningMode
+                        ? '下班后只有一个晚间时间段。可以安排行动，也可以聊天、看邮件，或者直接躺平。'
+                        : `21 个时间段，每次选择都会推进时间。当前：${currentSlotDay} · ${currentSlotPhase}。`}
+                    </p>
                   </div>
                   <div
                     className={`week-phase-badge mobile-week-badge phase-${weekPhaseClass}`}

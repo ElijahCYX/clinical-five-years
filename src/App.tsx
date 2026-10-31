@@ -240,7 +240,7 @@ import {
   roleLabel,
 } from './organizations'
 import { HYPOTHESIS_BY_ID, pickHypothesis } from './hypotheses'
-import { createClinicalState, isClinicalSeason } from './clinical'
+import { createClinicalState, examineRotation, isClinicalSeason } from './clinical'
 import { createClinicalTestState } from './clinicalTest'
 import { pickPublicationAcceptanceText } from './publicationTexts'
 import {
@@ -4506,6 +4506,35 @@ function RealApp() {
     persist(next)
   }
 
+  const finishClinicalEvening = (base: GameState): GameState => {
+    const clinical = base.clinical
+    if (!clinical) return base
+    const course = clinical.courses[clinical.courseIndex]
+    if (!course) return base
+    let nextClinical = clinical
+    if (clinical.dayIndex + 1 < course.clinicalDays) {
+      nextClinical = {
+        ...clinical,
+        dayIndex: clinical.dayIndex + 1,
+        mode: 'intro',
+        currentDay: null,
+        lastDaySummary: null,
+      }
+    } else {
+      const result = examineRotation(clinical, course)
+      nextClinical = {
+        ...clinical,
+        mode: 'exam',
+        lastRotation: result,
+        rotationResults: [
+          ...clinical.rotationResults.filter((item) => item.courseId !== result.courseId),
+          result,
+        ],
+      }
+    }
+    return { ...base, clinical: nextClinical, weekSlot: 2 }
+  }
+
   const finishWeekSlot = (base: GameState, actionId?: string) => {
     const withStats = actionId
       ? {
@@ -4514,6 +4543,12 @@ function RealApp() {
           careerStats: bumpCareerStats(base.careerStats, actionId),
         }
       : base
+    if (withStats.clinical?.mode === 'evening') {
+      const next = finishClinicalEvening(withStats)
+      setGame(next)
+      persist(next)
+      return
+    }
     const normalized = carryGrowthState(withStats)
     const advancedResult = advanceWeekSlot({
       ...normalized,
@@ -5500,7 +5535,11 @@ function RealApp() {
   const updateClinical = (clinical: GameState['clinical']) => {
     const current = gameRef.current ?? game
     if (!current) return
-    const next: GameState = { ...current, clinical }
+    const next: GameState = {
+      ...current,
+      clinical,
+      ...(clinical?.mode === 'evening' ? { weekSlot: 2, weekSlotSkipped: false } : {}),
+    }
     setGame(next)
     persist(next)
   }
@@ -7107,6 +7146,85 @@ function RealApp() {
         onWho={openWhoAmI}
         onTA={openWhoIs}
       />
+    )
+  }
+
+  if (view === 'clinical' && game && game.clinical?.mode === 'evening') {
+    return (
+      <>
+        <WeekScreen
+          state={game}
+          eveningMode
+          onEveningEnd={() => {
+            const current = gameRef.current ?? game
+            if (!current) return
+            const next = finishClinicalEvening(current)
+            setGame(next)
+            persist(next)
+          }}
+          onToggleAction={toggleAction}
+          onEndWeek={endWeek}
+          onAttendCourse={attendCurrentCourse}
+          onSkipResolved={resolveSkipCourse}
+          onSlotAction={performWeekSlotAction}
+          onSleepIn={sleepInCurrentSlot}
+          onDrinkCoffee={drinkCoffee}
+          onDailySelfCare={dailySelfCare}
+          onSoloAttempt={recordSoloAttempt}
+          onResolveSoloDate={resolveSoloDate}
+          onSlotLibraryFocus={performSlotLibrary}
+          onSlotDinner={performSlotDinner}
+          onSlotClubActivity={performSlotClubActivity}
+          onAttendClubActivity={attendClubActivity}
+          onLeaveClubActivity={leaveClubActivity}
+          onChooseFocus={chooseWeekFocus}
+          onWithdrawElective={withdrawElective}
+          onOpenWhoAmI={openWhoAmI}
+          onOpenTA={openWhoIs}
+          onArrangeDinner={arrangeDinner}
+          onSaveDinnerResults={saveDinnerResults}
+          onApplyClub={startClubApplication}
+          onArrangeClubActivity={arrangeClubActivity}
+          onRecordClubProjectPhase={recordClubProjectPhase}
+          onRecordClubProjectEvent={recordClubProjectEvent}
+          onAttendDebatePractice={attendDebatePractice}
+          onLiteratureReport={submitLiteratureReport}
+          onSendLiteratureReport={sendLiteratureReportDraft}
+          onResolveDebateCupRound={resolveDebateCupRound}
+          onSaveClubInvites={saveClubInvites}
+          onQuitClub={quitClub}
+          onContactLover={contactLover}
+          onBreakBond={breakBond}
+          onReconcileBond={reconcileBond}
+          onNpcConfession={handleNpcConfession}
+          onResolveConsumption={resolveConsumption}
+          onComposeMentorMail={composeMentorMail}
+          onSendMentorMail={sendMentorMail}
+          onReadMentorEmail={readMentorEmail}
+          onAcceptMentorProject={acceptMentorProject}
+          onDeclineMentorProject={declineMentorProject}
+          chatFocus={chatFocus}
+          onChatFocusConsumed={() => setChatFocus(null)}
+          onBondNicknameChange={changeBondNickname}
+          onBondNicknameDisplayChange={changeBondNicknameDisplay}
+          onAskGossip={askBondGossip}
+          onFollowGossipClue={followBondGossipClue}
+          onInvestigateNpcClue={investigateNpcClue}
+          interviewScene={mentorInterviewScene}
+          onConfirmMentorInterview={confirmMentorInterview}
+          onTitle={goTitle}
+        />
+        {game.pendingEvent && (
+          <RandomEventModal
+            state={game}
+            event={game.pendingEvent}
+            onContinue={handleRandomEventContinue}
+          />
+        )}
+        {game.pendingHealthEvent && (
+          <HealthEventModal state={game} onTreat={treatHealth} />
+        )}
+      </>
     )
   }
 

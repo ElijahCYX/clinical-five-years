@@ -24560,3 +24560,34 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   .title-save-load small { grid-column: 2; }
   .title-save-delete { font-size: 10px; }
 }
+
+/* Clinical evening reuses the weekly arrangement screen. */
+.clinical-evening-mode .week-overview,
+.clinical-evening-mode .week-slot-strip {
+  display: none !important;
+}
+.clinical-evening-week-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 8px;
+  padding: 8px 11px;
+  border: 1px solid rgba(47,91,76,.22);
+  background: rgba(238,242,232,.7);
+  color: var(--green);
+  font-size: 11px;
+}
+.clinical-evening-week-bar .btn {
+  padding: 5px 9px;
+  font-size: 10px;
+}
+.clinical-evening-mode .week-title-row {
+  margin-top: 6px;
+}
+
+/* The evening board has one slot, not a 21-slot weekly progress widget. */
+.clinical-evening-mode .week-controls-row,
+.clinical-evening-mode .week-phase-badge {
+  display: none !important;
+}
