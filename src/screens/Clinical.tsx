@@ -1228,10 +1228,10 @@ export function ClinicalScreen({
     }
   }, [clinicalPaused])
 
-  // 自由时间：长按偷闲每满 1 秒自动升一级，最高 8×；松手回到 1×。
+  // 自由/固定时间：长按偷闲每满 1 秒自动升一级，最高 8×；松手回到 1×。
   useEffect(() => {
-    const isFreeHold = Boolean(day?.holdAction) && currentBlock?.kind === 'free'
-    if (!isFreeHold) {
+    const isHold = Boolean(day?.holdAction) && (currentBlock?.kind === 'free' || currentBlock?.kind === 'fixed')
+    if (!isHold) {
       if (autoSpeedRef.current) {
         autoSpeedRef.current = false
         setSpeed(1)
