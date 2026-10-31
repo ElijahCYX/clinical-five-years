@@ -24365,3 +24365,97 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 }
 .clinical-attend-btn span { color: var(--muted); font-size: 11px; }
 .clinical-attend-btn:hover { border-color: var(--green); background: #e6ede1; }
+
+/* Lunch / nap cinematic and prompt */
+.clinical-lunch-btn {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(176,138,80,.45);
+  background: #fbf4e5;
+  color: #765b35;
+  padding: 10px 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.clinical-lunch-btn span { color: #9a7a4a; font-size: 11px; }
+.clinical-lunch-btn:hover { border-color: #b08a50; }
+.clinical-lunch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #fbf3df, #e9e4d4);
+  animation: lunch-overlay-in .3s ease both;
+}
+.clinical-lunch-orb {
+  position: absolute;
+  width: min(42vw, 320px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(176,138,80,.25);
+  border-radius: 50%;
+  animation: lunch-orb-float 2s ease-in-out infinite alternate;
+}
+.clinical-lunch-orb i {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border: 1px solid rgba(176,138,80,.4);
+  border-radius: 50%;
+  animation: lunch-particle 1.5s ease-in-out infinite;
+}
+.clinical-lunch-orb i:nth-child(1) { left: 18%; top: 32%; animation-delay: .1s; }
+.clinical-lunch-orb i:nth-child(2) { right: 20%; top: 22%; animation-delay: .5s; }
+.clinical-lunch-orb i:nth-child(3) { left: 54%; bottom: 18%; animation-delay: .9s; }
+.clinical-lunch-copy {
+  position: relative;
+  z-index: 1;
+  width: min(560px, calc(100vw - 44px));
+  text-align: center;
+  animation: lunch-copy-in .45s .1s ease-out both;
+}
+.clinical-lunch-speed {
+  display: inline-block;
+  border: 1px solid rgba(176,138,80,.4);
+  padding: 4px 9px;
+  color: #9a6b36;
+  font-size: 13px;
+  letter-spacing: .1em;
+}
+.clinical-lunch-copy h2 {
+  margin: 16px 0 8px;
+  color: #66502f;
+  font-family: var(--serif);
+  font-size: clamp(34px, 4vw, 50px);
+  font-weight: 500;
+}
+.clinical-lunch-copy p { margin: 0; color: #8d7a58; font-size: 14px; }
+.clinical-lunch-progress {
+  width: 240px;
+  height: 3px;
+  margin: 22px auto 9px;
+  background: rgba(142,113,69,.18);
+  overflow: hidden;
+}
+.clinical-lunch-progress i { display: block; height: 100%; background: #b08a50; transition: width .1s linear; }
+.clinical-lunch-copy small { color: #9a8663; font-size: 12px; }
+.clinical-lunch-prompt { width: min(540px, 100%); }
+.clinical-lunch-prompt p { font-size: 13px !important; line-height: 1.8; }
+.clinical-lunch-late-notice {
+  margin: 10px 0 0;
+  border-left: 2px solid #a95838;
+  background: #fbf0e6;
+  padding: 9px 11px;
+  color: #7e4d32;
+  font-size: 12px;
+  line-height: 1.7;
+}
+@keyframes lunch-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lunch-orb-float { from { transform: translateY(2px) scale(.98); } to { transform: translateY(-8px) scale(1.02); } }
+@keyframes lunch-particle { 0%,100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-12px); opacity: .8; } }
+@keyframes lunch-copy-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

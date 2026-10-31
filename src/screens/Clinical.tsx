@@ -424,6 +424,8 @@ export function ClinicalScreen({
   const questionPressureTimerRef = useRef<number | null>(null)
   const questionPressureRef = useRef(false)
   const recordWarningShownRef = useRef(false)
+  const lunchKnownTodoIdsRef = useRef<Set<string>>(new Set())
+  const lunchForcedRef = useRef(false)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
   const idleDecayRef = useRef(0)
@@ -435,6 +437,10 @@ export function ClinicalScreen({
   const [overtimeSettlement, setOvertimeSettlement] = useState<string | null>(null)
   const [eveningAction, setEveningAction] = useState<string | null>(null)
   const [recordWarning, setRecordWarning] = useState<string | null>(null)
+  const [lunchPhase, setLunchPhase] = useState<'none' | 'eating' | 'napPrompt' | 'napping' | 'declined' | 'done'>('none')
+  const [lunchStartClock, setLunchStartClock] = useState(0)
+  const [napStartClock, setNapStartClock] = useState(0)
+  const [lunchLateNotice, setLunchLateNotice] = useState<string | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const [blockTransition, setBlockTransition] = useState(false)
   const chatOpenRef = useRef(false)
@@ -491,7 +497,7 @@ export function ClinicalScreen({
     Boolean(morning) ||
     Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
     Boolean(escapeEvent) ||
-    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition)
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition || lunchPhase === 'eating' || lunchPhase === 'napping' || lunchPhase === 'napPrompt')
   const clockPausedRef = useRef(clockPaused)
   const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
   clockPausedRef.current = clockPaused
@@ -634,6 +640,12 @@ export function ClinicalScreen({
     setEveningAction(null)
     setRecordWarning(null)
     recordWarningShownRef.current = false
+    setLunchPhase('none')
+    setLunchStartClock(0)
+    setNapStartClock(0)
+    setLunchLateNotice(null)
+    lunchKnownTodoIdsRef.current = new Set()
+    lunchForcedRef.current = false
     if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
     setBlockTransition(false)
     scheduledChatsRef.current = createScheduledChats(
@@ -1229,6 +1241,54 @@ export function ClinicalScreen({
     return () => window.clearInterval(timer)
   }, [clinical.mode, day?.holdAction, day?.currentTaskId, day?.currentQuestionId, day?.fixedPromptId, taskResult, questionResult, escapeSetup, task, escapeEvent, nurseTodo, escapeTodo, suspicionWarning, speed, clinicalPaused, questionPressure])
 
+  // 午休阶段自动开始/结束。
+  useEffect(() => {
+    if (clinical.mode !== 'day' || !day || morning || day.escape) return
+    if (lunchPhase === 'none' && day.clock >= 300 && day.clock < 420) startLunch()
+    if (lunchPhase === 'eating' && day.clock >= lunchStartClock + 30) {
+      setLunchPhase('napPrompt')
+    }
+    if (lunchPhase === 'napping' && day.clock >= 420) {
+      const gain = Math.max(0, Math.floor((420 - napStartClock) / 2))
+      if (gain > 0) onGameEffect({ energy: gain })
+      setLunchPhase('done')
+    }
+  }, [clinical.mode, morning, day?.clock, day?.escape, lunchPhase, lunchStartClock, napStartClock])
+
+  // 吃饭/午休强制 8× 推进，主时钟暂停。
+  useEffect(() => {
+    if (clinical.mode !== 'day' || !day || morning) return
+    if (lunchPhase !== 'eating' && lunchPhase !== 'napping') return
+    if (clinicalPaused || task || taskResult || nurseTodo || escapeTodo || recordWarning) return
+    const target = lunchPhase === 'eating' ? lunchStartClock + 30 : 420
+    const timer = window.setInterval(() => {
+      setDay((prev) => (prev ? { ...prev, clock: Math.min(target, prev.clock + 1) } : prev))
+    }, 60)
+    return () => window.clearInterval(timer)
+  }, [clinical.mode, morning, lunchPhase, lunchStartClock, napStartClock, clinicalPaused, task, taskResult, nurseTodo, escapeTodo, recordWarning])
+
+  // 吃饭/午休期间新生成的待办会强制把玩家拉回工作状态，不进入待办卡片。
+  useEffect(() => {
+    if (!day || (lunchPhase !== 'eating' && lunchPhase !== 'napping')) return
+    const forced = (clinical.todos ?? []).find(
+      (todo) => todo.status === 'pending' && !lunchKnownTodoIdsRef.current.has(todo.id),
+    )
+    if (!forced) return
+    lunchKnownTodoIdsRef.current.add(forced.id)
+    const napGain = lunchPhase === 'napping'
+      ? Math.max(0, Math.floor((day.clock - napStartClock) / 2))
+      : 0
+    persistClinical({
+      ...clinical,
+      todos: (clinical.todos ?? []).filter((todo) => todo.id !== forced.id),
+    })
+    if (napGain > 0) onGameEffect({ energy: napGain })
+    onGameEffect({ stress: 10, energy: -5 })
+    lunchForcedRef.current = true
+    setLunchPhase('done')
+    setNurseTodo(forced)
+  }, [clinical.todos, day, lunchPhase, napStartClock])
+
   // 固定安排结束进入自由时间时给玩家一个明确提示。
   useEffect(() => {
     const kind = currentBlock?.kind ?? null
@@ -1243,6 +1303,19 @@ export function ClinicalScreen({
       blockTransitionTimerRef.current = window.setTimeout(() => setBlockTransition(false), 1900)
     }
   }, [currentBlock?.kind, day?.dayIndex])
+
+  const startLunch = () => {
+    if (!day || lunchPhase !== 'none' || day.clock >= 420) return
+    setLunchStartClock(day.clock)
+    setLunchPhase('eating')
+    lunchKnownTodoIdsRef.current = new Set(
+      (clinical.todos ?? []).filter((todo) => todo.status === 'pending').map((todo) => todo.id),
+    )
+    updateDay({
+      holdAction: null,
+      dayLog: [...day.dayLog, `去吃饭（${formatClock(day.clock)}）。`],
+    })
+  }
 
   const attendSeriously = () => {
     if (!day || !course || currentBlock?.kind !== 'fixed') return
@@ -1444,6 +1517,13 @@ export function ClinicalScreen({
         `${task.title} · ${choice.label} · 完成 · ${duration} 分钟。`,
       ],
     })
+    if (lunchForcedRef.current) {
+      const projected = overtime ? day.clock : Math.min(600, day.clock + duration)
+      if (projected >= 420) {
+        setLunchLateNotice('你处理完这项工作后已经错过了下午实践操作的开场，迟到了。带教看了你一眼，没有追究。')
+      }
+      lunchForcedRef.current = false
+    }
     onGameEffect({ energy: energyCost, stress: stressGain })
     setTaskResult(
       `你完成了「${task.title}」。方式：${choice.label}。精力 ${energyCost}、压力 ${stressGain >= 0 ? '+' : ''}${stressGain}。${trained.leveledUp ? '技能等级提升！' : '技能经验已记录。'}科室认可度 +4。`,
@@ -1673,6 +1753,7 @@ export function ClinicalScreen({
             {clinicalTab === 'day' && (
               <>
                 {blockNotice && <div className="clinical-block-notice">{blockNotice}</div>}
+                {lunchLateNotice && <div className="clinical-lunch-late-notice">{lunchLateNotice}</div>}
         {clinical.mode === 'intro' && (
           <section className="paper-card clinical-card">
             <div className="clinical-intro-top">
@@ -1942,6 +2023,11 @@ export function ClinicalScreen({
                 </div>
               )}
               <div className="clinical-day-actions">
+                {!overtime && lunchPhase === 'none' && day.clock >= 240 && day.clock < 300 && (
+                  <button type="button" className="clinical-lunch-btn" onClick={startLunch}>
+                    去吃饭 <span>消耗 30 分钟 · 12:00 自动</span>
+                  </button>
+                )}
                 {overtime ? (
                   <p className="clinical-action-hint">加班中不再提供偷闲操作。把待办收尾，或者点右上角「收工」。</p>
                 ) : day.escape ? (
@@ -2062,6 +2148,33 @@ export function ClinicalScreen({
             </div>
 
             <ClinicalModalPortal>
+            {(lunchPhase === 'eating' || lunchPhase === 'napping') && (
+              <div className="clinical-lunch-overlay" role="status" aria-live="polite">
+                <div className="clinical-lunch-orb" aria-hidden="true"><i /><i /><i /></div>
+                <div className="clinical-lunch-copy">
+                  <span className="clinical-lunch-speed">8×</span>
+                  <h2>{lunchPhase === 'eating' ? '去吃饭' : '午休中'}</h2>
+                  <p>{lunchPhase === 'eating' ? '午餐时间，暂时离开病房。' : '把接下来的时间交给一张折叠床。'}</p>
+                  <div className="clinical-lunch-progress"><i style={{ width: `${Math.min(100, ((day.clock - (lunchPhase === 'eating' ? lunchStartClock : napStartClock)) / (lunchPhase === 'eating' ? 30 : Math.max(1, 420 - napStartClock))) * 100)}%` }} /></div>
+                  <small>{formatClock(day.clock)} · 时间以 8× 推进</small>
+                </div>
+              </div>
+            )}
+            {lunchPhase === 'napPrompt' && (
+              <div className="clinical-modal-backdrop">
+                <div className="clinical-modal clinical-lunch-prompt">
+                  <span className="clinical-small-label">午饭结束 · {formatClock(day.clock)}</span>
+                  <h2>要午休吗？</h2>
+                  <p>现在距离 14:00 还有 {Math.max(0, 420 - day.clock)} 分钟。午休会以 8× 速度推进到 14:00，每 2 分钟恢复 1 点精力。</p>
+                  <div className="clinical-modal-actions">
+                    <button type="button" className="btn btn-primary" onClick={() => { setNapStartClock(day.clock); setLunchPhase('napping') }}>
+                      午休 · 恢复 {Math.max(0, Math.floor((420 - day.clock) / 2))} 精力
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setLunchPhase('declined')}>不午休，自由安排</button>
+                  </div>
+                </div>
+              </div>
+            )}
             {blockTransition && (
               <div className="clinical-block-transition" role="status" aria-live="polite">
                 <div className="clinical-block-transition-sweep" aria-hidden="true" />
@@ -2145,9 +2258,13 @@ export function ClinicalScreen({
             {nurseTodo && (
               <div className="clinical-modal-backdrop">
                 <div className="clinical-modal clinical-urgent-modal">
-                  <span className="clinical-small-label">紧急陪检 · 已超时</span>
-                  <h2>护士来医生办公室找你了</h2>
-                  <p>“你怎么还坐在这儿？{nurseTodo.bed} 床的检查工人已经等了很久了，赶紧去陪一下。”</p>
+                  <span className="clinical-small-label">{lunchForcedRef.current ? '午休被打断' : '紧急陪检 · 已超时'}</span>
+                  <h2>{lunchForcedRef.current ? '护士来叫你了' : '护士来医生办公室找你了'}</h2>
+                  {lunchForcedRef.current ? (
+                    <p>“先别休息了，{nurseTodo.title}还没处理，跟我来一趟。”你的午饭/午休被工作按下了暂停键。</p>
+                  ) : (
+                    <p>“你怎么还坐在这儿？{nurseTodo.bed} 床的检查工人已经等了很久了，赶紧去陪一下。”</p>
+                  )}
                   <div className="clinical-modal-actions">
                     <button type="button" className="btn btn-primary" onClick={() => openTodoTask(nurseTodo, true)}>跟护士去处理</button>
                   </div>
