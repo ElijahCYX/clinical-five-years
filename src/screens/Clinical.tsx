@@ -105,6 +105,7 @@ interface ClinicalChatMessage {
   clock?: number
   todo?: { kind: ClinicalTodoKind; bed: number }
   todoDeferred?: boolean
+  nurseVisitHandled?: boolean
 }
 
 interface ScheduledChatEvent {
@@ -427,6 +428,7 @@ export function ClinicalScreen({
   const lunchKnownTodoIdsRef = useRef<Set<string>>(new Set())
   const lunchForcedRef = useRef(false)
   const lunchAngryTimerRef = useRef<number | null>(null)
+  const admissionFallbackRef = useRef(false)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
   const idleDecayRef = useRef(0)
@@ -443,6 +445,7 @@ export function ClinicalScreen({
   const [napStartClock, setNapStartClock] = useState(0)
   const [lunchLateNotice, setLunchLateNotice] = useState<string | null>(null)
   const [lunchAngry, setLunchAngry] = useState(false)
+  const [nurseChatMessage, setNurseChatMessage] = useState<ClinicalChatMessage | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const [blockTransition, setBlockTransition] = useState(false)
   const chatOpenRef = useRef(false)
@@ -499,7 +502,7 @@ export function ClinicalScreen({
     Boolean(morning) ||
     Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
     Boolean(escapeEvent) ||
-    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition || lunchPhase === 'eating' || lunchPhase === 'napping' || lunchPhase === 'napPrompt' || lunchAngry)
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition || lunchPhase === 'eating' || lunchPhase === 'napping' || lunchPhase === 'napPrompt' || lunchAngry || nurseChatMessage)
   const clockPausedRef = useRef(clockPaused)
   const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
   clockPausedRef.current = clockPaused
@@ -648,6 +651,8 @@ export function ClinicalScreen({
     setLunchLateNotice(null)
     if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
     setLunchAngry(false)
+    setNurseChatMessage(null)
+    admissionFallbackRef.current = false
     lunchKnownTodoIdsRef.current = new Set()
     lunchForcedRef.current = false
     if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
@@ -961,6 +966,34 @@ export function ClinicalScreen({
     })
   }, [clinical.mode, morning, day?.clock])
 
+  // 新病人数量必须有对应的护士 @ 消息；如果全天定时事件结束仍未出现，补一条。
+  useEffect(() => {
+    if (clinical.mode !== 'day' || !day || morning || !course) return
+    if (admissionFallbackRef.current || day.tasks.expectedAdmissions <= 0) return
+    if (day.clock < earliestTodoMinute) return
+    if (chatMessages.some((message) => message.todo?.kind === 'admission')) return
+    if (scheduledChatsRef.current.some((event) => event.kind === 'admission')) return
+    admissionFallbackRef.current = true
+    const bed = randomBedNumber()
+    appendChatMessage({ sender: '护士站', text: '@你，新病人来了，在护士站', clock: day.clock, requiresResponse: true, todo: { kind: 'admission', bed } })
+    appendChatMessage({ sender: '护士站', text: '@你，新病人心电图记得拉', clock: day.clock, requiresResponse: true, todo: { kind: 'ecg', bed } })
+  }, [clinical.mode, day?.clock, day?.tasks.expectedAdmissions, morning, course, chatMessages])
+
+  // 护士 @你 超过 30 分钟未查看，会来办公室提醒。
+  useEffect(() => {
+    if (clinical.mode !== 'day' || !day || morning || nurseChatMessage) return
+    const overdue = chatMessages.find(
+      (message) =>
+        message.sender === '护士站' &&
+        message.todo &&
+        !message.read &&
+        !message.nurseVisitHandled &&
+        typeof message.clock === 'number' &&
+        day.clock >= message.clock + 30,
+    )
+    if (overdue) setNurseChatMessage(overdue)
+  }, [clinical.mode, day?.clock, morning, chatMessages, nurseChatMessage])
+
   // “在哪呢”只在逃实习风险超过 80 时出现一次。
   useEffect(() => {
     if (clinical.mode !== 'day' || morning || !day || whereAskedRef.current) return
@@ -1000,6 +1033,33 @@ export function ClinicalScreen({
       urgent: kind === 'escort',
       status: 'pending',
     }
+  }
+
+  const resolveNurseChatMessage = (immediate: boolean) => {
+    const message = nurseChatMessage
+    if (!message || !day) return
+    const baseTodo = todoFromMessage(message)
+    const todo = baseTodo
+      ? { ...baseTodo, dueAtClock: baseTodo.urgent ? day.clock + 30 : null }
+      : null
+    if (todo) {
+      const exists = (clinical.todos ?? []).some((item) => item.id === todo.id)
+      const nextTodos = exists ? (clinical.todos ?? []) : [...(clinical.todos ?? []), todo]
+      persistClinical({ ...clinical, todos: nextTodos })
+      if (immediate) {
+        setActiveTodoId(todo.id)
+        const taskDef = CLINICAL_TASK_BY_ID[todo.taskId]
+        if (taskDef) setTask(formatClinicalTaskForDay(taskDef, day.dayIndex))
+      }
+    }
+    setChatMessages((prev) => prev.map((item) =>
+      item.id === message.id
+        ? { ...item, read: true, nurseVisitHandled: true, requiresResponse: false }
+        : item,
+    ))
+    setChatMentions((count) => Math.max(0, count - 1))
+    setChatUnread((count) => Math.max(0, count - 1))
+    setNurseChatMessage(null)
   }
 
   // 打开群聊后把消息标记为已读，并把护士 @你 的消息转成待办。
@@ -1264,13 +1324,13 @@ export function ClinicalScreen({
   useEffect(() => {
     if (clinical.mode !== 'day' || !day || morning) return
     if (lunchPhase !== 'eating' && lunchPhase !== 'napping') return
-    if (clinicalPaused || task || taskResult || nurseTodo || escapeTodo || recordWarning) return
+    if (clinicalPaused || task || taskResult || nurseTodo || escapeTodo || recordWarning || nurseChatMessage) return
     const target = lunchPhase === 'eating' ? lunchStartClock + 30 : 420
     const timer = window.setInterval(() => {
       setDay((prev) => (prev ? { ...prev, clock: Math.min(target, prev.clock + 1) } : prev))
     }, 60)
     return () => window.clearInterval(timer)
-  }, [clinical.mode, morning, lunchPhase, lunchStartClock, napStartClock, clinicalPaused, task, taskResult, nurseTodo, escapeTodo, recordWarning])
+  }, [clinical.mode, morning, lunchPhase, lunchStartClock, napStartClock, clinicalPaused, task, taskResult, nurseTodo, escapeTodo, recordWarning, nurseChatMessage])
 
   // 吃饭/午休期间新生成的待办会强制把玩家拉回工作状态，不进入待办卡片。
   useEffect(() => {
@@ -2195,6 +2255,19 @@ export function ClinicalScreen({
                       午休 · 恢复 {Math.max(0, Math.floor((420 - day.clock) / 4))} 精力
                     </button>
                     <button type="button" className="btn btn-ghost" onClick={() => setLunchPhase('declined')}>不午休，自由安排</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {nurseChatMessage && (
+              <div className="clinical-modal-backdrop">
+                <div className="clinical-modal clinical-nurse-message">
+                  <span className="clinical-small-label">护士站 · 未回复提醒</span>
+                  <h2>“群里 @你 半小时了。”</h2>
+                  <p>护士站的人站到办公室门口：“看到消息没有？{nurseChatMessage.text.replace('@你，', '')}先记着，待会儿别忘了。”</p>
+                  <div className="clinical-modal-actions">
+                    <button type="button" className="btn btn-primary" onClick={() => resolveNurseChatMessage(false)}>待会儿做</button>
+                    <button type="button" className="btn btn-ghost" onClick={() => resolveNurseChatMessage(true)}>现在去处理</button>
                   </div>
                 </div>
               </div>

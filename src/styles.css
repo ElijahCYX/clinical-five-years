@@ -24667,3 +24667,8 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 @keyframes lunch-angry-shake { 0% { transform: translate(0,0); } 25% { transform: translate(2px,-1px); } 50% { transform: translate(-2px,1px); } 75% { transform: translate(1px,2px); } 100% { transform: translate(0,0); } }
 @keyframes lunch-angry-copy { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: scale(1); } }
 @keyframes lunch-angry-face { from { transform: rotate(-2deg) translateY(0); } to { transform: rotate(2deg) translateY(-2px); } }
+
+/* Nurse follow-up when an @ message stays unread */
+.clinical-nurse-message { width: min(540px, 100%); }
+.clinical-nurse-message h2 { color: #7f4a31; }
+.clinical-nurse-message p { font-size: 13px !important; line-height: 1.8; }
