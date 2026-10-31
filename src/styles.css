@@ -24135,3 +24135,48 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
     max-width: 78%;
   }
 }
+
+/* Overtime settlement */
+.clinical-overtime-settlement { width: min(560px, 100%); }
+.clinical-overtime-sarcasm {
+  border-left: 2px solid #a95838;
+  background: #fbf0e6;
+  padding: 11px 13px;
+  color: #7e4d32 !important;
+  font-size: 13px !important;
+  line-height: 1.75 !important;
+}
+.clinical-overtime-pending {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+}
+.clinical-overtime-pending strong { color: #8c4d35; font-size: 12px; }
+.clinical-overtime-pending p { margin: 5px 0 0 !important; font-size: 11px !important; }
+
+/* Next-day record warning */
+.clinical-record-warning-backdrop {
+  background: rgba(24, 12, 9, .62);
+  backdrop-filter: blur(5px);
+}
+.clinical-record-warning {
+  border: 1px solid rgba(159, 54, 36, .55);
+  background: #fbf0e6;
+  box-shadow: 0 24px 80px -30px rgba(65, 20, 10, .7);
+  animation: record-warning-in .35s ease-out both;
+}
+.clinical-record-warning h2 { color: #8f2f22; }
+.clinical-record-warning p { color: #6e3b2e !important; font-size: 14px !important; line-height: 1.8 !important; }
+.clinical-record-penalty {
+  display: inline-block;
+  margin-top: 6px;
+  border: 1px solid rgba(159,54,36,.3);
+  background: #fff6ee;
+  padding: 5px 9px;
+  color: #9a3e2b;
+  font-size: 12px;
+}
+@keyframes record-warning-in {
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

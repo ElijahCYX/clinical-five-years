@@ -5,6 +5,7 @@ import { PlayerRail } from './PlayerRail'
 import { CampusNoticeBoard } from './CampusNotice'
 import { pickLateScoldingText } from '../lateScoldingTexts'
 import { CLINICAL_EVENT_RULES } from '../clinicalEventRules'
+import { pickOvertimeText } from '../overtimeTexts'
 import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
 import {
   CLINICAL_QUESTION_BY_ID,
@@ -223,6 +224,13 @@ function escapeSceneText(hideout: string): string {
   return '你坐在医院外的便利店角落，面前放着一杯已经不怎么冰的饮料。玻璃门外没有人认识你，但手机里的工作群还在不断跳出消息。'
 }
 
+function formatOvertimeClock(minutes: number): string {
+  const total = 7 * 60 + Math.max(0, minutes)
+  const h = Math.floor(total / 60) % 24
+  const m = total % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 function formatClock(minutes: number): string {
   const total = 7 * 60 + Math.max(0, Math.min(600, minutes))
   const h = Math.floor(total / 60)
@@ -411,6 +419,7 @@ export function ClinicalScreen({
   const blockNoticeTimerRef = useRef<number | null>(null)
   const questionPressureTimerRef = useRef<number | null>(null)
   const questionPressureRef = useRef(false)
+  const recordWarningShownRef = useRef(false)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
   const idleDecayRef = useRef(0)
@@ -418,6 +427,9 @@ export function ClinicalScreen({
   const [escortNoticed, setEscortNoticed] = useState(false)
   const [overtimeOpen, setOvertimeOpen] = useState(false)
   const [overtime, setOvertime] = useState(false)
+  const [overtimeMinutes, setOvertimeMinutes] = useState(0)
+  const [overtimeSettlement, setOvertimeSettlement] = useState<string | null>(null)
+  const [recordWarning, setRecordWarning] = useState<string | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const chatOpenRef = useRef(false)
   const chatListRef = useRef<HTMLDivElement | null>(null)
@@ -473,7 +485,7 @@ export function ClinicalScreen({
     Boolean(morning) ||
     Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
     Boolean(escapeEvent) ||
-    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation)
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement)
   const clockPausedRef = useRef(clockPaused)
   const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
   clockPausedRef.current = clockPaused
@@ -611,6 +623,10 @@ export function ClinicalScreen({
     setEscortNoticed(false)
     setOvertimeOpen(false)
     setOvertime(false)
+    setOvertimeMinutes(0)
+    setOvertimeSettlement(null)
+    setRecordWarning(null)
+    recordWarningShownRef.current = false
     scheduledChatsRef.current = createScheduledChats(
       course,
       nextDay.tasks.expectedAdmissions,
@@ -1239,6 +1255,31 @@ export function ClinicalScreen({
         )
       }
     }
+    if (isRound && !recordWarningShownRef.current) {
+      const missed = (clinical.todos ?? []).filter(
+        (todo) => todo.status === 'pending' && todo.dayIndex < day.dayIndex && (todo.kind === 'admission' || todo.kind === 'ecg'),
+      )
+      if (missed.length > 0) {
+        recordWarningShownRef.current = true
+        const hasAdmission = missed.some((todo) => todo.kind === 'admission')
+        const hasEcg = missed.some((todo) => todo.kind === 'ecg')
+        setRecordWarning(
+          hasAdmission && hasEcg
+            ? '主任翻着病历，脸色沉下来：“昨天交代的病人没收到，心电图也没拉，你昨天到底在干什么？”'
+            : hasAdmission
+              ? '主任翻到一页空白的入院记录：“这个病人昨天为什么还没收？病历上写的是让我自己收吗？”'
+              : '主任把心电图报告拍在桌上：“昨天交代的心电图呢？病人等了一晚上，你等到下班？”',
+        )
+        onGameEffect({ stress: 10 })
+        updateDay({
+          dayLog: [...(day?.dayLog ?? []), '第二天查房：主任发现昨天的病人/心电图待办未完成，严厉批评。'],
+        })
+        persistClinical({
+          ...clinical,
+          recognition: Math.max(0, clinical.recognition - 5),
+        })
+      }
+    }
     if (day.lateArrival && isRound && !lateScoldingSeen) {
       setLateScoldingSeen(true)
       setLateScolding(pickLateScoldingText())
@@ -1357,11 +1398,16 @@ export function ClinicalScreen({
     }
     skillGainRef.current[task.skillId] =
       (skillGainRef.current[task.skillId] ?? 0) + (trained.leveledUp ? 1 : 0)
-    setTimeJump(`时间向前推进 ${duration} 分钟`)
+    if (overtime) {
+      setOvertimeMinutes((minutes) => minutes + duration)
+      setTimeJump('加班处理中 · 时间不再推进')
+    } else {
+      setTimeJump(`时间向前推进 ${duration} 分钟`)
+    }
     window.setTimeout(() => setTimeJump(null), 1400)
     updateDay({
       currentTaskId: null,
-      clock: Math.min(600, day.clock + duration),
+      clock: overtime ? day.clock : Math.min(600, day.clock + duration),
       tasks: {
         ...day.tasks,
         admitted: day.tasks.admitted + (task.id === 'admission' ? 1 : 0),
@@ -1866,8 +1912,8 @@ export function ClinicalScreen({
               )}
               {overtime && (
                 <div className="clinical-overtime-bar">
-                  <div><strong>17:00 · 加班中</strong><span>把剩下的待办处理完再走。</span></div>
-                  <button type="button" className="btn btn-ghost" onClick={finishDay}>结束加班，下班</button>
+                  <div><strong>17:00 · 加班中</strong><span>已处理 {overtimeMinutes} 分钟 · 时间不再自动推进</span></div>
+                  <button type="button" className="btn btn-ghost" onClick={() => setOvertimeSettlement(pickOvertimeText(formatOvertimeClock(600 + overtimeMinutes)))}>收工</button>
                 </div>
               )}
               <div className="clinical-day-actions">
@@ -2010,6 +2056,19 @@ export function ClinicalScreen({
                 </div>
               </div>
             )}
+            {recordWarning && (
+              <div className="clinical-modal-backdrop clinical-record-warning-backdrop">
+                <div className="clinical-modal clinical-record-warning">
+                  <span className="clinical-small-label">第二天查房 · 主任查阅病历</span>
+                  <h2>病历夹被摔在桌上。</h2>
+                  <p>{recordWarning}</p>
+                  <div className="clinical-record-penalty">压力 +10 · 科室认可度 -5</div>
+                  <div className="clinical-modal-actions">
+                    <button type="button" className="btn btn-primary" onClick={() => setRecordWarning(null)}>低头认错</button>
+                  </div>
+                </div>
+              </div>
+            )}
             {overtimeOpen && (
               <div className="clinical-modal-backdrop">
                 <div className="clinical-modal clinical-overtime-modal">
@@ -2017,8 +2076,26 @@ export function ClinicalScreen({
                   <h2>还有 {pendingTodos.length} 项待办没完成</h2>
                   <p>护士站的交班已经开始了。你可以留下来加班处理，也可以直接下班，把普通待办留到明天。</p>
                   <div className="clinical-modal-actions">
-                    <button type="button" className="btn btn-primary" onClick={() => { setOvertimeOpen(false); setOvertime(true) }}>加班完成</button>
+                    <button type="button" className="btn btn-primary" onClick={() => { setOvertimeOpen(false); setOvertime(true); setOvertimeMinutes(0) }}>加班完成</button>
                     <button type="button" className="btn btn-ghost" onClick={() => { setOvertimeOpen(false); finishDay() }}>直接下班</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {overtimeSettlement && (
+              <div className="clinical-modal-backdrop">
+                <div className="clinical-modal clinical-overtime-settlement">
+                  <span className="clinical-small-label">收工结算 · 加班 {overtimeMinutes} 分钟</span>
+                  <h2>你加班到了 {formatOvertimeClock(600 + overtimeMinutes)}。</h2>
+                  <p className="clinical-overtime-sarcasm">{overtimeSettlement}</p>
+                  {pendingTodos.length > 0 && (
+                    <div className="clinical-overtime-pending">
+                      <strong>还有 {pendingTodos.length} 项待办没完成</strong>
+                      <p>明天早一点到医院，趁查房前处理掉。主任翻病历的时候不会等你。</p>
+                    </div>
+                  )}
+                  <div className="clinical-modal-actions">
+                    <button type="button" className="btn btn-primary" onClick={() => { setOvertimeSettlement(null); finishDay() }}>收工下班</button>
                   </div>
                 </div>
               </div>
