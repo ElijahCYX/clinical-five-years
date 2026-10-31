@@ -1249,7 +1249,7 @@ export function ClinicalScreen({
       setLunchPhase('napPrompt')
     }
     if (lunchPhase === 'napping' && day.clock >= 420) {
-      const gain = Math.max(0, Math.floor((420 - napStartClock) / 2))
+      const gain = Math.max(0, Math.floor((420 - napStartClock) / 4))
       if (gain > 0) onGameEffect({ energy: gain })
       setLunchPhase('done')
     }
@@ -1276,7 +1276,7 @@ export function ClinicalScreen({
     if (!forced) return
     lunchKnownTodoIdsRef.current.add(forced.id)
     const napGain = lunchPhase === 'napping'
-      ? Math.max(0, Math.floor((day.clock - napStartClock) / 2))
+      ? Math.max(0, Math.floor((day.clock - napStartClock) / 4))
       : 0
     persistClinical({
       ...clinical,
@@ -2165,10 +2165,10 @@ export function ClinicalScreen({
                 <div className="clinical-modal clinical-lunch-prompt">
                   <span className="clinical-small-label">午饭结束 · {formatClock(day.clock)}</span>
                   <h2>要午休吗？</h2>
-                  <p>现在距离 14:00 还有 {Math.max(0, 420 - day.clock)} 分钟。午休会以 8× 速度推进到 14:00，每 2 分钟恢复 1 点精力。</p>
+                  <p>现在距离 14:00 还有 {Math.max(0, 420 - day.clock)} 分钟。午休会以 8× 速度推进到 14:00，每 4 分钟恢复 1 点精力。</p>
                   <div className="clinical-modal-actions">
                     <button type="button" className="btn btn-primary" onClick={() => { setNapStartClock(day.clock); setLunchPhase('napping') }}>
-                      午休 · 恢复 {Math.max(0, Math.floor((420 - day.clock) / 2))} 精力
+                      午休 · 恢复 {Math.max(0, Math.floor((420 - day.clock) / 4))} 精力
                     </button>
                     <button type="button" className="btn btn-ghost" onClick={() => setLunchPhase('declined')}>不午休，自由安排</button>
                   </div>
