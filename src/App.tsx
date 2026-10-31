@@ -5533,15 +5533,16 @@ function RealApp() {
   }
 
   const updateClinical = (clinical: GameState['clinical']) => {
-    const current = gameRef.current ?? game
-    if (!current) return
-    const next: GameState = {
-      ...current,
-      clinical,
-      ...(clinical?.mode === 'evening' ? { weekSlot: 2, weekSlotSkipped: false } : {}),
-    }
-    setGame(next)
-    persist(next)
+    setGame((previous) => {
+      if (!previous) return previous
+      const next: GameState = {
+        ...previous,
+        clinical,
+        ...(clinical?.mode === 'evening' ? { weekSlot: 2, weekSlotSkipped: false } : {}),
+      }
+      persist(next)
+      return next
+    })
   }
 
   const applyClinicalEffect = (effect: {
