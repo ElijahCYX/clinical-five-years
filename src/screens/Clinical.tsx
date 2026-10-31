@@ -448,6 +448,7 @@ export function ClinicalScreen({
   const [napStartClock, setNapStartClock] = useState(0)
   const [lunchLateNotice, setLunchLateNotice] = useState<string | null>(null)
   const [lunchAngry, setLunchAngry] = useState(false)
+  const [lunchAngryKind, setLunchAngryKind] = useState<'eating' | 'napping' | null>(null)
   const [nurseChatMessage, setNurseChatMessage] = useState<ClinicalChatMessage | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const [blockTransition, setBlockTransition] = useState(false)
@@ -654,6 +655,7 @@ export function ClinicalScreen({
     setLunchLateNotice(null)
     if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
     setLunchAngry(false)
+    setLunchAngryKind(null)
     setNurseChatMessage(null)
     admissionFallbackRef.current = false
     admissionArrivalsSentRef.current = 0
@@ -1509,11 +1511,13 @@ export function ClinicalScreen({
     if (napGain > 0) onGameEffect({ energy: napGain })
     onGameEffect({ stress: 10, energy: -5 })
     lunchForcedRef.current = true
+    setLunchAngryKind(lunchPhase === 'napping' ? 'napping' : 'eating')
     setLunchPhase('done')
     setLunchAngry(true)
     if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
     lunchAngryTimerRef.current = window.setTimeout(() => {
       setLunchAngry(false)
+      setLunchAngryKind(null)
       setNurseTodo(forced!)
     }, 2300)
   }, [clinical.todos, chatMessages, day, lunchPhase, napStartClock, lunchStartClock, course])
@@ -2393,16 +2397,30 @@ export function ClinicalScreen({
 
             <ClinicalModalPortal>
             {lunchAngry && (
-              <div className="clinical-lunch-angry" role="alert" aria-live="assertive">
+              <div
+                className={`clinical-lunch-angry ${lunchAngryKind === 'napping' ? 'is-napping' : 'is-eating'}`}
+                role="alert"
+                aria-live="assertive"
+              >
                 <div className="clinical-lunch-angry-bg" aria-hidden="true" />
                 <div className="clinical-lunch-angry-copy">
-                  <span className="clinical-lunch-angry-kicker">午饭/午休被打断</span>
-                  <h2>饭都不让人吃完？</h2>
-                  <p>你刚把饭盒放下，或刚在折叠床上闭眼，护士站的声音就把你拽了起来。</p>
+                  <span className="clinical-lunch-angry-kicker">
+                    {lunchAngryKind === 'napping' ? '午睡被打断' : '午饭被打断'}
+                  </span>
+                  <h2>{lunchAngryKind === 'napping' ? '觉都不让人睡完？' : '饭都不让人吃完？'}</h2>
+                  <p>
+                    {lunchAngryKind === 'napping'
+                      ? '你刚在折叠床上闭眼，还没睡沉，护士站的声音就把你从梦里拽了出来。'
+                      : '你刚把饭盒放下，筷子还攥在手里，护士站的声音就把你叫了起来。'}
+                  </p>
                   <div className="clinical-lunch-angry-face" aria-hidden="true">
                     <i /><i /><b />
                   </div>
-                  <small>你压着火，站起来往病房走。</small>
+                  <small>
+                    {lunchAngryKind === 'napping'
+                      ? '你压着火，揉了一把脸，站起来往病房走。'
+                      : '你压着火，把饭盒盖上，站起来往病房走。'}
+                  </small>
                 </div>
               </div>
             )}

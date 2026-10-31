@@ -24680,3 +24680,33 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   background: rgba(235,232,221,.5);
 }
 .clinical-morning-todo.is-too-late span { color: #9b5b43; }
+
+/* Two distinct interruption moods: lunch vs nap */
+.clinical-lunch-angry.is-eating .clinical-lunch-angry-bg {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(199,98,53,.48), transparent 32%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(231,145,94,.1) 0 1px, transparent 2px 7px);
+}
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-bg {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(132,55,48,.55), transparent 32%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(160,92,82,.12) 0 1px, transparent 2px 7px);
+}
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-kicker {
+  border-color: rgba(233,161,138,.45);
+  color: #e9a18a;
+}
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-face i {
+  top: 36px;
+  height: 3px;
+  transform: rotate(0);
+}
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-face i:first-child { left: 22px; }
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-face i:nth-child(2) { right: 22px; transform: rotate(0); }
+.clinical-lunch-angry.is-napping .clinical-lunch-angry-face b {
+  left: 34px;
+  right: 34px;
+  bottom: 25px;
+  height: 2px;
+  transform: rotate(0);
+}
