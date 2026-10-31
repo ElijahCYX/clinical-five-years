@@ -1044,6 +1044,7 @@ export interface ClinicalState {
     escapeMinutes: number
   } | null
   lastRotation: ClinicalRotationResult | null
+  askedQuestionIds?: string[]
 }
 
 export interface GameState {

@@ -621,6 +621,7 @@ export function createClinicalState(courses: Course[]): ClinicalState {
     escapeMinutes: 0,
     lastDaySummary: null,
     lastRotation: null,
+    askedQuestionIds: [],
   }
 }
 
@@ -735,8 +736,10 @@ export function randomTaskFor(
   return source[Math.floor(Math.random() * source.length)] ?? CLINICAL_TASKS[0]
 }
 
-export function randomQuestionFor(course: ClinicalCourseInfo): ClinicalQuestionDef {
-  const pool = CLINICAL_QUESTIONS
+export function randomQuestionFor(course: ClinicalCourseInfo, askedIds: string[] = []): ClinicalQuestionDef {
+  const asked = new Set(askedIds)
+  const fresh = CLINICAL_QUESTIONS.filter((question) => !asked.has(question.id))
+  const pool = fresh.length > 0 ? fresh : CLINICAL_QUESTIONS
   return pool[Math.floor(Math.random() * pool.length)] ?? pool[0]
 }
 

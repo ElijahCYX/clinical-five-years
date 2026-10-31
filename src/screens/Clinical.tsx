@@ -533,10 +533,6 @@ export function ClinicalScreen({
     if (todoLocked && !force) return
     const taskDef = CLINICAL_TASK_BY_ID[todo.taskId]
     if (!taskDef) return
-    if (morning && morning.clock < 55 && taskDef.duration > 55 - morning.clock) {
-      setTaskResult(`现在离 07:55 只剩 ${Math.max(0, 55 - morning.clock)} 分钟，来不及完成「${todo.title}」。先去做别的，或者等下班。`)
-      return
-    }
     const currentProgresses = day?.holdProgresses ?? { phone: 0, exam: 0, study: 0, nap: 0 }
     updateDay({
       holdAction: null,
@@ -572,6 +568,14 @@ export function ClinicalScreen({
     setNurseTodo(todo)
   }
 
+  const nextUnaskedQuestion = () => {
+    if (!course) return null
+    const asked = clinical.askedQuestionIds ?? []
+    const question = shuffledQuestion(randomQuestionFor(course, asked))
+    persistClinical({ ...clinical, askedQuestionIds: [...asked, question.id] })
+    return question
+  }
+
   const askTeacherQuestion = () => {
     if (!course || questionPressureRef.current) return
     questionPressureRef.current = true
@@ -588,7 +592,8 @@ export function ClinicalScreen({
     if (questionPressureTimerRef.current) window.clearTimeout(questionPressureTimerRef.current)
     questionPressureTimerRef.current = window.setTimeout(() => {
       if (!course) return
-      const nextQuestion = shuffledQuestion(randomQuestionFor(course))
+      const nextQuestion = nextUnaskedQuestion()
+      if (!nextQuestion) return
       questionPressureRef.current = false
       updateDay({ currentQuestionId: nextQuestion.id })
       setQuestion(nextQuestion)
@@ -1706,7 +1711,7 @@ export function ClinicalScreen({
       }
       onGameEffect({ energy: energyCost, stress: stressGain })
       persistClinical(nextClinical)
-      setMorning({ ...morning, clock: Math.min(55, morning.clock + duration) })
+      setMorning({ ...morning, clock: morning.clock + duration })
       setActiveTodoId(null)
       setTaskResult(`你提前完成了「${task.title}」。方式：${choice.label}。精力 ${energyCost}、压力 ${stressGain >= 0 ? '+' : ''}${stressGain}。${trained.leveledUp ? '技能等级提升！' : '技能经验已记录。'}科室认可度 +4。`)
       return
@@ -1772,7 +1777,8 @@ export function ClinicalScreen({
 
   const answerLateQuestion = () => {
     if (!course) return
-    const nextQuestion = shuffledQuestion(randomQuestionFor(course))
+    const nextQuestion = nextUnaskedQuestion()
+    if (!nextQuestion) return
     setLateScolding(null)
     onGameEffect({ stress: 5, energy: -5 })
     setQuestion(nextQuestion)
@@ -2121,13 +2127,12 @@ export function ClinicalScreen({
                               key={todo.id}
                               type="button"
                               className={`clinical-morning-todo ${tooLong ? 'is-too-late' : ''}`}
-                              disabled={tooLong}
                               onClick={() => openTodoTask(todo)}
                             >
                               <strong>{todo.title}</strong>
                               <span>
                                 {tooLong
-                                  ? `需要 ${taskDuration} 分钟 · 只剩 ${remaining} 分钟，来不及`
+                                  ? `需要 ${taskDuration} 分钟 · 只剩 ${remaining} 分钟，完成后会超过 07:55`
                                   : `预计 ${taskDuration} 分钟 · 剩余 ${remaining} 分钟`}
                               </span>
                             </button>

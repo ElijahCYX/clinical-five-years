@@ -24710,3 +24710,11 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   height: 2px;
   transform: rotate(0);
 }
+
+.clinical-morning-todo.is-too-late {
+  opacity: 1;
+  cursor: pointer;
+  border-color: rgba(155, 91, 67, .35);
+  background: #fbf4ea;
+}
+.clinical-morning-todo.is-too-late:hover { background: #f7eadc; }
