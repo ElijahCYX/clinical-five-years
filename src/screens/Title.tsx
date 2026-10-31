@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { GAME_SUBTITLE, SCHOOL_NAME } from '../data'
 import { Eyebrow, Footer, HeartLineArt, Stamp, TopBar } from '../ui'
 
@@ -15,10 +16,13 @@ interface TitleScreenProps {
   onStart: () => void
   onContinue: () => void
   onLoadSlot?: (id: string) => void
+  onDeleteSlot?: (id: string) => void
   onTestClinical?: () => void
 }
 
-export function TitleScreen({ hasSave, saveSlots = [], onStart, onContinue, onLoadSlot, onTestClinical }: TitleScreenProps) {
+export function TitleScreen({ hasSave, saveSlots = [], onStart, onContinue, onLoadSlot, onDeleteSlot, onTestClinical }: TitleScreenProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const pendingDeleteSlot = saveSlots.find((slot) => slot.id === pendingDeleteId) ?? null
   return (
     <div className="screen title-screen">
       <div className="shell">
@@ -83,16 +87,25 @@ export function TitleScreen({ hasSave, saveSlots = [], onStart, onContinue, onLo
                 <p className="title-save-empty">开始五年后会自动出现在这里。</p>
               ) : (
                 saveSlots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    className="title-save-row"
-                    onClick={() => onLoadSlot?.(slot.id)}
-                  >
-                    <strong>{slot.playerName}</strong>
-                    <span>{slot.seasonLabel} · {slot.screenLabel}</span>
-                    <small>{slot.savedAt ? new Date(slot.savedAt).toLocaleString('zh-CN', { hour12: false }) : ''}</small>
-                  </button>
+                  <div key={slot.id} className="title-save-row">
+                    <button
+                      type="button"
+                      className="title-save-load"
+                      onClick={() => onLoadSlot?.(slot.id)}
+                    >
+                      <strong>{slot.playerName}</strong>
+                      <span>{slot.seasonLabel} · {slot.screenLabel}</span>
+                      <small>{slot.savedAt ? new Date(slot.savedAt).toLocaleString('zh-CN', { hour12: false }) : ''}</small>
+                    </button>
+                    <button
+                      type="button"
+                      className="title-save-delete"
+                      aria-label={`删除 ${slot.playerName} 的存档`}
+                      onClick={() => setPendingDeleteId(slot.id)}
+                    >
+                      删除
+                    </button>
+                  </div>
                 ))
               )}
             </div>
@@ -144,6 +157,22 @@ export function TitleScreen({ hasSave, saveSlots = [], onStart, onContinue, onLo
             </div>
           </aside>
         </main>
+        {pendingDeleteSlot && (
+          <div className="title-delete-backdrop">
+            <div className="title-delete-modal">
+              <span>删除存档</span>
+              <h3>确定删除「{pendingDeleteSlot.playerName}」的存档吗？</h3>
+              <p>{pendingDeleteSlot.seasonLabel} · {pendingDeleteSlot.screenLabel}<br />删除后无法恢复。</p>
+              <div className="title-delete-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setPendingDeleteId(null)}>保留</button>
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  if (pendingDeleteId) onDeleteSlot?.(pendingDeleteId)
+                  setPendingDeleteId(null)
+                }}>确认删除</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Footer />
       </div>

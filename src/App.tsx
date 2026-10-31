@@ -434,6 +434,20 @@ function writeActiveSave(game: GameState) {
   }
 }
 
+function deleteSaveSlot(id: string) {
+  try {
+    localStorage.removeItem(saveSlotKey(id))
+    if (activeSaveSlotId === id) {
+      activeSaveSlotId = null
+      localStorage.removeItem(ACTIVE_SAVE_SLOT_KEY)
+      const latest = listSaveSlots()[0]
+      if (latest) setActiveSaveSlot(latest.id)
+    }
+  } catch {
+    /* localStorage may be unavailable */
+  }
+}
+
 export function beginNewSaveSlot(): string {
   const id = createSaveSlotId()
   setActiveSaveSlot(id)
@@ -6151,6 +6165,13 @@ function RealApp() {
   }
 
 
+  const handleDeleteSlot = (slotId: string) => {
+    deleteSaveSlot(slotId)
+    const slots = listSaveSlots()
+    setSaveSlots(slots)
+    setHasSave(slots.length > 0)
+  }
+
   const handleLoadSlot = (slotId: string) => {
     activateSaveSlot(slotId)
     handleContinueSave()
@@ -6873,6 +6894,7 @@ function RealApp() {
         onStart={startCreate}
         onContinue={handleContinueSave}
         onLoadSlot={handleLoadSlot}
+        onDeleteSlot={handleDeleteSlot}
         onTestClinical={startClinicalTest}
       />
     )
@@ -6890,6 +6912,7 @@ function RealApp() {
         onStart={startCreate}
         onContinue={handleContinueSave}
         onLoadSlot={handleLoadSlot}
+        onDeleteSlot={handleDeleteSlot}
         onTestClinical={startClinicalTest}
       />
     )
