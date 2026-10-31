@@ -467,6 +467,17 @@ export function ClinicalScreen({
     todo.kind === 'admission' ? 'admission' : todo.kind === 'ecg' ? 'ecg' : 'accompany',
   )
   const deferredChatCount = chatMessages.filter((message) => message.todoDeferred).length
+  const clockPaused =
+    clinical.mode !== 'day' ||
+    !day ||
+    Boolean(morning) ||
+    Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
+    Boolean(escapeEvent) ||
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation)
+  const clockPausedRef = useRef(clockPaused)
+  const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
+  clockPausedRef.current = clockPaused
+  pendingTodoTaskIdsRef.current = pendingTodoTaskIds
   const todoLocked = Boolean(day && !day.escape && currentBlock?.kind === 'fixed')
   const clinicalDailyKey = course ? `clinical-${course.courseId}-${clinical.dayIndex}` : ''
   const coffeeCost = consumptionCoffeeCost(state, state.habits.includes('ledger') ? 5 : 10)
@@ -764,13 +775,11 @@ export function ClinicalScreen({
     setFinishing(false)
   }
 
-  // 医院日时钟
+  // 医院日时钟：独立计时，不被其他界面状态的重渲染重置。
   useEffect(() => {
-    if (clinical.mode !== 'day' || !day || morning) return
-    if (day.currentTaskId || day.currentQuestionId || day.fixedPromptId || escapeEvent) return
-    if (taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation) return
-    if (day.clock >= 600) return
+    if (clinical.mode !== 'day' || morning) return
     const timer = window.setInterval(() => {
+      if (clockPausedRef.current) return
       setDay((prev) => {
         if (!prev || prev.clock >= 600) return prev
         const clock = Math.min(600, prev.clock + 1)
@@ -794,7 +803,7 @@ export function ClinicalScreen({
             next.holdAction = null
           }
           if (block?.kind === 'free' && !prev.currentTaskId && Math.random() < 0.035) {
-            const nextTask = randomTaskFor(course, pendingTodoTaskIds)
+            const nextTask = randomTaskFor(course, pendingTodoTaskIdsRef.current)
             next.currentTaskId = nextTask.id
           }
         }
@@ -819,7 +828,7 @@ export function ClinicalScreen({
       })
     }, Math.round(480 / speed))
     return () => window.clearInterval(timer)
-  }, [clinical.mode, day?.clock, day?.fixedPromptId, day?.currentTaskId, day?.currentQuestionId, day?.escape, escapeEvent, taskResult, questionResult, escapeSetup, task, course, speed, morning, lateScolding, nurseTodo, escapeTodo, clinicalPaused, pendingTodoTaskIds, questionPressure, scoldAnimation])
+  }, [clinical.mode, speed, morning, course?.courseId])
 
   // 任务 id 写入 day 后，再由这里装载任务弹窗内容，避免在状态更新函数里制造副作用。
   useEffect(() => {
