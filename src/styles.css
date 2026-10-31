@@ -24672,3 +24672,11 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 .clinical-nurse-message { width: min(540px, 100%); }
 .clinical-nurse-message h2 { color: #7f4a31; }
 .clinical-nurse-message p { font-size: 13px !important; line-height: 1.8; }
+
+.clinical-morning-todo.is-too-late,
+.clinical-morning-todo:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  background: rgba(235,232,221,.5);
+}
+.clinical-morning-todo.is-too-late span { color: #9b5b43; }

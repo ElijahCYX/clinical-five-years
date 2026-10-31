@@ -1944,12 +1944,27 @@ export function ClinicalScreen({
                           <strong>07:55 前还能处理</strong>
                           <span>剩余 {55 - morning.clock} 分钟</span>
                         </div>
-                        {pendingTodos.map((todo) => (
-                          <button key={todo.id} type="button" className="clinical-morning-todo" onClick={() => openTodoTask(todo)}>
-                            <strong>{todo.title}</strong>
-                            <span>预计 {CLINICAL_TASK_BY_ID[todo.taskId]?.duration ?? 0} 分钟</span>
-                          </button>
-                        ))}
+                        {pendingTodos.map((todo) => {
+                          const taskDuration = CLINICAL_TASK_BY_ID[todo.taskId]?.duration ?? 0
+                          const remaining = 55 - morning.clock
+                          const tooLong = taskDuration > remaining
+                          return (
+                            <button
+                              key={todo.id}
+                              type="button"
+                              className={`clinical-morning-todo ${tooLong ? 'is-too-late' : ''}`}
+                              disabled={tooLong}
+                              onClick={() => openTodoTask(todo)}
+                            >
+                              <strong>{todo.title}</strong>
+                              <span>
+                                {tooLong
+                                  ? `需要 ${taskDuration} 分钟 · 只剩 ${remaining} 分钟，来不及`
+                                  : `预计 ${taskDuration} 分钟 · 剩余 ${remaining} 分钟`}
+                              </span>
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                     <div className="clinical-modal-actions">
@@ -2690,7 +2705,7 @@ export function ClinicalScreen({
           </section>
         )}
 
-        {clinical.mode === 'day' && day && (
+        {clinical.mode === 'day' && day && !morning && (
           <section className="paper-card clinical-todo-card">
             <div className="clinical-todo-head">
               <strong>待办事项</strong>
