@@ -989,6 +989,7 @@ export function ClinicalScreen({
   // 护士 @你 超过 30 分钟未查看，会来办公室提醒。
   useEffect(() => {
     if (clinical.mode !== 'day' || !day || morning || nurseChatMessage) return
+    if (currentBlock?.kind !== 'free') return
     const overdue = chatMessages.find(
       (message) =>
         message.sender === '护士站' &&
@@ -999,7 +1000,7 @@ export function ClinicalScreen({
         day.clock >= message.clock + 30,
     )
     if (overdue) setNurseChatMessage(overdue)
-  }, [clinical.mode, day?.clock, morning, chatMessages, nurseChatMessage])
+  }, [clinical.mode, day?.clock, morning, chatMessages, nurseChatMessage, currentBlock?.kind])
 
   // 16:00 保证今日预计入院的患者都有对应待办，不再依赖群里是否点开。
   useEffect(() => {
