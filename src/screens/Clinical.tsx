@@ -429,6 +429,7 @@ export function ClinicalScreen({
   const lunchForcedRef = useRef(false)
   const lunchAngryTimerRef = useRef<number | null>(null)
   const admissionFallbackRef = useRef(false)
+  const autoSpeedRef = useRef(false)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
   const idleDecayRef = useRef(0)
@@ -1226,6 +1227,23 @@ export function ClinicalScreen({
       watchPausedAtRef.current = 0
     }
   }, [clinicalPaused])
+
+  // 自由时间：长按偷闲 1 秒自动升到 2×，再持续 1 秒升到 4×；松手回到 1×。
+  useEffect(() => {
+    const isFreeHold = Boolean(day?.holdAction) && currentBlock?.kind === 'free'
+    if (!isFreeHold) {
+      if (autoSpeedRef.current) {
+        autoSpeedRef.current = false
+        setSpeed(1)
+      }
+      return
+    }
+    const timer = window.setTimeout(() => {
+      autoSpeedRef.current = true
+      setSpeed((previous) => (previous === 1 ? 2 : previous === 2 ? 4 : previous))
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [day?.holdAction, currentBlock?.kind, speed])
 
   // 隐藏的“主任注意概率”与“主任正在看你”状态。
   useEffect(() => {
