@@ -426,6 +426,7 @@ export function ClinicalScreen({
   const recordWarningShownRef = useRef(false)
   const lunchKnownTodoIdsRef = useRef<Set<string>>(new Set())
   const lunchForcedRef = useRef(false)
+  const lunchAngryTimerRef = useRef<number | null>(null)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
   const idleDecayRef = useRef(0)
@@ -441,6 +442,7 @@ export function ClinicalScreen({
   const [lunchStartClock, setLunchStartClock] = useState(0)
   const [napStartClock, setNapStartClock] = useState(0)
   const [lunchLateNotice, setLunchLateNotice] = useState<string | null>(null)
+  const [lunchAngry, setLunchAngry] = useState(false)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const [blockTransition, setBlockTransition] = useState(false)
   const chatOpenRef = useRef(false)
@@ -497,7 +499,7 @@ export function ClinicalScreen({
     Boolean(morning) ||
     Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
     Boolean(escapeEvent) ||
-    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition || lunchPhase === 'eating' || lunchPhase === 'napping' || lunchPhase === 'napPrompt')
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition || lunchPhase === 'eating' || lunchPhase === 'napping' || lunchPhase === 'napPrompt' || lunchAngry)
   const clockPausedRef = useRef(clockPaused)
   const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
   clockPausedRef.current = clockPaused
@@ -644,6 +646,8 @@ export function ClinicalScreen({
     setLunchStartClock(0)
     setNapStartClock(0)
     setLunchLateNotice(null)
+    if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
+    setLunchAngry(false)
     lunchKnownTodoIdsRef.current = new Set()
     lunchForcedRef.current = false
     if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
@@ -1244,6 +1248,7 @@ export function ClinicalScreen({
   // 午休阶段自动开始/结束。
   useEffect(() => {
     if (clinical.mode !== 'day' || !day || morning || day.escape) return
+    if (task || taskResult || question || escapeEvent || lateScolding || recordWarning || nurseTodo || escapeTodo) return
     if (lunchPhase === 'none' && day.clock >= 300 && day.clock < 420) startLunch()
     if (lunchPhase === 'eating' && day.clock >= lunchStartClock + 30) {
       setLunchPhase('napPrompt')
@@ -1253,7 +1258,7 @@ export function ClinicalScreen({
       if (gain > 0) onGameEffect({ energy: gain })
       setLunchPhase('done')
     }
-  }, [clinical.mode, morning, day?.clock, day?.escape, lunchPhase, lunchStartClock, napStartClock])
+  }, [clinical.mode, morning, day?.clock, day?.escape, lunchPhase, lunchStartClock, napStartClock, task, taskResult, question, escapeEvent, lateScolding, recordWarning, nurseTodo, escapeTodo])
 
   // 吃饭/午休强制 8× 推进，主时钟暂停。
   useEffect(() => {
@@ -1286,7 +1291,12 @@ export function ClinicalScreen({
     onGameEffect({ stress: 10, energy: -5 })
     lunchForcedRef.current = true
     setLunchPhase('done')
-    setNurseTodo(forced)
+    setLunchAngry(true)
+    if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
+    lunchAngryTimerRef.current = window.setTimeout(() => {
+      setLunchAngry(false)
+      setNurseTodo(forced)
+    }, 2300)
   }, [clinical.todos, day, lunchPhase, napStartClock])
 
   // 固定安排结束进入自由时间时给玩家一个明确提示。
@@ -2148,6 +2158,20 @@ export function ClinicalScreen({
             </div>
 
             <ClinicalModalPortal>
+            {lunchAngry && (
+              <div className="clinical-lunch-angry" role="alert" aria-live="assertive">
+                <div className="clinical-lunch-angry-bg" aria-hidden="true" />
+                <div className="clinical-lunch-angry-copy">
+                  <span className="clinical-lunch-angry-kicker">午饭/午休被打断</span>
+                  <h2>饭都不让人吃完？</h2>
+                  <p>你刚把饭盒放下，或刚在折叠床上闭眼，护士站的声音就把你拽了起来。</p>
+                  <div className="clinical-lunch-angry-face" aria-hidden="true">
+                    <i /><i /><b />
+                  </div>
+                  <small>你压着火，站起来往病房走。</small>
+                </div>
+              </div>
+            )}
             {(lunchPhase === 'eating' || lunchPhase === 'napping') && (
               <div className="clinical-lunch-overlay" role="status" aria-live="polite">
                 <div className="clinical-lunch-orb" aria-hidden="true"><i /><i /><i /></div>

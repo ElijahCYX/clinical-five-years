@@ -24591,3 +24591,79 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
 .clinical-evening-mode .week-phase-badge {
   display: none !important;
 }
+
+/* Displeased lunch/nap interruption */
+.clinical-lunch-angry {
+  position: fixed;
+  inset: 0;
+  z-index: 4800;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #24120d;
+  animation: lunch-angry-in .25s ease-out both;
+}
+.clinical-lunch-angry-bg {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(189,79,45,.45), transparent 32%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(231,145,94,.1) 0 1px, transparent 2px 7px);
+  animation: lunch-angry-shake .11s linear infinite;
+}
+.clinical-lunch-angry-copy {
+  position: relative;
+  z-index: 1;
+  width: min(620px, calc(100vw - 44px));
+  text-align: center;
+  color: #fff1e4;
+  animation: lunch-angry-copy .45s ease-out both;
+}
+.clinical-lunch-angry-kicker {
+  display: inline-block;
+  border: 1px solid rgba(255,158,119,.5);
+  padding: 4px 10px;
+  color: #ffb28f;
+  font-size: 13px;
+  letter-spacing: .12em;
+}
+.clinical-lunch-angry-copy h2 {
+  margin: 16px 0 8px;
+  font-family: var(--serif);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 500;
+  color: #fff1e2;
+  text-shadow: 0 0 24px rgba(220,88,45,.35);
+}
+.clinical-lunch-angry-copy p {
+  margin: 0 auto;
+  max-width: 500px;
+  color: rgba(255,230,211,.77);
+  font-size: 15px;
+  line-height: 1.8;
+}
+.clinical-lunch-angry-copy small { display: block; margin-top: 12px; color: rgba(255,213,188,.5); font-size: 12px; }
+.clinical-lunch-angry-face {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  margin: 18px auto 0;
+  border: 1px solid rgba(255,165,124,.45);
+  border-radius: 50%;
+  animation: lunch-angry-face .4s ease-in-out infinite alternate;
+}
+.clinical-lunch-angry-face i {
+  position: absolute;
+  top: 31px;
+  width: 18px;
+  height: 4px;
+  background: #f0a07d;
+  transform: rotate(18deg);
+}
+.clinical-lunch-angry-face i:first-child { left: 19px; }
+.clinical-lunch-angry-face i:nth-child(2) { right: 19px; transform: rotate(-18deg); }
+.clinical-lunch-angry-face b { position: absolute; left: 29px; right: 29px; bottom: 22px; height: 3px; background: #e88f6f; transform: rotate(-4deg); }
+@keyframes lunch-angry-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lunch-angry-shake { 0% { transform: translate(0,0); } 25% { transform: translate(2px,-1px); } 50% { transform: translate(-2px,1px); } 75% { transform: translate(1px,2px); } 100% { transform: translate(0,0); } }
+@keyframes lunch-angry-copy { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: scale(1); } }
+@keyframes lunch-angry-face { from { transform: rotate(-2deg) translateY(0); } to { transform: rotate(2deg) translateY(-2px); } }
