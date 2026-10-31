@@ -1350,21 +1350,56 @@ export function ClinicalScreen({
     return () => window.clearInterval(timer)
   }, [clinical.mode, morning, lunchPhase, lunchStartClock, napStartClock, clinicalPaused, task, taskResult, nurseTodo, escapeTodo, recordWarning, nurseChatMessage])
 
-  // 吃饭/午休期间新生成的待办会强制把玩家拉回工作状态，不进入待办卡片。
+  // 吃饭/午休期间新触发的护士待办会强制把玩家拉回工作状态，不进入待办卡片。
   useEffect(() => {
     if (!day || (lunchPhase !== 'eating' && lunchPhase !== 'napping')) return
-    const forced = (clinical.todos ?? []).find(
+
+    const newMessage = chatMessages.find(
+      (message) =>
+        message.sender === '护士站' &&
+        Boolean(message.todo) &&
+        !message.read &&
+        !message.nurseVisitHandled &&
+        typeof message.clock === 'number' &&
+        message.clock >= lunchStartClock,
+    )
+    let forced = (clinical.todos ?? []).find(
       (todo) => todo.status === 'pending' && !lunchKnownTodoIdsRef.current.has(todo.id),
     )
+    if (newMessage?.todo) {
+      const { kind, bed } = newMessage.todo
+      forced = {
+        id: `todo-${newMessage.id}`,
+        kind,
+        title: kind === 'admission' ? `收病人 · ${bed} 床` : kind === 'ecg' ? `拉心电图 · ${bed} 床` : `陪检查 · ${bed} 床`,
+        bed,
+        taskId: kind === 'admission' ? 'admission' : kind === 'ecg' ? 'ecg' : 'accompany',
+        courseId: course?.courseId ?? '',
+        dayIndex: day.dayIndex,
+        createdAtClock: day.clock,
+        dueAtClock: kind === 'escort' ? day.clock + 30 : null,
+        urgent: kind === 'escort',
+        status: 'pending',
+      }
+      setChatMessages((prev) => prev.map((message) =>
+        message.id === newMessage.id
+          ? { ...message, read: true, nurseVisitHandled: true, requiresResponse: false }
+          : message,
+      ))
+      setChatMentions((count) => Math.max(0, count - 1))
+      setChatUnread((count) => Math.max(0, count - 1))
+    }
     if (!forced) return
     lunchKnownTodoIdsRef.current.add(forced.id)
     const napGain = lunchPhase === 'napping'
       ? Math.max(0, Math.floor((day.clock - napStartClock) / 4))
       : 0
-    persistClinical({
-      ...clinical,
-      todos: (clinical.todos ?? []).filter((todo) => todo.id !== forced.id),
-    })
+    if (!newMessage) {
+      persistClinical({
+        ...clinical,
+        todos: (clinical.todos ?? []).filter((todo) => todo.id !== forced!.id),
+      })
+    }
     if (napGain > 0) onGameEffect({ energy: napGain })
     onGameEffect({ stress: 10, energy: -5 })
     lunchForcedRef.current = true
@@ -1373,9 +1408,9 @@ export function ClinicalScreen({
     if (lunchAngryTimerRef.current) window.clearTimeout(lunchAngryTimerRef.current)
     lunchAngryTimerRef.current = window.setTimeout(() => {
       setLunchAngry(false)
-      setNurseTodo(forced)
+      setNurseTodo(forced!)
     }, 2300)
-  }, [clinical.todos, day, lunchPhase, napStartClock])
+  }, [clinical.todos, chatMessages, day, lunchPhase, napStartClock, lunchStartClock, course])
 
   // 固定安排结束进入自由时间时给玩家一个明确提示。
   useEffect(() => {
