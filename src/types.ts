@@ -43,6 +43,7 @@ export type ScreenName =
   | 'plan'
   | 'clubRecruitment'
   | 'week'
+  | 'clinical'
   | 'prep'
   | 'result'
   | 'vacation'
@@ -894,6 +895,157 @@ export interface CareerStats {
   weeks: number
 }
 
+export type ClinicalHoldAction = 'phone' | 'exam' | 'study' | 'nap'
+
+export type ClinicalSkillId =
+  | 'interview'
+  | 'physicalExam'
+  | 'record'
+  | 'sterile'
+  | 'dressing'
+  | 'suture'
+  | 'ecg'
+  | 'urinary'
+  | 'ngtube'
+  | 'thoracentesis'
+  | 'abdominal'
+  | 'boneMarrow'
+  | 'lumbar'
+  | 'drain'
+  | 'drainRemoval'
+  | 'specimen'
+  | 'communicationCommon'
+  | 'communicationMedium'
+
+export type ClinicalSkillKind = 'common' | 'medium' | 'difficult'
+export type ClinicalActionMode = 'observe' | 'assist' | 'supervise' | 'independent'
+export type ClinicalSkillLevel = 0 | 1 | 2 | 3
+
+export interface ClinicalSkillState {
+  level: ClinicalSkillLevel
+  xp: number
+  observes: number
+  assists: number
+  supervised: number
+  independentUsed: boolean
+}
+
+export interface ClinicalCourseInfo {
+  courseId: string
+  name: string
+  credits: number
+  clinicalDays: number
+  scheduleKey: string
+  department: string
+}
+
+export interface ClinicalSkillRecord {
+  skillId: ClinicalSkillId
+  gained: number
+}
+
+export interface ClinicalTaskRecord {
+  taskId: string
+  title: string
+  skillId: ClinicalSkillId
+  success: boolean
+  duration: number
+  courseId: string
+}
+
+export interface ClinicalRotationResult {
+  courseId: string
+  name: string
+  credits: number
+  score: number
+  gpa: number
+  recognition: number
+  attendance: number
+  absences: number
+  escapeMinutes: number
+  taskCount: number
+  skills: ClinicalSkillRecord[]
+}
+
+export interface ClinicalDayTaskState {
+  expectedAdmissions: number
+  admitted: number
+  totalTasks: number
+  completedTasks: number
+}
+
+export interface ClinicalEscapeState {
+  purpose: 'study' | 'exam' | 'rest'
+  hideout: string
+  startedClock: number
+  risk: number
+  minutes: number
+  delegatedTo: string | null
+  safeLeave: boolean
+}
+
+export interface ClinicalDayState {
+  courseId: string
+  dayIndex: number
+  totalDays: number
+  clock: number
+  phaseId: string
+  suspicion: number
+  suspicionBlockId?: string
+  holdAction: ClinicalHoldAction | null
+  holdProgresses: Record<ClinicalHoldAction, number>
+  fixedPromptId: string | null
+  currentTaskId: string | null
+  currentQuestionId: string | null
+  escape: ClinicalEscapeState | null
+  tasks: ClinicalDayTaskState
+  recognition: number
+  dayLog: string[]
+  attendedBlocks: string[]
+  lateArrival?: boolean
+  arrivedBefore750?: boolean
+}
+
+export type ClinicalTodoKind = 'admission' | 'ecg' | 'escort'
+
+export interface ClinicalTodo {
+  id: string
+  kind: ClinicalTodoKind
+  title: string
+  bed: number
+  taskId: 'admission' | 'ecg' | 'accompany'
+  courseId: string
+  dayIndex: number
+  createdAtClock: number
+  dueAtClock: number | null
+  urgent: boolean
+  status: 'pending' | 'done' | 'delegated'
+}
+
+export interface ClinicalState {
+  courseIndex: number
+  dayIndex: number
+  mode: 'intro' | 'day' | 'summary' | 'exam' | 'done'
+  courses: ClinicalCourseInfo[]
+  skills: Record<ClinicalSkillId, ClinicalSkillState>
+  recognition: number
+  taskRecords: ClinicalTaskRecord[]
+  rotationResults: ClinicalRotationResult[]
+  currentDay: ClinicalDayState | null
+  todos: ClinicalTodo[]
+  dayAttendance: number
+  dayAbsences: number
+  escapeMinutes: number
+  lastDaySummary: {
+    title: string
+    lines: string[]
+    skills: ClinicalSkillRecord[]
+    recognition: number
+    escapeMinutes: number
+  } | null
+  lastRotation: ClinicalRotationResult | null
+}
+
 export interface GameState {
   screen: ScreenName
   player: Player | null
@@ -903,6 +1055,7 @@ export interface GameState {
   plan: PlanId | null
   habits: HabitId[]
   weekFocus: string | null
+  clinical: ClinicalState | null
   week: number
   energy: number
   stress: number
@@ -980,7 +1133,9 @@ export interface GameState {
   weekSlotActions: string[]
   skipCaught: Record<string, number>
   coffeeDayKey: string | null
+  breakfastDayKey: string | null
   selfCareDayKey: string | null
+  selfCareDayCount: number
   eveningCoffeeDayKey: string | null
   campusRunDayKey: string | null
   peRunCount: number

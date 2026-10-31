@@ -127,6 +127,7 @@ import { ResultScreen } from './screens/Result'
 import { TitleScreen } from './screens/Title'
 import { VacationScreen } from './screens/Vacation'
 import { WeekScreen } from './screens/Week'
+import { ClinicalScreen } from './screens/Clinical'
 import { WhoAmIScreen } from './screens/WhoAmI'
 import { TalentSelectScreen } from './screens/TalentSelect'
 import { OpeningTalentEventScreen } from './screens/OpeningTalentEvent'
@@ -239,6 +240,8 @@ import {
   roleLabel,
 } from './organizations'
 import { HYPOTHESIS_BY_ID, pickHypothesis } from './hypotheses'
+import { createClinicalState, isClinicalSeason } from './clinical'
+import { createClinicalTestState } from './clinicalTest'
 import { pickPublicationAcceptanceText } from './publicationTexts'
 import {
   createLiteratureReplyEmail,
@@ -504,7 +507,9 @@ function readSave(): GameState | null {
       weekSlotActions: game.weekSlotActions ?? [],
       skipCaught: game.skipCaught ?? {},
       coffeeDayKey: game.coffeeDayKey ?? null,
+      breakfastDayKey: game.breakfastDayKey ?? null,
       selfCareDayKey: game.selfCareDayKey ?? null,
+      selfCareDayCount: game.selfCareDayCount ?? 0,
       eveningCoffeeDayKey: game.eveningCoffeeDayKey ?? null,
       campusRunDayKey: game.campusRunDayKey ?? null,
       peRunCount: game.peRunCount ?? 0,
@@ -2285,6 +2290,25 @@ function RealApp() {
 
   const handlePlan = (plan: PlanId, habits: HabitId[]) => {
     if (!game) return
+    if (isClinicalSeason(game.seasonIndex)) {
+      const next: GameState = {
+        ...game,
+        screen: 'clinical',
+        plan,
+        habits,
+        clinical: game.clinical ?? createClinicalState(game.season.courses),
+        week: 1,
+        selected: [],
+        actionsUsed: 0,
+        weekSlot: 0,
+        weekSlotSkipped: false,
+        weekSlotActions: [],
+      }
+      setGame(next)
+      persist(next)
+      setView('clinical')
+      return
+    }
     const next: GameState = {
       ...game,
       screen: 'week',
@@ -2348,7 +2372,13 @@ function RealApp() {
     // Overlays are reached from several hosts. Remember the host view rather
     // than guessing from game.screen, which can be deliberately out of sync
     // during prep/vacation transitions.
-    if (view === 'week' || view === 'prep' || view === 'vacation' || view === 'plan') {
+    if (
+      view === 'week' ||
+      view === 'clinical' ||
+      view === 'prep' ||
+      view === 'vacation' ||
+      view === 'plan'
+    ) {
       interfaceOriginView.current = view
     }
   }
@@ -4440,13 +4470,13 @@ function RealApp() {
   const dailyActionKey = () =>
     `${game?.seasonIndex ?? 0}-${game?.week ?? 1}-${Math.floor((game?.weekSlot ?? 0) / 3)}`
 
-  const drinkCoffee = () => {
+  const drinkCoffee = (keyOverride?: string) => {
     const coffeeCost = consumptionCoffeeCost(
       game ?? ({} as GameState),
       game?.habits.includes('ledger') ? 5 : 10,
     )
     if (!game || game.money < coffeeCost || game.energy >= 100) return
-    const key = dailyActionKey()
+    const key = keyOverride ?? dailyActionKey()
     if (game.coffeeDayKey === key) return
     const next: GameState = {
       ...game,
@@ -4462,24 +4492,6 @@ function RealApp() {
     persist(next)
   }
 
-  const doCampusRun = () => {
-    if (!game || !game.pendingPeCourseId) return
-    if (game.energy < 20 || game.peRunCount >= 24) return
-    const key = dailyActionKey()
-    if (game.campusRunDayKey === key) return
-    const next = carryGrowthState({
-      ...game,
-      energy: clamp(game.energy - 20, 0, 100),
-      constitutionGrowth: game.constitutionGrowth + 1,
-      weekSlotActions: [...game.weekSlotActions, 'campusRun'],
-      semesterStats: bumpSemesterStats(game.semesterStats, 'exercise'),
-      careerStats: bumpCareerStats(game.careerStats, 'campusRun'),
-      peRunCount: game.peRunCount + 1,
-      campusRunDayKey: key,
-    })
-    setGame(next)
-    persist(next)
-  }
 
   const performWeekSlotAction = (actionId: string) => {
     if (!game) return
@@ -4497,10 +4509,7 @@ function RealApp() {
     if (!game || game.weekSlot % 3 !== 0) return
     if (!game.weekSlotSkipped && timetableCourseAt(game, game.weekSlot)) return
     const dayKey = `${game.seasonIndex}-${game.week}-${Math.floor(game.weekSlot / 3)}`
-    if (
-      game.coffeeDayKey === dayKey ||
-      game.campusRunDayKey === dayKey
-    ) {
+    if (game.coffeeDayKey === dayKey) {
       return
     }
     if (game.habits.includes('earlyRise') && Math.floor(game.weekSlot / 3) <= 4) {
@@ -4812,8 +4821,7 @@ function RealApp() {
           caught,
         )
         const { paperWeight } = courseScoreWeights(peCourse)
-        const peScoreCap =
-          game.peRunCount >= 24 ? 100 : game.peRunCount >= 12 ? 80 : 60
+        const peScoreCap = 100
         const cappedScore = Math.min(finalScore, peScoreCap)
         results.push({
           course: peCourse,
@@ -5029,14 +5037,30 @@ function RealApp() {
     persist(next)
   }
 
-  const dailySelfCare = () => {
+  const eatBreakfast = (keyOverride?: string) => {
+    if (!game) return
+    const key = keyOverride ?? dailyActionKey()
+    if (game.breakfastDayKey === key) return
+    if (game.money < 10) return
+    const next: GameState = {
+      ...game,
+      money: Math.max(0, game.money - 10),
+      stress: clamp(game.stress - 10, 0, 100),
+      breakfastDayKey: key,
+    }
+    setGame(next)
+    persist(next)
+  }
+
+  const dailySelfCare = (keyOverride?: string) => {
     const selfCareCost = consumptionSelfCareCost(
       game ?? ({} as GameState),
       game?.habits.includes('ledger') ? 15 : 30,
     )
     if (!game || game.money < selfCareCost) return
-    const key = dailyActionKey()
-    if (game.selfCareDayKey === key) return
+    const key = keyOverride ?? dailyActionKey()
+    const usedToday = game.selfCareDayKey === key ? (game.selfCareDayCount ?? 0) : 0
+    if (usedToday >= 2) return
     const next = carryGrowthState({
       ...game,
       money: Math.max(0, game.money - selfCareCost),
@@ -5044,6 +5068,7 @@ function RealApp() {
       stress: clamp(game.stress - 15, 0, 100),
       constitutionGrowth: game.constitutionGrowth - 5,
       selfCareDayKey: key,
+      selfCareDayCount: usedToday + 1,
       semesterStats: bumpSemesterStats(game.semesterStats, 'selfCare'),
       careerStats: bumpCareerStats(game.careerStats, 'selfCare'),
     })
@@ -5296,6 +5321,104 @@ function RealApp() {
   const handleScholarshipContinue = () => {
     if (!game) return
     commit({ ...game, screen: 'plan' }, 'plan')
+  }
+
+  const updateClinical = (clinical: GameState['clinical']) => {
+    const current = gameRef.current ?? game
+    if (!current) return
+    const next: GameState = { ...current, clinical }
+    setGame(next)
+    persist(next)
+  }
+
+  const applyClinicalEffect = (effect: {
+    stress?: number
+    energy?: number
+    kaoyanPrep?: number
+    courseId?: string
+    coursePrep?: number
+  }) => {
+    setGame((previous) => {
+      if (!previous) return previous
+      const next: GameState = {
+        ...previous,
+        stress: clamp(previous.stress + (effect.stress ?? 0), 0, 100),
+        energy: clamp(previous.energy + (effect.energy ?? 0), 0, 100),
+        kaoyanPrep: Math.max(0, previous.kaoyanPrep + (effect.kaoyanPrep ?? 0)),
+        prep:
+          effect.courseId && effect.coursePrep
+            ? {
+                ...previous.prep,
+                [effect.courseId]: clamp(
+                  (previous.prep[effect.courseId] ?? 0) + effect.coursePrep,
+                  0,
+                  100,
+                ),
+              }
+            : previous.prep,
+      }
+      persist(next)
+      return next
+    })
+  }
+
+  const finishClinicalSeason = (clinical: NonNullable<GameState['clinical']>) => {
+    const current = gameRef.current ?? game
+    if (!current) return
+    const results: ExamResult[] = clinical.rotationResults.map((rotation) => {
+      const course =
+        current.season.courses.find((item) => item.id === rotation.courseId) ?? {
+          id: rotation.courseId,
+          name: rotation.name,
+          examType: '大考' as const,
+          credits: rotation.credits,
+          memory: '中' as const,
+          comprehension: '中' as const,
+        }
+      return {
+        course,
+        score: rotation.score,
+        gpa: rotation.gpa,
+        expectedMin: 60,
+        expectedMax: 100,
+        stressRelief: 0,
+      }
+    })
+    const creditGain = results.reduce((sum, result) => sum + result.course.credits, 0)
+    const pointGain = results.reduce(
+      (sum, result) => sum + result.course.credits * result.gpa,
+      0,
+    )
+    const next: GameState = {
+      ...current,
+      screen: 'result',
+      results,
+      clinical: null,
+      cumulativeCredits: current.cumulativeCredits + creditGain,
+      cumulativePoints: current.cumulativePoints + pointGain,
+      courseRecords: [
+        ...current.courseRecords,
+        ...results
+          .filter(
+            (result) =>
+              !current.courseRecords.some((record) => record.id === result.course.id),
+          )
+          .map((result) => ({
+            id: result.course.id,
+            name: result.course.name,
+            credits: result.course.credits,
+            gpa: result.gpa,
+            score: result.score,
+            category: 'professional' as const,
+          })),
+      ],
+      everFailed: current.everFailed || results.some((result) => result.score < 60),
+      yearFailed: current.yearFailed || results.some((result) => result.score < 60),
+      finalNote: `${current.season.seasonLabel}临床轮转结束。成绩、技能和科室认可度已经写入档案。`,
+    }
+    setGame(next)
+    persist(next)
+    setView('result')
   }
 
   const handleResultContinue = () => {
@@ -5811,6 +5934,15 @@ function RealApp() {
     }
   }
 
+  const startClinicalTest = () => {
+    const testState = createClinicalTestState()
+    setGame(testState)
+    persist(testState)
+    setHasSave(true)
+    setCrisisKind(null)
+    setView('clinical')
+  }
+
   const handleContinueSave = () => {
     let saved = readSave()
     if (!saved) return
@@ -5835,6 +5967,18 @@ function RealApp() {
       setGame(saved)
       setView('week')
       return
+    }
+    // 旧存档进入大四/大五时，直接切到新的临床轮转界面。
+    if (
+      isClinicalSeason(saved.seasonIndex) &&
+      (saved.screen === 'week' || saved.screen === 'prep')
+    ) {
+      saved = {
+        ...saved,
+        screen: 'clinical',
+        clinical: saved.clinical ?? createClinicalState(saved.season.courses),
+      }
+      persist(saved)
     }
     setGame(saved)
     setView(
@@ -6559,6 +6703,7 @@ function RealApp() {
         hasSave={hasSave}
         onStart={startCreate}
         onContinue={handleContinueSave}
+        onTestClinical={startClinicalTest}
       />
     )
   }
@@ -6568,7 +6713,14 @@ function RealApp() {
   }
 
   if (!game || !game.player) {
-    return <TitleScreen hasSave={hasSave} onStart={startCreate} onContinue={handleContinueSave} />
+    return (
+      <TitleScreen
+        hasSave={hasSave}
+        onStart={startCreate}
+        onContinue={handleContinueSave}
+        onTestClinical={startClinicalTest}
+      />
+    )
   }
 
   if (view === 'crisis' && crisisKind) {
@@ -6763,6 +6915,23 @@ function RealApp() {
     )
   }
 
+  if (view === 'clinical' && game) {
+    return (
+      <ClinicalScreen
+        state={game}
+        onUpdateClinical={updateClinical}
+        onFinishSeason={finishClinicalSeason}
+        onGameEffect={applyClinicalEffect}
+        onTitle={goTitle}
+        onOpenWhoAmI={openWhoAmI}
+        onOpenTA={openWhoIs}
+        onDrinkCoffee={drinkCoffee}
+        onEatBreakfast={eatBreakfast}
+        onDailySelfCare={dailySelfCare}
+      />
+    )
+  }
+
   if (view === 'week') {
     return (
       <>
@@ -6775,7 +6944,6 @@ function RealApp() {
           onSlotAction={performWeekSlotAction}
           onSleepIn={sleepInCurrentSlot}
           onDrinkCoffee={drinkCoffee}
-          onCampusRun={doCampusRun}
           onDailySelfCare={dailySelfCare}
           onSoloAttempt={recordSoloAttempt}
           onResolveSoloDate={resolveSoloDate}

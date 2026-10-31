@@ -5,9 +5,10 @@ interface TitleScreenProps {
   hasSave: boolean
   onStart: () => void
   onContinue: () => void
+  onTestClinical?: () => void
 }
 
-export function TitleScreen({ hasSave, onStart, onContinue }: TitleScreenProps) {
+export function TitleScreen({ hasSave, onStart, onContinue, onTestClinical }: TitleScreenProps) {
   return (
     <div className="screen title-screen">
       <div className="shell">
@@ -52,6 +53,15 @@ export function TitleScreen({ hasSave, onStart, onContinue }: TitleScreenProps) 
               >
                 {hasSave ? '继续上次档案' : '暂无存档'}
               </button>
+              {import.meta.env.DEV && onTestClinical && (
+                <button
+                  className="btn btn-ghost title-test-btn"
+                  type="button"
+                  onClick={onTestClinical}
+                >
+                  测试：临床
+                </button>
+              )}
             </div>
 
             <blockquote className="title-quote">

@@ -151,7 +151,6 @@ interface WeekScreenProps {
   onSlotAction?: (actionId: string) => void
   onSleepIn?: () => void
   onDrinkCoffee?: () => void
-  onCampusRun?: () => void
   onDailySelfCare?: () => void
   onSoloAttempt?: (record: SoloChatRecord, invite?: SoloInvite) => void
   onResolveSoloDate?: (inviteId: string) => void
@@ -217,7 +216,6 @@ export function WeekScreen({
   onSlotAction,
   onSleepIn,
   onDrinkCoffee,
-  onCampusRun,
   onDailySelfCare,
   onSoloAttempt,
   onResolveSoloDate,
@@ -682,8 +680,8 @@ export function WeekScreen({
     10 + (currentCourseStars >= 4 ? 2 : currentCourseStars <= 2 ? -2 : 0)
   const dailyKey = `${state.seasonIndex}-${state.week}-${Math.floor(weekSlot / 3)}`
   const coffeeUsedToday = state.coffeeDayKey === dailyKey
-  const runUsedToday = state.campusRunDayKey === dailyKey
-  const selfCareUsedToday = state.selfCareDayKey === dailyKey
+  const selfCareCountToday = state.selfCareDayKey === dailyKey ? (state.selfCareDayCount ?? 0) : 0
+  const selfCareUsedToday = selfCareCountToday >= 2
   const coffeeCost = consumptionCoffeeCost(
     state,
     state.habits.includes('ledger') ? 5 : 10,
@@ -696,11 +694,8 @@ export function WeekScreen({
     currentSlotIsMorning &&
     Math.floor(weekSlot / 3) <= 4 &&
     state.habits.includes('earlyRise')
-  const morningActivityDone =
-    currentSlotIsMorning && (coffeeUsedToday || runUsedToday)
+  const morningActivityDone = currentSlotIsMorning && coffeeUsedToday
   const sleepInDisabled = morningActivityDone || earlyRiseBlocked
-  const hasPeCourse = Boolean(state.pendingPeCourseId)
-  const runCap = state.peRunCount >= 24 ? 100 : state.peRunCount >= 12 ? 80 : 60
   const weekPhaseClass = ['morning', 'afternoon', 'evening'][weekSlot % 3]
   const pastPalette =
     weekPhaseClass === 'morning'
@@ -956,31 +951,6 @@ export function WeekScreen({
         </button>
         <button
           type="button"
-          className={`daily-action-card ${runUsedToday ? 'is-used' : ''}`}
-          disabled={!hasPeCourse || runUsedToday || healthLocksSport(state) || state.energy < 20 || state.peRunCount >= 24}
-          onClick={onCampusRun}
-        >
-          <span className="daily-action-icon"><DailyActionIcon kind="run" /></span>
-          <span className="daily-action-copy">
-            <strong>校园跑</strong>
-            <small>
-              {healthLocksSport(state)
-                ? '受伤恢复中，暂时不能跑步'
-                : hasPeCourse
-                  ? `精力 -20 · 体质成长 +1 · ${state.peRunCount} / 24`
-                  : '当前没有体育课'}
-            </small>
-          </span>
-          <em>
-            {!hasPeCourse
-              ? '不可用'
-              : runUsedToday
-                ? '今日已跑'
-                : `上限 ${runCap}`}
-          </em>
-        </button>
-        <button
-          type="button"
           className={`daily-action-card ${selfCareUsedToday ? 'is-used' : ''}`}
           disabled={selfCareUsedToday || state.money < selfCareCost}
           onClick={onDailySelfCare}
@@ -988,9 +958,9 @@ export function WeekScreen({
           <span className="daily-action-icon"><DailyActionIcon kind="care" /></span>
           <span className="daily-action-copy">
             <strong>爱你老己</strong>
-            <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长 -5%</small>
+            <small>精力 +10 · 压力 -15 · 生活费 -{selfCareCost} · 体质成长 -5% · 今日 {selfCareCountToday}/2</small>
           </span>
-          <em>{selfCareUsedToday ? '今日已做' : '可执行'}</em>
+          <em>{selfCareUsedToday ? '今日已做满' : `可执行 ${2 - selfCareCountToday}/2`}</em>
         </button>
       </div>
     </section>
@@ -2012,15 +1982,6 @@ export function WeekScreen({
                       ? '你翘掉了这节课，这个时间段现在归你自己安排。'
                       : '当前时间段没有课程，可以自由安排。'}
                   </p>
-                  {canApplyClub && clubMemberships.length > 0 && (
-                    <button
-                      type="button"
-                      className="btn btn-ghost slot-club-apply-btn"
-                      onClick={onApplyClub}
-                    >
-                      申请第二个组织
-                    </button>
-                  )}
                 </div>
 
                 {!withdrawPanelHidden &&
@@ -2061,18 +2022,6 @@ export function WeekScreen({
                   <p className="constitution-decay-note">
                     本周没有健身习惯或运动安排：周末体质成长 -5%。
                   </p>
-                )}
-
-                {courses.length > 1 && state.weekFocus && (
-                  <button
-                    type="button"
-                    className="week-focus-bar"
-                    onClick={() => setFocusPrompt('adjust')}
-                  >
-                    <span>本周主攻</span>
-                    <strong>{focusLabel}</strong>
-                    <span className="week-focus-adjust">点击调整 →</span>
-                  </button>
                 )}
 
                 {renderDailyActions()}
@@ -2138,11 +2087,9 @@ export function WeekScreen({
                         {sleepInDisabled
                           ? earlyRiseBlocked
                             ? '早起习惯已经把身体叫醒了，工作日的早上不再适合回笼觉。'
-                            : coffeeUsedToday && runUsedToday
-                              ? '早上已经喝过咖啡、也跑完步了，现在躺下大概只会睁着眼。'
-                              : coffeeUsedToday
-                                ? '早上那杯咖啡还在起作用，回笼觉已经睡不回去了。'
-                                : '早上已经跑过步，身体醒过来了，回笼觉接不上。'
+                            : coffeeUsedToday
+                              ? '早上那杯咖啡还在起作用，回笼觉已经睡不回去了。'
+                              : '现在躺下也未必睡得着。'
                           : '把闹钟按掉，再睡一个回笼觉。'}
                       </p>
                       <p className="action-effect">
@@ -2156,11 +2103,9 @@ export function WeekScreen({
                           <span className="action-locked">
                             {earlyRiseBlocked
                               ? '早起习惯生效'
-                              : coffeeUsedToday && runUsedToday
-                                ? '早上已喝咖啡并跑完步'
-                                : coffeeUsedToday
-                                  ? '早上已喝咖啡'
-                                  : '早上已校园跑'}
+                              : coffeeUsedToday
+                                ? '早上已喝咖啡'
+                                : '当前不可用'}
                           </span>
                         ) : (
                           <span className="action-repeat">消耗 1 个时间段</span>
@@ -2191,6 +2136,37 @@ export function WeekScreen({
                       <div className="action-bottom">
                         <span className="action-en">REST</span>
                         <span className="action-repeat">消耗 1 个时间段</span>
+                      </div>
+                    </div>
+                  )}
+                  {canApplyClub && clubMemberships.length > 0 && (
+                    <div className="action-card club-apply-card mobile-category-social">
+                      <ActionDoodle kind="club" />
+                      <div className="action-meta">
+                        <span>组织</span>
+                        <span className="action-no">+1</span>
+                      </div>
+                      <h3>社团活动</h3>
+                      <p className="action-flavor">
+                        你已经在{clubMemberships.map((membership) => ORG_BY_ID[membership.orgId]?.name ?? '学生组织').join('、')}里。
+                        第一周还可以申请加入第二个组织。
+                      </p>
+                      <p className="action-effect">
+                        已有 {clubMemberships.length} 个组织 · 每周固定时段占用
+                      </p>
+                      <button
+                        type="button"
+                        className="action-mini-btn"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onApplyClub?.()
+                        }}
+                      >
+                        申请加入第二个组织
+                      </button>
+                      <div className="action-bottom">
+                        <span className="action-en">ORGANIZATION</span>
+                        <span className="action-repeat">不消耗时间段</span>
                       </div>
                     </div>
                   )}
@@ -2367,21 +2343,6 @@ export function WeekScreen({
                           )}
                           {locked && <span className="action-locked">{locked}</span>}
                         </div>
-                        {action.id === 'club' &&
-                          canApplyClub &&
-                          clubMemberships.length > 0 &&
-                          !committed && (
-                            <button
-                              type="button"
-                              className="action-mini-btn"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                onApplyClub?.()
-                              }}
-                            >
-                              申请第二个组织
-                            </button>
-                          )}
                       </div>
                     )
                   })}
