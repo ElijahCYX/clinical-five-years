@@ -429,6 +429,8 @@ export function ClinicalScreen({
   const lunchForcedRef = useRef(false)
   const lunchAngryTimerRef = useRef<number | null>(null)
   const admissionFallbackRef = useRef(false)
+  const admissionArrivalsSentRef = useRef(0)
+  const admissionsForcedRef = useRef(false)
   const autoSpeedRef = useRef(false)
   const pressureFadeTimerRef = useRef<number | null>(null)
   const scoldAnimationTimerRef = useRef<number | null>(null)
@@ -654,6 +656,8 @@ export function ClinicalScreen({
     setLunchAngry(false)
     setNurseChatMessage(null)
     admissionFallbackRef.current = false
+    admissionArrivalsSentRef.current = 0
+    admissionsForcedRef.current = false
     lunchKnownTodoIdsRef.current = new Set()
     lunchForcedRef.current = false
     if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
@@ -957,6 +961,7 @@ export function ClinicalScreen({
     due.forEach((event) => {
       const time = formatClock(event.at)
       if (event.kind === 'admission') {
+        admissionArrivalsSentRef.current += 1
         appendChatMessage({ sender: '护士站', text: '@你，新病人来了，在护士站', time, clock: event.at, requiresResponse: true, todo: { kind: 'admission', bed: event.bed } })
         appendChatMessage({ sender: '护士站', text: '@你，新病人心电图记得拉', time, clock: event.at, requiresResponse: true, todo: { kind: 'ecg', bed: event.bed } })
       } else if (event.kind === 'escort') {
@@ -975,6 +980,7 @@ export function ClinicalScreen({
     if (chatMessages.some((message) => message.todo?.kind === 'admission')) return
     if (scheduledChatsRef.current.some((event) => event.kind === 'admission')) return
     admissionFallbackRef.current = true
+    admissionArrivalsSentRef.current += 1
     const bed = randomBedNumber()
     appendChatMessage({ sender: '护士站', text: '@你，新病人来了，在护士站', clock: day.clock, requiresResponse: true, todo: { kind: 'admission', bed } })
     appendChatMessage({ sender: '护士站', text: '@你，新病人心电图记得拉', clock: day.clock, requiresResponse: true, todo: { kind: 'ecg', bed } })
@@ -994,6 +1000,105 @@ export function ClinicalScreen({
     )
     if (overdue) setNurseChatMessage(overdue)
   }, [clinical.mode, day?.clock, morning, chatMessages, nurseChatMessage])
+
+  // 16:00 保证今日预计入院的患者都有对应待办，不再依赖群里是否点开。
+  useEffect(() => {
+    if (clinical.mode !== 'day' || !day || morning || !course) return
+    if (day.clock < 540 || admissionsForcedRef.current) return
+    admissionsForcedRef.current = true
+    scheduledChatsRef.current = scheduledChatsRef.current.filter((event) => event.kind !== 'admission')
+    const expected = day.tasks.expectedAdmissions
+    const admissionMessages = chatMessages.filter(
+      (message) => message.sender === '护士站' && message.todo?.kind === 'admission',
+    )
+    const existingTodos = clinical.todos ?? []
+    const additions: ClinicalTodo[] = []
+    const markReadIds = new Set<string>()
+    admissionMessages.forEach((message) => {
+      const bed = message.todo?.bed ?? randomBedNumber()
+      const admissionId = `todo-${message.id}`
+      if (!existingTodos.some((todo) => todo.id === admissionId)) {
+        additions.push({
+          id: admissionId,
+          kind: 'admission',
+          title: `收病人 · ${bed} 床`,
+          bed,
+          taskId: 'admission',
+          courseId: course.courseId,
+          dayIndex: day.dayIndex,
+          createdAtClock: day.clock,
+          dueAtClock: null,
+          urgent: false,
+          status: 'pending',
+        })
+      }
+      const ecgMessage = chatMessages.find(
+        (item) => item.todo?.kind === 'ecg' && item.todo.bed === bed,
+      )
+      const ecgId = `todo-${ecgMessage?.id ?? `ecg-${message.id}`}`
+      if (!existingTodos.some((todo) => todo.id === ecgId)) {
+        additions.push({
+          id: ecgId,
+          kind: 'ecg',
+          title: `拉心电图 · ${bed} 床`,
+          bed,
+          taskId: 'ecg',
+          courseId: course.courseId,
+          dayIndex: day.dayIndex,
+          createdAtClock: day.clock,
+          dueAtClock: null,
+          urgent: false,
+          status: 'pending',
+        })
+      }
+      markReadIds.add(message.id)
+    })
+    const represented = Math.max(admissionArrivalsSentRef.current, admissionMessages.length)
+    const missing = Math.max(0, expected - represented)
+    for (let index = 0; index < missing; index += 1) {
+      const bed = randomBedNumber()
+      const key = `${day.dayIndex}-${day.clock}-${index}-${bed}`
+      additions.push({
+        id: `todo-late-admission-${key}`,
+        kind: 'admission',
+        title: `收病人 · ${bed} 床`,
+        bed,
+        taskId: 'admission',
+        courseId: course.courseId,
+        dayIndex: day.dayIndex,
+        createdAtClock: day.clock,
+        dueAtClock: null,
+        urgent: false,
+        status: 'pending',
+      })
+      additions.push({
+        id: `todo-late-ecg-${key}`,
+        kind: 'ecg',
+        title: `拉心电图 · ${bed} 床`,
+        bed,
+        taskId: 'ecg',
+        courseId: course.courseId,
+        dayIndex: day.dayIndex,
+        createdAtClock: day.clock,
+        dueAtClock: null,
+        urgent: false,
+        status: 'pending',
+      })
+    }
+    if (additions.length > 0) {
+      persistClinical({ ...clinical, todos: [...existingTodos, ...additions] })
+    }
+    if (markReadIds.size > 0) {
+      setChatMessages((prev) => prev.map((message) =>
+        markReadIds.has(message.id)
+          ? { ...message, read: true, nurseVisitHandled: true, requiresResponse: false }
+          : message,
+      ))
+    }
+    setBlockNotice(`16:00 · 今日预计入院 ${expected} 人已全部到院，相关收病人/心电图任务已加入待办。`)
+    if (blockNoticeTimerRef.current) window.clearTimeout(blockNoticeTimerRef.current)
+    blockNoticeTimerRef.current = window.setTimeout(() => setBlockNotice(null), 5000)
+  }, [clinical.mode, day?.clock, morning, course, chatMessages, clinical.todos])
 
   // “在哪呢”只在逃实习风险超过 80 时出现一次。
   useEffect(() => {
