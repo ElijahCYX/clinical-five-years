@@ -53,13 +53,13 @@ export function TitleScreen({ hasSave, onStart, onContinue, onTestClinical }: Ti
               >
                 {hasSave ? '继续上次档案' : '暂无存档'}
               </button>
-              {import.meta.env.DEV && onTestClinical && (
+              {onTestClinical && (
                 <button
                   className="btn btn-ghost title-test-btn"
                   type="button"
                   onClick={onTestClinical}
                 >
-                  测试：临床
+                  测试版：直接体验临床
                 </button>
               )}
             </div>
