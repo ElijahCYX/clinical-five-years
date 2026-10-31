@@ -1537,6 +1537,32 @@ export function ClinicalScreen({
     }
   }, [currentBlock?.kind, day?.dayIndex])
 
+  const triggerRecordWarningIfNeeded = () => {
+    if (!day || recordWarningShownRef.current) return
+    const missed = (clinical.todos ?? []).filter(
+      (todo) => todo.status === 'pending' && (todo.kind === 'admission' || todo.kind === 'ecg'),
+    )
+    if (missed.length === 0) return
+    recordWarningShownRef.current = true
+    const hasAdmission = missed.some((todo) => todo.kind === 'admission')
+    const hasEcg = missed.some((todo) => todo.kind === 'ecg')
+    setRecordWarning(
+      hasAdmission && hasEcg
+        ? '主任翻着病历，脸色沉下来：“之前的病人没收到，心电图也没拉，你到底在干什么？”'
+        : hasAdmission
+          ? '主任翻到一页空白的入院记录：“这个病人为什么还没收？病历上写的是让我自己收吗？”'
+          : '主任把心电图报告拍在桌上：“之前交代的心电图呢？病人等了一晚上，你等到下班？”',
+    )
+    onGameEffect({ stress: 10 })
+    updateDay({
+      dayLog: [...(day.dayLog ?? []), '查房时主任发现未完成的病人/心电图待办，严厉批评。'],
+    })
+    persistClinical({
+      ...clinical,
+      recognition: Math.max(0, clinical.recognition - 5),
+    })
+  }
+
   const startLunch = () => {
     if (!day || lunchPhase !== 'none' || day.clock >= 420) return
     setLunchStartClock(day.clock)
@@ -1561,6 +1587,9 @@ export function ClinicalScreen({
       suspicion: 0,
       dayLog: [...day.dayLog, `认真听讲，跳过${currentBlock.title}。`],
     })
+    if (currentBlock.title.includes('查房') || currentBlock.title.includes('交班')) {
+      triggerRecordWarningIfNeeded()
+    }
   }
 
   const answerFixedBlock = (go: boolean) => {
@@ -1586,31 +1615,6 @@ export function ClinicalScreen({
         )
       }
     }
-    if (isRound && !recordWarningShownRef.current) {
-      const missed = (clinical.todos ?? []).filter(
-        (todo) => todo.status === 'pending' && todo.dayIndex < day.dayIndex && (todo.kind === 'admission' || todo.kind === 'ecg'),
-      )
-      if (missed.length > 0) {
-        recordWarningShownRef.current = true
-        const hasAdmission = missed.some((todo) => todo.kind === 'admission')
-        const hasEcg = missed.some((todo) => todo.kind === 'ecg')
-        setRecordWarning(
-          hasAdmission && hasEcg
-            ? '主任翻着病历，脸色沉下来：“昨天交代的病人没收到，心电图也没拉，你昨天到底在干什么？”'
-            : hasAdmission
-              ? '主任翻到一页空白的入院记录：“这个病人昨天为什么还没收？病历上写的是让我自己收吗？”'
-              : '主任把心电图报告拍在桌上：“昨天交代的心电图呢？病人等了一晚上，你等到下班？”',
-        )
-        onGameEffect({ stress: 10 })
-        updateDay({
-          dayLog: [...(day?.dayLog ?? []), '第二天查房：主任发现昨天的病人/心电图待办未完成，严厉批评。'],
-        })
-        persistClinical({
-          ...clinical,
-          recognition: Math.max(0, clinical.recognition - 5),
-        })
-      }
-    }
     if (day.lateArrival && isRound && !lateScoldingSeen) {
       setLateScoldingSeen(true)
       setLateScolding(pickLateScoldingText())
@@ -1620,6 +1624,7 @@ export function ClinicalScreen({
       attendedBlocks: [...day.attendedBlocks, block.id],
       dayLog: [...day.dayLog, `参加了${block.title}。`],
     })
+    if (isRound) triggerRecordWarningIfNeeded()
     persistClinical({
       ...clinical,
       dayAttendance: clinical.dayAttendance + 1,
@@ -2503,7 +2508,7 @@ export function ClinicalScreen({
             {recordWarning && (
               <div className="clinical-modal-backdrop clinical-record-warning-backdrop">
                 <div className="clinical-modal clinical-record-warning">
-                  <span className="clinical-small-label">第二天查房 · 主任查阅病历</span>
+                  <span className="clinical-small-label">查房 · 主任查阅病历</span>
                   <h2>病历夹被摔在桌上。</h2>
                   <p>{recordWarning}</p>
                   <div className="clinical-record-penalty">压力 +10 · 科室认可度 -5</div>
