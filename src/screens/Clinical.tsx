@@ -2005,7 +2005,7 @@ export function ClinicalScreen({
               <div className="clinical-day-top">
                 <div>
                   <span className="clinical-small-label">临床日 {day.dayIndex + 1} / {course.clinicalDays}</span>
-                  <strong className="clinical-clock">{formatClock(day.clock)}</strong>
+                  <strong className="clinical-clock">{overtime ? formatOvertimeClock(600 + overtimeMinutes) : formatClock(day.clock)}</strong>
                   <span className="clinical-phase">{blockAt(course, day.clock)?.title ?? '收尾中'}</span>
                   {day.lateArrival && <span className="clinical-late-badge">迟到</span>}
                 </div>
@@ -2088,7 +2088,7 @@ export function ClinicalScreen({
               )}
               {overtime && (
                 <div className="clinical-overtime-bar">
-                  <div><strong>17:00 · 加班中</strong><span>已处理 {overtimeMinutes} 分钟 · 时间不再自动推进</span></div>
+                  <div><strong>{formatOvertimeClock(600 + overtimeMinutes)} · 加班中</strong><span>已处理 {overtimeMinutes} 分钟 · 时间不再自动推进</span></div>
                   <button type="button" className="btn btn-ghost" onClick={() => setOvertimeSettlement(pickOvertimeText(formatOvertimeClock(600 + overtimeMinutes)))}>收工</button>
                 </div>
               )}
