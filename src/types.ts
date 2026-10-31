@@ -1025,7 +1025,7 @@ export interface ClinicalTodo {
 export interface ClinicalState {
   courseIndex: number
   dayIndex: number
-  mode: 'intro' | 'day' | 'summary' | 'exam' | 'done'
+  mode: 'intro' | 'day' | 'summary' | 'evening' | 'exam' | 'done'
   courses: ClinicalCourseInfo[]
   skills: Record<ClinicalSkillId, ClinicalSkillState>
   recognition: number

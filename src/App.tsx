@@ -4477,6 +4477,21 @@ function RealApp() {
     }
   }
 
+  const performClinicalEveningAction = (actionId: string) => {
+    const current = gameRef.current ?? game
+    if (!current) return
+    const action = ACTION_BY_ID[actionId]
+    if (!action) return
+    const applied = carryGrowthState(applySlotAction(current, actionId))
+    const next = {
+      ...applied,
+      semesterStats: bumpSemesterStats(applied.semesterStats, actionId),
+      careerStats: bumpCareerStats(applied.careerStats, actionId),
+    }
+    setGame(next)
+    persist(next)
+  }
+
   const finishWeekSlot = (base: GameState, actionId?: string) => {
     const withStats = actionId
       ? {
@@ -7085,6 +7100,7 @@ function RealApp() {
         onDrinkCoffee={drinkCoffee}
         onEatBreakfast={eatBreakfast}
         onDailySelfCare={dailySelfCare}
+        onClinicalEveningAction={performClinicalEveningAction}
       />
     )
   }

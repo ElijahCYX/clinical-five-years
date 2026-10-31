@@ -7,6 +7,7 @@ import { pickLateScoldingText } from '../lateScoldingTexts'
 import { CLINICAL_EVENT_RULES } from '../clinicalEventRules'
 import { pickOvertimeText } from '../overtimeTexts'
 import { consumptionCoffeeCost, consumptionSelfCareCost } from '../consumption'
+import { ACTION_BY_ID, ACTIONS } from '../data'
 import {
   CLINICAL_QUESTION_BY_ID,
   CLINICAL_SKILLS,
@@ -60,6 +61,7 @@ interface ClinicalScreenProps {
   onDrinkCoffee?: (dayKey?: string) => void
   onEatBreakfast?: (dayKey?: string) => void
   onDailySelfCare?: (dayKey?: string) => void
+  onClinicalEveningAction?: (actionId: string) => void
 }
 
 interface EscapeEvent {
@@ -380,6 +382,7 @@ export function ClinicalScreen({
   onDrinkCoffee,
   onEatBreakfast,
   onDailySelfCare,
+  onClinicalEveningAction,
 }: ClinicalScreenProps) {
   const [clinical, setClinical] = useState<ClinicalState>(
     () => state.clinical ?? createClinicalState(state.season.courses),
@@ -429,6 +432,7 @@ export function ClinicalScreen({
   const [overtime, setOvertime] = useState(false)
   const [overtimeMinutes, setOvertimeMinutes] = useState(0)
   const [overtimeSettlement, setOvertimeSettlement] = useState<string | null>(null)
+  const [eveningAction, setEveningAction] = useState<string | null>(null)
   const [recordWarning, setRecordWarning] = useState<string | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
   const chatOpenRef = useRef(false)
@@ -625,6 +629,7 @@ export function ClinicalScreen({
     setOvertime(false)
     setOvertimeMinutes(0)
     setOvertimeSettlement(null)
+    setEveningAction(null)
     setRecordWarning(null)
     recordWarningShownRef.current = false
     scheduledChatsRef.current = createScheduledChats(
@@ -1917,7 +1922,9 @@ export function ClinicalScreen({
                 </div>
               )}
               <div className="clinical-day-actions">
-                {day.escape ? (
+                {overtime ? (
+                  <p className="clinical-action-hint">加班中不再提供偷闲操作。把待办收尾，或者点右上角「收工」。</p>
+                ) : day.escape ? (
                   <>
                     <button type="button" className="btn btn-ghost" onClick={endEscape}>回科室</button>
                     <div className="clinical-escape-holds">
@@ -2324,6 +2331,53 @@ export function ClinicalScreen({
           </>
         )}
 
+        {clinical.mode === 'evening' && (
+          <section className="paper-card clinical-evening-card">
+            <span className="clinical-small-label">下班后 · 晚上时间段 1 / 1</span>
+            <h2>下班后的晚上</h2>
+            <p className="clinical-evening-lede">
+              今天的工作结束了。只有一个晚上的时间段，安排一件想做的事，然后回去睡觉。
+            </p>
+            {eveningAction ? (
+              <div className="clinical-evening-result">
+                <strong>{ACTION_BY_ID[eveningAction]?.name ?? '今晚的行动'}</strong>
+                <p>{ACTION_BY_ID[eveningAction]?.effectText ?? ''}</p>
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  if (clinical.dayIndex + 1 < course.clinicalDays) {
+                    persistClinical({ ...clinical, dayIndex: clinical.dayIndex + 1, mode: 'intro', currentDay: null, lastDaySummary: null })
+                  } else {
+                    takeExam()
+                  }
+                }}>睡觉，迎接第二天</button>
+              </div>
+            ) : (
+              <div className="clinical-evening-actions">
+                {['rest', 'library', 'english', 'kaoyan', 'sport', 'entertainment', 'partTime', 'research'].map((actionId) => {
+                  const action = ACTION_BY_ID[actionId]
+                  if (!action) return null
+                  const disabled = actionId === 'research' && !state.mentorContactUnlocked
+                  return (
+                    <button
+                      key={actionId}
+                      type="button"
+                      className="clinical-evening-action"
+                      disabled={disabled}
+                      onClick={() => {
+                        if (disabled) return
+                        setEveningAction(actionId)
+                        onClinicalEveningAction?.(actionId)
+                      }}
+                    >
+                      <strong>{action.name}</strong>
+                      <span>{action.effectText}</span>
+                      <small>{disabled ? '尚未进入实验室' : '选择一个行动'}</small>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
         {clinical.mode === 'summary' && clinical.lastDaySummary && (
           <section className="paper-card clinical-card">
             <span className="clinical-small-label">17:00 · 下班结算</span>
@@ -2335,15 +2389,9 @@ export function ClinicalScreen({
             <button
               type="button"
               className="btn btn-primary clinical-main-btn"
-              onClick={() => {
-                if (clinical.dayIndex + 1 < course.clinicalDays) {
-                  persistClinical({ ...clinical, dayIndex: clinical.dayIndex + 1, mode: 'intro', currentDay: null, lastDaySummary: null })
-                } else {
-                  takeExam()
-                }
-              }}
+              onClick={() => persistClinical({ ...clinical, mode: 'evening', currentDay: null })}
             >
-              {clinical.dayIndex + 1 < course.clinicalDays ? '下一天' : '进入出科日'} <span className="btn-arrow">→</span>
+              下班，开始晚上 <span className="btn-arrow">→</span>
             </button>
           </section>
         )}
