@@ -24223,3 +24223,145 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   .clinical-evening-actions { grid-template-columns: 1fr; }
   .clinical-evening-action { min-height: 0; }
 }
+
+/* Fixed-to-free transition, with time paused */
+.clinical-block-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, rgba(238,242,230,.98), rgba(247,243,232,.98));
+  animation: block-transition-in .3s ease-out both;
+}
+.clinical-block-transition-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(47,91,76,.15), transparent);
+  animation: block-transition-sweep 1.6s .15s ease-in-out both;
+}
+.clinical-block-transition-copy {
+  position: relative;
+  z-index: 1;
+  width: min(620px, calc(100vw - 44px));
+  text-align: center;
+  animation: block-transition-copy .5s .12s ease-out both;
+}
+.clinical-block-transition-copy span {
+  display: inline-block;
+  border: 1px solid rgba(47,91,76,.3);
+  padding: 5px 11px;
+  color: var(--green);
+  font-size: 12px;
+  letter-spacing: .14em;
+}
+.clinical-block-transition-copy h2 {
+  margin: 18px 0 10px;
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 500;
+}
+.clinical-block-transition-copy p {
+  margin: 0 auto;
+  max-width: 460px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+@keyframes block-transition-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes block-transition-sweep { from { left: -30%; } to { left: 105%; } }
+@keyframes block-transition-copy { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Honest participation button */
+.clinical-attend-btn {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(47,91,76,.35);
+  background: #eef2e8;
+  color: #415e4c;
+  padding: 10px 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.clinical-attend-btn span { color: var(--muted); font-size: 11px; }
+.clinical-attend-btn:hover { border-color: var(--green); background: #e6ede1; }
+
+/* Fixed-to-free transition, with time paused */
+.clinical-block-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, rgba(238,242,230,.98), rgba(247,243,232,.98));
+  animation: block-transition-in .3s ease-out both;
+}
+.clinical-block-transition-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(47,91,76,.15), transparent);
+  animation: block-transition-sweep 1.6s .15s ease-in-out both;
+}
+.clinical-block-transition-copy {
+  position: relative;
+  z-index: 1;
+  width: min(620px, calc(100vw - 44px));
+  text-align: center;
+  animation: block-transition-copy .5s .12s ease-out both;
+}
+.clinical-block-transition-copy span {
+  display: inline-block;
+  border: 1px solid rgba(47,91,76,.3);
+  padding: 5px 11px;
+  color: var(--green);
+  font-size: 12px;
+  letter-spacing: .14em;
+}
+.clinical-block-transition-copy h2 {
+  margin: 18px 0 10px;
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 500;
+}
+.clinical-block-transition-copy p {
+  margin: 0 auto;
+  max-width: 460px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+@keyframes block-transition-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes block-transition-sweep { from { left: -30%; } to { left: 105%; } }
+@keyframes block-transition-copy { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Honest participation button */
+.clinical-attend-btn {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(47,91,76,.35);
+  background: #eef2e8;
+  color: #415e4c;
+  padding: 10px 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.clinical-attend-btn span { color: var(--muted); font-size: 11px; }
+.clinical-attend-btn:hover { border-color: var(--green); background: #e6ede1; }

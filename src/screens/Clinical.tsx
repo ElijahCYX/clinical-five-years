@@ -420,6 +420,7 @@ export function ClinicalScreen({
   const deferredTodoMessagesRef = useRef<ClinicalChatMessage[]>([])
   const previousBlockKindRef = useRef<string | null>(null)
   const blockNoticeTimerRef = useRef<number | null>(null)
+  const blockTransitionTimerRef = useRef<number | null>(null)
   const questionPressureTimerRef = useRef<number | null>(null)
   const questionPressureRef = useRef(false)
   const recordWarningShownRef = useRef(false)
@@ -435,6 +436,7 @@ export function ClinicalScreen({
   const [eveningAction, setEveningAction] = useState<string | null>(null)
   const [recordWarning, setRecordWarning] = useState<string | null>(null)
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
+  const [blockTransition, setBlockTransition] = useState(false)
   const chatOpenRef = useRef(false)
   const chatListRef = useRef<HTMLDivElement | null>(null)
   const scheduledChatsRef = useRef<ScheduledChatEvent[]>([])
@@ -489,7 +491,7 @@ export function ClinicalScreen({
     Boolean(morning) ||
     Boolean(day.currentTaskId || day.currentQuestionId || day.fixedPromptId) ||
     Boolean(escapeEvent) ||
-    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement)
+    Boolean(taskResult || questionResult || escapeSetup || task || lateScolding || nurseTodo || escapeTodo || clinicalPaused || questionPressure || scoldAnimation || recordWarning || overtimeSettlement || blockTransition)
   const clockPausedRef = useRef(clockPaused)
   const pendingTodoTaskIdsRef = useRef<string[]>(pendingTodoTaskIds)
   clockPausedRef.current = clockPaused
@@ -632,6 +634,8 @@ export function ClinicalScreen({
     setEveningAction(null)
     setRecordWarning(null)
     recordWarningShownRef.current = false
+    if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
+    setBlockTransition(false)
     scheduledChatsRef.current = createScheduledChats(
       course,
       nextDay.tasks.expectedAdmissions,
@@ -1234,8 +1238,24 @@ export function ClinicalScreen({
       setBlockNotice('固定安排结束 · 现在可以处理待办，也可以偷偷摸鱼了。')
       if (blockNoticeTimerRef.current) window.clearTimeout(blockNoticeTimerRef.current)
       blockNoticeTimerRef.current = window.setTimeout(() => setBlockNotice(null), 4200)
+      setBlockTransition(true)
+      if (blockTransitionTimerRef.current) window.clearTimeout(blockTransitionTimerRef.current)
+      blockTransitionTimerRef.current = window.setTimeout(() => setBlockTransition(false), 1900)
     }
   }, [currentBlock?.kind, day?.dayIndex])
+
+  const attendSeriously = () => {
+    if (!day || !course || currentBlock?.kind !== 'fixed') return
+    const target = Math.min(600, currentBlock.end)
+    setTimeJump('认真听讲 · 直接跳过本段固定安排')
+    window.setTimeout(() => setTimeJump(null), 1400)
+    updateDay({
+      clock: target,
+      holdAction: null,
+      suspicion: 0,
+      dayLog: [...day.dayLog, `认真听讲，跳过${currentBlock.title}。`],
+    })
+  }
 
   const answerFixedBlock = (go: boolean) => {
     if (!day || !course || !day.fixedPromptId) return
@@ -1993,6 +2013,11 @@ export function ClinicalScreen({
                     ) : (
                       <p className="clinical-free-note">自由时间 · 做这些不会增加提问风险</p>
                     )}
+                    {currentBlock?.kind === 'fixed' && (
+                      <button type="button" className="clinical-attend-btn" onClick={attendSeriously}>
+                        认真听讲 <span>放弃偷闲收益 · 跳过本段固定安排</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={`clinical-hold-btn ${day.holdAction === 'phone' ? 'is-holding' : ''}`}
@@ -2037,6 +2062,16 @@ export function ClinicalScreen({
             </div>
 
             <ClinicalModalPortal>
+            {blockTransition && (
+              <div className="clinical-block-transition" role="status" aria-live="polite">
+                <div className="clinical-block-transition-sweep" aria-hidden="true" />
+                <div className="clinical-block-transition-copy">
+                  <span>固定安排结束</span>
+                  <h2>进入自由时间</h2>
+                  <p>查房和教学结束了。时间暂停一秒，接下来怎么安排，由你决定。</p>
+                </div>
+              </div>
+            )}
             {scoldAnimation && (
               <div className="clinical-scold-cinematic" role="alert" aria-live="assertive">
                 <div className="scold-flash" aria-hidden="true" />
