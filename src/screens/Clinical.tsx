@@ -1174,7 +1174,7 @@ export function ClinicalScreen({
       }
     }, 100)
     return () => window.clearInterval(timer)
-  }, [clinical.mode, morning, course, day?.escape, day?.currentTaskId, day?.currentQuestionId, day?.fixedPromptId, speed, clinicalPaused, questionPressure])
+  }, [clinical.mode, morning, course, day?.escape, day?.currentTaskId, day?.currentQuestionId, day?.fixedPromptId, speed, clinicalPaused, questionPressure, taskResult, questionResult, escapeSetup, nurseTodo, escapeTodo])
 
   // 停止偷玩后，老师的怀疑会连续回落；闲置越久，回落越快。
   useEffect(() => {
