@@ -403,7 +403,7 @@ export function ClinicalScreen({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [questionResult, setQuestionResult] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
-  const [speed, setSpeed] = useState<1 | 2 | 4>(1)
+  const [speed, setSpeed] = useState<1 | 2 | 4 | 8>(1)
   const [timeJump, setTimeJump] = useState<string | null>(null)
   const [suspicionWarning, setSuspicionWarning] = useState(false)
   const [morning, setMorning] = useState<MorningState | null>(null)
@@ -1228,7 +1228,7 @@ export function ClinicalScreen({
     }
   }, [clinicalPaused])
 
-  // 自由时间：长按偷闲 1 秒自动升到 2×，再持续 1 秒升到 4×；松手回到 1×。
+  // 自由时间：长按偷闲每满 1 秒自动升一级，最高 8×；松手回到 1×。
   useEffect(() => {
     const isFreeHold = Boolean(day?.holdAction) && currentBlock?.kind === 'free'
     if (!isFreeHold) {
@@ -1240,7 +1240,7 @@ export function ClinicalScreen({
     }
     const timer = window.setTimeout(() => {
       autoSpeedRef.current = true
-      setSpeed((previous) => (previous === 1 ? 2 : previous === 2 ? 4 : previous))
+      setSpeed((previous) => (previous === 1 ? 2 : previous === 2 ? 4 : previous === 4 ? 8 : previous))
     }, 1000)
     return () => window.clearTimeout(timer)
   }, [day?.holdAction, currentBlock?.kind, speed])
@@ -2045,7 +2045,7 @@ export function ClinicalScreen({
                 <div className="clinical-day-status">
                   <span className="clinical-speed-control">
                     播放
-                    {([1, 2, 4] as const).map((value) => (
+                    {([1, 2, 4, 8] as const).map((value) => (
                       <button
                         key={value}
                         type="button"
