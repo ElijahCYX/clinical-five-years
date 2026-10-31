@@ -24113,3 +24113,25 @@ html[data-explain-master="on"][data-explain-value="off"] [data-explain-category=
   .title-save-row { grid-template-columns: 64px minmax(0, 1fr); }
   .title-save-row small { grid-column: 2; }
 }
+
+/* Group chat bubbles: content-width, up to 2/3 of the conversation width. */
+.clinical-game-screen .clinical-group-message {
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+}
+.clinical-game-screen .clinical-group-bubble {
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: 66.666%;
+}
+.clinical-game-screen .clinical-group-message p {
+  width: auto;
+  max-width: 100% !important;
+  white-space: pre-wrap;
+}
+@media (max-width: 820px) {
+  .clinical-game-screen .clinical-group-bubble {
+    max-width: 78%;
+  }
+}
